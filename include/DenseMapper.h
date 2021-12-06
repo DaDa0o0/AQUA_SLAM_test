@@ -1,0 +1,142 @@
+//
+// Created by da on 03/12/2021.
+//
+#ifndef DENSEMAPPER_H
+#define DENSEMAPPER_H
+
+#include <ros/ros.h>
+#include <sensor_msgs/Image.h>
+#include <image_transport/image_transport.h>
+#include <image_transport/subscriber_filter.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <cv_bridge/cv_bridge.h>
+#include <std_srvs/Empty.h>
+
+
+#include <pcl/common/common_headers.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/console/parse.h>
+#include <pcl/point_types.h>
+#include <pcl/common/transforms.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Geometry>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/ximgproc/disparity_filter.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/calib3d.hpp>
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <mutex>
+
+using namespace cv;
+using namespace std;
+
+namespace ORB_SLAM3
+{
+class KeyFrame;
+
+struct DepthEstParamters
+{
+	float _P1;
+	float _P2;
+	int _correlation_window_size;
+	int _disp12MaxDiff;
+	int _disparity_range;
+	int _min_disparity;
+	int _prefilter_cap;
+	int _prefilter_size;
+	int _speckle_range;
+	int _speckle_size;
+	int _texture_threshold;
+	float _uniqueness_ratio;
+	DepthEstParamters()
+	{};
+	DepthEstParamters(float P1,
+					  float P2,
+					  int correlation_window_size,
+					  int disp12MaxDiff,
+					  int disparity_range,
+					  int min_disparity,
+					  int prefilter_cap,
+					  int prefilter_size,
+					  int speckle_range,
+					  int speckle_size,
+					  int texture_threshold,
+					  float uniqueness_ratio)
+		: _P1(P1), _P2(P2), _correlation_window_size(correlation_window_size),
+		  _disp12MaxDiff(disp12MaxDiff),
+		  _disparity_range(disparity_range), _min_disparity(min_disparity),
+		  _prefilter_cap(prefilter_cap), _prefilter_size(prefilter_size), _speckle_range(speckle_range),
+		  _speckle_size(speckle_size), _texture_threshold(texture_threshold), _uniqueness_ratio(uniqueness_ratio)
+	{};
+
+};
+
+class DenseMapper
+{
+public:
+	DenseMapper(string settingFile);
+	std::mutex mDenseMapMutex;
+	pcl::PointCloud<pcl::PointXYZRGB> mGlobalMap;
+
+	// point cloud is in local camera frame
+	std::mutex mKFMutex;
+	std::map<KeyFrame *, pcl::PointCloud<pcl::PointXYZRGB>> mKFWithPointCloud;
+
+	std::mutex mKFQueueMutex;
+	std::queue<KeyFrame *> mKFQueue;
+
+	// used for store KF before more than 5 KF in map
+	std::queue<KeyFrame *> mKFQueueTemp;
+
+	//ros publisher
+	boost::shared_ptr<image_transport::Publisher> mDepthPub;
+	boost::shared_ptr<image_transport::Publisher> mDepthConfPub;
+	boost::shared_ptr<ros::Publisher> mMapPub;
+
+	bool mStop = false;
+
+public:
+	void InsertNewKF(KeyFrame *pKF);
+	void Update();
+
+	void PublishMap();
+
+	void Run();
+	void Stop();
+	void Resume();
+
+protected:
+	double fx, fy, cx, cy, bf;
+	DepthEstParamters mParam;
+
+protected:
+	inline void Project2Dto3D(int x, int y, float d, Eigen::Vector3d &point)
+	{
+		point.z() = bf / d;
+		point.x() = point.z() * (x - cx) / fx;
+		point.y() = point.z() * (y - cy) / fy;
+	}
+
+	void ComputeDisp(const Mat &left, const Mat &right, Mat &out, Mat &out_conf, DepthEstParamters &param);
+
+	void GetSubMap(const Mat &img_l, const Mat &img_r, pcl::PointCloud<pcl::PointXYZRGB> &sub_map);
+
+	void MergeSubMap(pcl::PointCloud<pcl::PointXYZRGB> &sub_map, KeyFrame *pKF);
+
+};
+
+}
+
+
+#endif //DENSEMAPPER_H

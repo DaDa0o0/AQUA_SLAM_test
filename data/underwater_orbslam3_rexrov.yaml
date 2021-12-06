@@ -1,0 +1,137 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+Camera.type: "PinHole"
+
+# Camera calibration and distortion parameters (OpenCV)
+Camera.fx: 407.0646129842357
+Camera.fy: 407.0646129842357
+Camera.cx: 384.5
+Camera.cy: 246.5
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+
+Camera.bFishEye: 0
+
+Camera.width: 768
+Camera.height: 492
+
+# Camera frames per second
+Camera.fps: 10
+
+# stereo baseline times fx
+Camera.bf: 97.68
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 0
+
+# Close/Far threshold. Baseline times.
+ThDepth: 35.0
+
+# scale image by a factor
+ImageScale: 1
+
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 800
+
+# ORB Extractor: Scale factor between levels in the scale pyramid
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast
+ORBextractor.iniThFAST: 15
+ORBextractor.minThFAST: 3
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize:2
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500
+
+# Optimization Parameters
+Optimizer.visual_lamda: 1
+Optimizer.DVL_lamda: 1
+Optimizer.DVL_lamda_debug: 1
+Optimizer.DVL_func: 1
+Optimizer.KF_init_step: 0.5
+Optimizer.KF_num_for_init: 25
+Optimizer.calibrated: 1 # 0 or 1
+Tracker.KFThresholdForMap: 5
+
+# IMU Parameters  -0.0539971  0.0286326
+Tbc: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ 0, 0, 1, 1.35,
+          -1,  0, 0, 0.12,
+          0, -1, 0, 0.2,
+          0, 0, 0, 1 ] # simulator_rexrov
+IMU.Frequency: 40
+IMU.NoiseGyro: 0.1
+IMU.NoiseAcc: 0.1
+IMU.GyroWalk: 0.01
+IMU.AccWalk: 0.01
+
+VisualIntegration: 0
+
+# IMU to orb
+# only use rotation
+T_gyro_c: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ 0, 0, 1, 0,
+          -1,  0, 0, 0,
+          0, -1, 0, 0,
+          0, 0, 0, 1 ] # simulator_rexrov
+#  data: [ 0, 0, 1, 1.35,
+#          -1,  0, 0, 0.12,
+#          0, -1, 0, 0.2,
+#          0, 0, 0, 1 ] # simulator_rexrov
+
+
+
+# dvl to orb
+T_dvl_c: !!opencv-matrix
+  rows: 4
+  cols: 4
+  dt: f
+  data: [ 0,  1,   0,   -0.880, #falcon/odom linear velocity , , 1.056
+          -1,  0,   0,    -0.348,
+          0,  0,  1,    1.056,
+          0,  0,   0,    1 ]
+
+#rovco
+LeftImgTopic: "/img_l/image_compressed"
+RightImgTopic: "/img_r/image_compressed"
+#LeftImgTopic: "/rexrov2/rexrov2/cameraleft/camera_image"
+#RightImgTopic: "/rexrov2/rexrov2/cameraright/camera_image"
+ImuTopic: "/rexrov2/imu"
+DvlTopic: "/rexrov2/DVL"
+
+#ImuTopic: "/kvh_1750_imu/imu"
+#DvlTopic: "/bluerov2/odometry"

@@ -1,0 +1,704 @@
+//
+// Created by da on 24/03/2021.
+//
+
+#include "RosHandling.h"
+#include "Atlas.h"
+#include "Map.h"
+#include "System.h"
+#include <fstream>
+using namespace ORB_SLAM3;
+using namespace std;
+
+RosHandling::RosHandling(System* pSys):mp_system(pSys)
+{
+	ros::NodeHandle nh_;
+	image_transport::ImageTransport it(nh_);
+
+	image_transport::Publisher img_l_pub = it.advertise("/suv3d/left/image_raw", 10);
+	mp_img_l_pub =boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_l_pub));
+
+	image_transport::Publisher img_r_pub = it.advertise("/suv3d/right/image_raw", 10);
+	mp_img_r_pub = boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_r_pub));
+
+	image_transport::Publisher img_info_pub = it.advertise("/ORBSLAM3_tight/img_with_info", 10);
+	mp_img_info_pub = boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_info_pub));
+
+	image_transport::Publisher img_merge_pub = it.advertise("/ORBSLAM3_tight/img_merge_cand", 10);
+	mp_img_merge_cond_pub = boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_merge_pub));
+
+
+	ros::Publisher gt_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_dvl/gt", 10);
+	mp_gt_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(gt_pub));
+	ros::Publisher gt_path_pub = nh_.advertise<nav_msgs::Path>("orb_path_gt", 10);
+	mp_gt_path_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(gt_path_pub));
+
+	ros::Publisher integration_path_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tight/integration_path", 10);
+	mp_integration_path_pub =
+		boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(integration_path_pub));
+
+	ros::Publisher pose_orb_pub = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/orb_pose", 10);
+	mp_pose_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_orb_pub));
+	ros::Publisher odom_orb_pub = nh_.advertise<nav_msgs::Odometry>("orb_odom", 10);
+	mp_odom_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(odom_orb_pub));
+	ros::Publisher path_orb_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tightly/orb_path", 10);
+	mp_path_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(path_orb_pub));
+	ros::Publisher pose_orb_camera_pub = nh_.advertise<nav_msgs::Odometry>("/ORBSLAM3_tightly/camera_pose", 10);
+	mp_pose_orb_camera_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_orb_camera_pub));
+
+	ros::Publisher pose_ekf_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_ekf_pose", 10);
+	mp_pose_ekf_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_ekf_pub));
+	ros::Publisher path_ekf_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3/ekf_path", 10);
+	mp_path_ekf_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(path_ekf_pub));
+
+	ros::Publisher pose_pointcloud_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_point_pose", 10);
+	mp_pose_pointcloud_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_pointcloud_pub));
+
+//	ros::ServiceClient lost_srv = nh_.serviceClient<vehicle_interface::AlarmStoppedTracking>("/ORBSLAM3/lost");
+//	mp_lost_srv = boost::shared_ptr<ros::ServiceClient>(boost::make_shared<ros::ServiceClient>(lost_srv));
+
+	ros::Publisher pointcloud_pub = nh_.advertise<sensor_msgs::PointCloud2>("/ORBSLAM3_tightly/sparse_map", 100);
+	mp_pointcloud_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pointcloud_pub));
+
+	ros::Publisher octomap_pub = nh_.advertise<octomap_msgs::Octomap>("/ORBSLAM3_tightly/octomap", 10);
+	mp_octomap_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(octomap_pub));
+	mp_cloud_occupied = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+	mp_cloud_occupied->reserve(5000);
+	mp_cloud_free = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+	mp_cloud_free->reserve(50000);
+	m_octomap_resolution = 0.1;
+	mp_octree = boost::make_shared<octomap::OcTree>(octomap::OcTree(m_octomap_resolution));
+	ros::Publisher map_info_pub = nh_.advertise<vehicle_interface::MapInfo>("/ORBSLAM3_tightly/map_info", 10);
+	mp_map_info_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(map_info_pub));
+
+	ros::Publisher pose_integration_ref = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/integration_ref", 10);
+	mp_pose_integration_ref_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_integration_ref));
+
+	ros::Publisher pose_integration_cur = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/integration_cur", 10);
+	mp_pose_integration_cur_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_integration_cur));
+
+	ros::ServiceServer save_srv = nh_.advertiseService("/ORBSLAM3_tightly/save",&RosHandling::SavePose, this);
+	mp_save_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(save_srv));
+
+}
+
+void RosHandling::PublishLeftImg(const sensor_msgs::ImageConstPtr &img)
+{
+	mp_img_l_pub->publish(img);
+}
+void RosHandling::PublishRightImg(const sensor_msgs::ImageConstPtr &img)
+{
+	mp_img_r_pub->publish(img);
+}
+void RosHandling::PublishImgWithInfo(const sensor_msgs::ImageConstPtr &img)
+{
+	mp_img_info_pub->publish(img);
+}
+void RosHandling::PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time &stamp)
+{
+	geometry_msgs::PoseStamped gt_pose;
+	gt_pose.header.frame_id = "orb_slam";
+	gt_pose.header.stamp = stamp;
+	gt_pose.pose.position.x = T_g0_gj_gt.translation().x();
+	gt_pose.pose.position.y = T_g0_gj_gt.translation().y();
+	gt_pose.pose.position.z = T_g0_gj_gt.translation().z();
+	Eigen::Quaterniond r = Eigen::Quaterniond(T_g0_gj_gt.rotation());
+	gt_pose.pose.orientation.x = r.x();
+	gt_pose.pose.orientation.y = r.y();
+	gt_pose.pose.orientation.z = r.z();
+	gt_pose.pose.orientation.w = r.w();
+	mp_gt_pub->publish(gt_pose);
+	m_gt_path.header = gt_pose.header;
+	m_gt_path.poses.push_back(gt_pose);
+	mp_gt_path_pub->publish(m_gt_path);
+}
+
+void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp)
+{
+	//conversion from ENU to NED
+	// Eigen::AngleAxisd r_x(M_PI,Eigen::Vector3d::UnitX());
+	// Eigen::AngleAxisd r_z(-0.5*M_PI,Eigen::Vector3d::UnitZ());
+	// Eigen::Isometry3d T_enu_ned=Eigen::Isometry3d::Identity();
+	// T_enu_ned.rotate(r_x);
+	// T_enu_ned.rotate(r_z);
+	// Eigen::Isometry3d T_c0_cj_orb_NED=T_c0_cj_orb*T_enu_ned;
+
+	geometry_msgs::PoseStamped pose_to_pub;
+	pose_to_pub.header.frame_id = "orb_slam";
+	//pose_to_pub.header.stamp=ros::Time::now();
+	pose_to_pub.header.stamp = stamp;
+	pose_to_pub.pose.position.x = T_c0_cj_orb.translation().x();
+	pose_to_pub.pose.position.y = T_c0_cj_orb.translation().y();
+	pose_to_pub.pose.position.z = T_c0_cj_orb.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+	Eigen::Quaterniond rotation_q(T_c0_cj_orb.rotation());
+	pose_to_pub.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.orientation.w = rotation_q.w();
+
+	mp_pose_orb_pub->publish(pose_to_pub);
+//	m_path_orb.header = pose_to_pub.header;
+//	m_path_orb.poses.push_back(pose_to_pub);
+//	mp_path_orb_pub->publish(m_path_orb);
+
+
+	// pose_to_pub.pose.position.x = T_c0_cj_orb_NED.translation().x();
+	// pose_to_pub.pose.position.y = T_c0_cj_orb_NED.translation().y();
+	// pose_to_pub.pose.position.z = T_c0_cj_orb_NED.translation().z();
+	pose_to_pub.pose.position.x = T_c0_cj_orb.translation().x();
+	pose_to_pub.pose.position.y = T_c0_cj_orb.translation().y();
+	pose_to_pub.pose.position.z = T_c0_cj_orb.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+
+	// rotation_q =T_c0_cj_orb_NED.rotation();
+	rotation_q = T_c0_cj_orb.rotation();
+	pose_to_pub.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.orientation.w = rotation_q.w();
+	BroadcastTF(T_c0_cj_orb, stamp, "orb_slam", "orb_odom");
+	nav_msgs::Odometry odom;
+	odom.header = pose_to_pub.header;
+	odom.pose.pose = pose_to_pub.pose;
+	mp_odom_orb_pub->publish(odom);
+}
+
+void RosHandling::PublishEkf(const Eigen::Isometry3d &T_e0_ej_ekf, const ros::Time &stamp)
+{
+	geometry_msgs::PoseStamped pose_to_pub;
+	pose_to_pub.header.frame_id = "orb_slam";
+	//pose_to_pub.header.stamp=ros::Time::now();
+	pose_to_pub.header.stamp = stamp;
+	pose_to_pub.pose.position.x = T_e0_ej_ekf.translation().x();
+	pose_to_pub.pose.position.y = T_e0_ej_ekf.translation().y();
+	pose_to_pub.pose.position.z = T_e0_ej_ekf.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+	Eigen::Quaterniond rotation_q = Eigen::Quaterniond(T_e0_ej_ekf.rotation());
+	pose_to_pub.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.orientation.w = rotation_q.w();
+
+	mp_pose_ekf_pub->publish(pose_to_pub);
+	m_path_ekf.header = pose_to_pub.header;
+	m_path_ekf.poses.push_back(pose_to_pub);
+	mp_path_ekf_pub->publish(m_path_ekf);
+
+}
+
+void RosHandling::PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, const ros::Time &stamp)
+{
+	geometry_msgs::PoseStamped pose_to_pub;
+	pose_to_pub.header.frame_id = "orb_slam";
+	//pose_to_pub.header.stamp=ros::Time::now();
+	pose_to_pub.header.stamp = stamp;
+	pose_to_pub.pose.position.x = T_c0_cmj.translation().x();
+	pose_to_pub.pose.position.y = T_c0_cmj.translation().y();
+	pose_to_pub.pose.position.z = T_c0_cmj.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+	Eigen::Quaterniond rotation_q = Eigen::Quaterniond(T_c0_cmj.rotation());
+	pose_to_pub.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.orientation.w = rotation_q.w();
+
+	mp_pose_pointcloud_pub->publish(pose_to_pub);
+
+}
+
+void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
+{
+	const std::lock_guard<std::mutex> guard(m_mutex_map);
+//	pcl::PointCloud<pcl::PointXYZRGB> cloud;
+//	octomap::OcTree tree(0.1);
+	mp_cloud_occupied->clear();
+	mp_cloud_free->clear();
+	mp_octree->clear();
+
+	vector<Map *> allMaps = pAtlas->GetAllMaps();
+	for (vector<Map *>::iterator it = allMaps.begin(); it != allMaps.end(); it++) {
+		Map *pMap = *it;
+		const vector<MapPoint *> &vpMPs = pMap->GetAllMapPoints();
+		const Eigen::Vector3d &color = pMap->mColor * 255;
+
+		if (vpMPs.empty()) {
+			return;
+		}
+
+//		glPointSize(mPointSize);
+//		glBegin(GL_POINTS);
+//		glColor3f(color[0],color[1],color[2]);
+
+		for (size_t i = 0, iend = vpMPs.size(); i < iend; i++) {
+			if (vpMPs[i]->isBad()) {
+				continue;
+			}
+			cv::Mat pos_end = vpMPs[i]->GetWorldPos();
+//			glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
+//			pcl::PointXYZRGB p(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2),(uint8_t)color[0],(uint8_t)color[1],(uint8_t)color[2]);
+			pcl::PointXYZRGB p_end;
+			p_end.x = pos_end.at<float>(0);
+			p_end.y = pos_end.at<float>(1);
+			p_end.z = pos_end.at<float>(2);
+			p_end.r = (unsigned char)color[0];
+			p_end.g = (unsigned char)color[1];
+			p_end.b = (unsigned char)color[2];
+			mp_cloud_occupied->push_back(p_end);
+
+
+			KeyFrame *ref_kf = vpMPs[i]->GetReferenceKeyFrame();
+			cv::Mat pos_start = ref_kf->GetPose();
+
+			Eigen::Isometry3d T_cj_c0 = Eigen::Isometry3d::Identity();
+			cv::cv2eigen(pos_start, T_cj_c0.matrix());
+			Eigen::Isometry3d T_c0_cj = T_cj_c0.inverse();
+
+			pcl::PointXYZRGB p_start;
+			p_start.x = T_c0_cj.translation().x();
+			p_start.y = T_c0_cj.translation().y();
+			p_start.z = T_c0_cj.translation().z();
+
+			pcl::PointCloud<pcl::PointXYZRGB> free_cloud;
+			GenerateFreePointcloud(p_start, p_end, m_octomap_resolution, free_cloud);
+//			cout << "add free pointcloud number: " << free_cloud.size() << endl;
+			*mp_cloud_free += free_cloud;
+
+//			map<KeyFrame *, tuple<int, int>> observations = vpMPs[i]->GetObservations();
+//			for (map<KeyFrame *, tuple<int, int>>::iterator mit = observations.begin(), mend = observations.end();
+//				 mit != mend; mit++)
+//			{
+//				if (mit->first->isBad() || mit->first->GetMap() != pMap)
+//				{
+//					continue;
+//				}
+//				//T_cj_c0
+//				cv::Mat pos_start = mit->first->GetPose();
+//
+//				Eigen::Isometry3d T_cj_c0 = Eigen::Isometry3d::Identity();
+//				cv::cv2eigen(pos_start, T_cj_c0.matrix());
+//				Eigen::Isometry3d T_c0_cj = T_cj_c0.inverse();
+//
+//				pcl::PointXYZRGB p_start;
+//				p_start.x = T_c0_cj.translation().x();
+//				p_start.y = T_c0_cj.translation().y();
+//				p_start.z = T_c0_cj.translation().z();
+//
+//				pcl::PointCloud<pcl::PointXYZRGB> free_cloud;
+//				GenerateFreePointcloud(p_start, p_end, m_octomap_resolution, free_cloud);
+//				cout << "add free pointcloud number: " << free_cloud.size() << endl;
+//				*mp_cloud_free += free_cloud;
+//			}
+
+		}
+
+	}
+//	cout << "total free pointcloud number: " << mp_cloud_free->size() << endl;
+
+	// remove noise map point
+	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+	sor.setInputCloud(mp_cloud_occupied);
+	sor.setMeanK(50);
+	sor.setStddevMulThresh(1);
+	sor.filter(*mp_cloud_occupied);
+
+	pcl::VoxelGrid<pcl::PointXYZRGB> vg;
+	vg.setInputCloud(mp_cloud_free);
+	vg.setLeafSize(0.05f, 0.05f, 0.05f);
+	vg.filter(*mp_cloud_free);
+//	pcl::io::savePCDFileBinary("./data/map.pcd", *mp_cloud_occupied);
+	vector<KeyFrame *> vpKFs = pAtlas->GetAllKeyFrames();
+	KeyFrame *kp = vpKFs[0];
+//	Eigen::Isometry3d T_e_c=
+	Eigen::Isometry3d T_rviz_orb = Eigen::Isometry3d::Identity();
+	Eigen::AngleAxisd r1(M_PI / 2, Eigen::Vector3d::UnitY());
+	Eigen::AngleAxisd r2(-M_PI / 2, Eigen::Vector3d::UnitZ());
+	T_rviz_orb.rotate(r1);
+	T_rviz_orb.rotate(r2);
+	// convert map point from orb frame to rviz frame
+	pcl::transformPointCloud(*mp_cloud_occupied, *mp_cloud_occupied, T_rviz_orb.matrix());
+	pcl::transformPointCloud(*mp_cloud_free, *mp_cloud_free, T_rviz_orb.matrix());
+
+	for (auto p:*mp_cloud_occupied) {
+		octomap::point3d p_oct(p.x, p.y, p.z);
+		mp_octree->updateNode(p_oct, true);
+	}
+	for (auto p:*mp_cloud_free) {
+		octomap::point3d p_oct(p.x, p.y, p.z);
+		mp_octree->updateNode(p_oct, false);
+	}
+
+	sensor_msgs::PointCloud2 sparse_map;
+	pcl::toROSMsg(*mp_cloud_occupied, sparse_map);
+	sparse_map.header.frame_id = "orb_slam";
+	mp_pointcloud_pub->publish(sparse_map);
+
+
+	octomap_msgs::Octomap map;
+	map.header = sparse_map.header;
+	octomap_msgs::fullMapToMsg(*mp_octree, map);
+	mp_octomap_pub->publish(map);
+}
+void RosHandling::PublishMap(ORB_SLAM3::Atlas *pAtlas, int state)
+{
+	int current_map_id = pAtlas->GetCurrentMap()->GetId();
+	vector<int> map_ids;
+	vector<Map *> maps = pAtlas->GetAllMaps();
+	for (auto map:maps) {
+		map_ids.push_back(map->GetId());
+	}
+	vehicle_interface::MapInfo map_info;
+	map_info.current_map_id = current_map_id;
+	map_info.all_map_id = map_ids;
+	map_info.slam_state = state;
+	mp_map_info_pub->publish(map_info);
+}
+void RosHandling::BroadcastTF(const Eigen::Isometry3d &T_c0_cj_orb,
+							  const ros::Time &stamp,
+							  const string &id,
+							  const string &child_id)
+{
+	Eigen::Quaterniond rotation_q(T_c0_cj_orb.rotation());
+	m_tb.sendTransform(
+		tf::StampedTransform(
+			tf::Transform(tf::Quaternion(rotation_q.x(), rotation_q.y(), rotation_q.z(), rotation_q.w()),
+						  tf::Vector3(T_c0_cj_orb.translation().x(),
+									  T_c0_cj_orb.translation().y(),
+									  T_c0_cj_orb.translation().z())),
+			stamp, id, child_id));
+}
+
+void RosHandling::GenerateFreePointcloud(const pcl::PointXYZRGB &start,
+										 const pcl::PointXYZRGB &end,
+										 float resolution,
+										 pcl::PointCloud<pcl::PointXYZRGB> &cloud_free)
+{
+	double start_x = start.x, start_y = start.y, start_z = start.z, end_x = end.x, end_y = end.y, end_z = end.z;
+	double dis_x = abs(end_x - start_x);
+	double dis_y = abs(end_y - start_y);
+	double dis_z = abs(end_z - start_z);
+	double max_dis = max(max(dis_x, dis_y), dis_z);
+//	cout<<"max_dis: "<<max_dis<<endl;
+	if (max_dis >= 3.0) {
+//		cout << "distance too large! skip" << endl;
+		return;
+	}
+
+
+	if (max_dis == dis_x) {
+		if (end_x > start_x) {
+			double steps = (end_x - start_x) / resolution;
+//			cout << "intepolate along x-axis, steps: " << steps << endl;
+			for (int i = 0; i < steps - 1; ++i) {
+				pcl::PointXYZRGB p;
+				p.x = start_x + resolution * i;
+				p.y = LinearInterpolation(start_x, end_x, start_y, end_y, p.x);
+				p.z = LinearInterpolation(start_x, end_x, start_z, end_z, p.x);
+				cloud_free.push_back(p);
+			}
+		}
+		else {
+			double steps = (start_x - end_x) / resolution;
+//			cout << "intepolate along x-axis, steps: " << steps << endl;
+			for (int i = 0; i < steps - 1; ++i) {
+				pcl::PointXYZRGB p;
+				p.x = end_x + resolution * i;
+				p.y = LinearInterpolation(end_x, start_x, end_y, start_y, p.x);
+				p.z = LinearInterpolation(end_x, start_x, end_z, start_z, p.x);
+				cloud_free.push_back(p);
+			}
+		}
+	}
+	else if (max_dis == dis_y) {
+		if (end_y > start_y) {
+			double steps = (end_y - start_y) / resolution;
+//			cout << "intepolate along y-axis, steps: " << steps << endl;
+			for (int i = 0; i < steps - 1; ++i) {
+				pcl::PointXYZRGB p;
+				p.y = start_y + resolution * i;
+				p.x = LinearInterpolation(start_y, end_y, start_x, end_x, p.y);
+				p.z = LinearInterpolation(start_y, end_y, start_z, end_z, p.y);
+				cloud_free.push_back(p);
+			}
+		}
+		else {
+			double steps = (start_y - end_y) / resolution;
+//			cout << "intepolate along y-axis, steps: " << steps << endl;
+			for (int i = 0; i < steps - 1; ++i) {
+				pcl::PointXYZRGB p;
+				p.y = end_y + resolution * i;
+				p.x = LinearInterpolation(end_y, start_y, end_x, start_x, p.y);
+				p.z = LinearInterpolation(end_y, start_y, end_z, start_z, p.y);
+				cloud_free.push_back(p);
+			}
+		}
+
+	}
+	else {
+		if (end_z > start_z) {
+			double steps = (end_z - start_z) / resolution;
+//			cout << "intepolate along z-axis, steps: " << steps << endl;
+			for (int i = 0; i < steps - 1; ++i) {
+				pcl::PointXYZRGB p;
+				p.z = start_z + resolution * i;
+				p.y = LinearInterpolation(start_z, end_z, start_y, end_y, p.z);
+				p.x = LinearInterpolation(start_z, end_z, start_x, end_x, p.z);
+				cloud_free.push_back(p);
+			}
+		}
+		else {
+			double steps = (start_z - end_z) / resolution;
+//			cout << "intepolate along z-axis, steps: " << steps << endl;
+			for (int i = 0; i < steps - 1; ++i) {
+				pcl::PointXYZRGB p;
+				p.z = end_z + resolution * i;
+				p.y = LinearInterpolation(end_z, start_z, end_y, start_y, p.z);
+				p.x = LinearInterpolation(end_z, start_z, end_x, start_x, p.z);
+				cloud_free.push_back(p);
+			}
+		}
+
+	}
+
+}
+
+double RosHandling::LinearInterpolation(double start_x, double end_x, double start_y, double end_y, double x)
+{
+	return start_y + (x - start_x) * ((end_y - start_y) / (end_x - start_x));
+}
+void RosHandling::PublishIntegration(Atlas *pAtlas)
+{
+	auto pKFs = pAtlas->GetAllKeyFrames();
+	if (pKFs.empty()) {
+		return;
+	}
+	else if (pKFs[0]->GetPoseInverse().empty()) {
+		return;
+	}
+
+	KeyFrame* pKF = pKFs[0];
+	while (pKF->mPrevKF)
+	{
+		pKF=pKF->mPrevKF;
+	}
+
+	vector<Eigen::Isometry3d> poses_integration;
+	Eigen::Isometry3d T_c_enu = Eigen::Isometry3d::Identity();
+	Eigen::AngleAxisd r_z(M_PI / 2, Eigen::Vector3d::UnitZ());
+	Eigen::AngleAxisd r_y(-M_PI / 2, Eigen::Vector3d::UnitY());
+	T_c_enu.rotate(r_z);
+	T_c_enu.rotate(r_y);
+
+	Eigen::Isometry3d T_c0_c1 = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_d0_dj = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_g_d = Eigen::Isometry3d::Identity();
+	Eigen::Isometry3d T_d_c = Eigen::Isometry3d::Identity();
+	cv::Mat T_c0_c1_cv=pKF->GetPoseInverse();
+	cv::cv2eigen(T_c0_c1_cv,T_c0_c1.matrix());
+	cv::Mat T_d_c_cv = pKFs[0]->mImuCalib.mT_dvl_c.clone();
+	cv::Mat T_g_d_cv = pKFs[0]->mImuCalib.mT_gyro_dvl.clone();
+	cv::cv2eigen(T_g_d_cv, T_g_d.matrix());
+	cv::cv2eigen(T_d_c_cv, T_d_c.matrix());
+	cv::Mat R_g_d = T_g_d_cv.rowRange(0, 3).colRange(0, 3);
+
+	Eigen::Isometry3d T_d0_d1 = T_d_c * T_c0_c1 * T_d_c.inverse();
+	T_d0_dj = T_d0_dj * T_d0_d1;
+
+	m_integration_path.poses.clear();
+	m_path_orb.poses.clear();
+
+	// save trajectory to local file
+	fstream file_integration_trajectory,file_orb_trajectory;
+	file_integration_trajectory.open("data/stamped_traj_estimate_inte.txt", ios::out);
+	if (!file_integration_trajectory) {
+		cout << "fail to open data/stamped_traj_estimate_inte.txt" << endl;
+	}
+	file_orb_trajectory.open("data/stamped_traj_estimate_orb.txt", ios::out);
+	if (!file_orb_trajectory) {
+		cout << "fail to open data/stamped_traj_estimate_orb.txt" << endl;
+	}
+
+	while(pKF) {
+		cv::Mat R_gi_gj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaRotation(pKF->GetImuBias()).clone();
+		cv::Mat t_di_dj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaPosition(pKF->GetImuBias()).clone();
+		cv::Mat R_di_dj_cv = R_g_d.t() * R_gi_gj_cv * R_g_d;
+		Eigen::Matrix3d R_di_dj;
+		cv::cv2eigen(R_di_dj_cv, R_di_dj);
+		Eigen::Vector3d t_di_dj;
+		cv::cv2eigen(t_di_dj_cv, t_di_dj);
+		Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
+		T_di_dj.pretranslate(t_di_dj);
+		T_di_dj.rotate(R_di_dj);
+		T_d0_dj = T_d0_dj * T_di_dj;
+		// todo_tightly
+		// save inverse
+		Eigen::Isometry3d T_c0_cj_integration = T_c_enu.inverse() * T_d_c.inverse() * T_d0_dj * T_d_c * T_c_enu;
+		poses_integration.push_back(T_c0_cj_integration);
+
+		geometry_msgs::PoseStamped pose_to_pub;
+		pose_to_pub.header.frame_id = "orb_slam";
+		//pose_to_pub.header.stamp=ros::Time::now();
+		pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
+		pose_to_pub.pose.position.x = T_c0_cj_integration.translation().x();
+		pose_to_pub.pose.position.y = T_c0_cj_integration.translation().y();
+		pose_to_pub.pose.position.z = T_c0_cj_integration.translation().z();
+		// Eigen::Matrix3d rotation_matrix;
+		// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+		// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+		// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+		Eigen::Quaterniond rotation_q(T_c0_cj_integration.rotation());
+		pose_to_pub.pose.orientation.x = rotation_q.x();
+		pose_to_pub.pose.orientation.y = rotation_q.y();
+		pose_to_pub.pose.orientation.z = rotation_q.z();
+		pose_to_pub.pose.orientation.w = rotation_q.w();
+
+		m_integration_path.header = pose_to_pub.header;
+		m_integration_path.poses.push_back(pose_to_pub);
+
+
+		cv::Mat T_c0_cj_orb_cv = pKF->GetPoseInverse();
+		Eigen::Isometry3d T_c0_cj_orb = Eigen::Isometry3d::Identity();
+		cv::cv2eigen(T_c0_cj_orb_cv,T_c0_cj_orb.matrix());
+		T_c0_cj_orb = T_c_enu.inverse() * T_c0_cj_orb * T_c_enu;
+
+		pose_to_pub.header.frame_id = "orb_slam";
+		//pose_to_pub.header.stamp=ros::Time::now();
+		pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
+		pose_to_pub.pose.position.x = T_c0_cj_orb.translation().x();
+		pose_to_pub.pose.position.y = T_c0_cj_orb.translation().y();
+		pose_to_pub.pose.position.z = T_c0_cj_orb.translation().z();
+		// Eigen::Matrix3d rotation_matrix;
+		// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+		// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+		// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+		rotation_q = Eigen::Quaterniond(T_c0_cj_orb.rotation());
+		pose_to_pub.pose.orientation.x = rotation_q.x();
+		pose_to_pub.pose.orientation.y = rotation_q.y();
+		pose_to_pub.pose.orientation.z = rotation_q.z();
+		pose_to_pub.pose.orientation.w = rotation_q.w();
+
+		m_path_orb.header = pose_to_pub.header;
+		m_path_orb.poses.push_back(pose_to_pub);
+
+		Eigen::Vector3d t = T_c0_cj_integration.translation();
+		Eigen::Quaterniond q(T_c0_cj_integration.rotation());
+
+		file_integration_trajectory << fixed << setprecision(12)
+		<< pKF->mTimeStamp << " "
+		<< t.x() << " " << t.y() << " " << t.z() << " "
+		<< q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
+		<< endl;
+
+		t = T_c0_cj_orb.translation();
+		q = Eigen::Quaterniond(T_c0_cj_orb.rotation());
+
+		file_orb_trajectory << fixed << setprecision(12)
+		<< pKF->mTimeStamp << " "
+		<< t.x() << " " << t.y() << " " << t.z() << " "
+		<< q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
+		<< endl;
+
+		pKF=pKF->mNextKF;
+
+
+
+
+	}
+	mp_integration_path_pub->publish(m_integration_path);
+	mp_path_orb_pub->publish(m_path_orb);
+	file_integration_trajectory.close();
+	file_orb_trajectory.close();
+
+
+
+}
+void RosHandling::PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec)
+{
+	geometry_msgs::PoseStamped pose_to_pub;
+	pose_to_pub.header.frame_id = "orb_slam";
+	pose_to_pub.header.stamp=ros::Time::now();
+//	pose_to_pub.header.stamp = stamp;
+	pose_to_pub.pose.position.x = T_e0_er.translation().x();
+	pose_to_pub.pose.position.y = T_e0_er.translation().y();
+	pose_to_pub.pose.position.z = T_e0_er.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+	Eigen::Quaterniond rotation_q(T_e0_er.rotation());
+	pose_to_pub.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.orientation.w = rotation_q.w();
+
+	mp_pose_integration_ref_pub->publish(pose_to_pub);
+
+	pose_to_pub.pose.position.x = T_e0_ec.translation().x();
+	pose_to_pub.pose.position.y = T_e0_ec.translation().y();
+	pose_to_pub.pose.position.z = T_e0_ec.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+	rotation_q = Eigen::Quaterniond(T_e0_ec.rotation());
+	pose_to_pub.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.orientation.w = rotation_q.w();
+
+	mp_pose_integration_cur_pub->publish(pose_to_pub);
+}
+void RosHandling::PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp)
+{
+	nav_msgs::Odometry pose_to_pub;
+	pose_to_pub.header.frame_id = "orb_slam";
+	//pose_to_pub.header.stamp=ros::Time::now();
+	pose_to_pub.header.stamp = stamp;
+
+	pose_to_pub.pose.pose.position.x = T_c0_cj_orb.translation().x();
+	pose_to_pub.pose.pose.position.y = T_c0_cj_orb.translation().y();
+	pose_to_pub.pose.pose.position.z = T_c0_cj_orb.translation().z();
+	// Eigen::Matrix3d rotation_matrix;
+	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
+	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
+	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
+	Eigen::Quaterniond rotation_q(T_c0_cj_orb.rotation());
+	pose_to_pub.pose.pose.orientation.x = rotation_q.x();
+	pose_to_pub.pose.pose.orientation.y = rotation_q.y();
+	pose_to_pub.pose.pose.orientation.z = rotation_q.z();
+	pose_to_pub.pose.pose.orientation.w = rotation_q.w();
+
+	mp_pose_orb_camera_pub->publish(pose_to_pub);
+}
+bool RosHandling::SavePose(std_srvs::EmptyRequest &req,std_srvs::EmptyResponse &res)
+{
+	mp_system->SaveKeyFrameTrajectoryTUM("/home/da/project/ORB_SLAM3_DVL_tightly/pose_for_reconstruction/KeyFrameTrajectory_TUM_Format");
+	return true;
+}
+void RosHandling::PublishImgMergeCandidate(const cv::Mat &img)
+{
+	cv::Mat img_to_pub;
+	img.copyTo(img_to_pub);
+	std_msgs::Header header; // empty header
+	header.stamp = ros::Time::now(); // time
+//	cv::Mat img_with_info=mpFrameDrawer->DrawFrame(true);
+
+	if (img_to_pub.channels() < 3) {
+		cv::cvtColor(img_to_pub, img_to_pub, CV_GRAY2BGR);
+	}
+	cv_bridge::CvImage img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, img_to_pub);
+
+	mp_img_merge_cond_pub->publish(img_bridge.toImageMsg());
+}

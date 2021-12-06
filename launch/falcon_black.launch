@@ -1,0 +1,18 @@
+<launch>
+    <!--    <node pkg="tf" type="static_transform_publisher" name="world2odom"-->
+    <!--          args="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 world odom 100"/>-->
+    <!--    <node pkg="tf" type="static_transform_publisher" name="orbodom2odom"-->
+    <!--          args="0.0000 0.0000 0.0000 0.0000 0.0000 0.0000 1.0000 orb_odom odom 100"/>-->
+    <node pkg="ORB_SLAM3_DVL_tightly" type="stereo_dvl" name="stereo_dvl"
+          args="$(find ORB_SLAM3_DVL_tightly)/Vocabulary/blyth_0914.txt $(find ORB_SLAM3_DVL_tightly)/data/underwater_orbslam3_falcon_black.yaml false"/>
+<!--    <node pkg="ORB_SLAM3_DVL_tightly" type="cameras_black_node.py" name="camera_black">-->
+<!--        <remap from="/img_l/compressed" to="/CAM_L/image_dehazed/compressed"/>-->
+<!--        <remap from="/img_r/compressed" to="/CAM_R/image_dehazed/compressed"/>-->
+<!--    </node>-->
+
+    <!--    <node pkg="sonar_localization" type="sonar_black_node.py" name="ekf_se" clear_params="true" output="screen"/>-->
+    <!--    <arg name="model" default="$(find ORB_SLAM3_edit)/urdf/bluerov.urdf"/>-->
+    <!--    <param name="robot_description" command="$(find xacro)/xacro $(arg model)"/>-->
+    <node name="rviz_2" pkg="rviz" type="rviz" args="-d $(find ORB_SLAM3_DVL_tightly)/launch/falcon_tightly.rviz"/>
+
+</launch>
