@@ -114,40 +114,8 @@ public:
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true, const int initFr = 0, const string &strSequence = std::string(), const string &strLoadingFile = std::string());
 
-    // Proccess the given stereo frame. Images must be synchronized and rectified.
-    // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
-    // Returns the camera pose (empty if tracking fails).
-    cv::Mat TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), string filename="");
-
 	cv::Mat TrackStereoGroDVL(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), bool bDVL= false, string filename="");
 
-    // Proccess the given stereo frame. Images must be synchronized and rectified.
-    // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
-    // 
-    // Returns the camera pose (empty if tracking fails).
-    cv::Mat TrackStereoDVL(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp,
-						   const Eigen::Isometry3d &T_e0_ej, const double& timeEKF, bool good_ekf,const Eigen::Isometry3d &T_g0_gj,
-						   const Eigen::Matrix<double,6,1> &V_e);
-
-    // Process the given rgbd frame. Depthmap must be registered to the RGB frame.
-    // Input image: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
-    // Input depthmap: Float (CV_32F).
-    // Returns the camera pose (empty if tracking fails).
-    cv::Mat TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, string filename="");
-
-    // Proccess the given monocular frame and optionally imu data
-    // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
-    // Returns the camera pose (empty if tracking fails).
-    cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), string filename="");
-
-    // start ros thread to read data from rosbag
-    void runRos();
-    // Ros data call back
-    void frameLoad(const sensor_msgs::ImageConstPtr &img_l,
-                   const sensor_msgs::ImageConstPtr &img_r,
-                   const nav_msgs::OdometryConstPtr &odom,
-                   const nav_msgs::OdometryConstPtr &odom_depth,
-                   const geometry_msgs::PoseStampedConstPtr &gt);
     void dvlCallBack(const nav_msgs::OdometryConstPtr &dvl);
 
     // This stops local mapping thread (map building) and performs only camera tracking.
@@ -210,6 +178,7 @@ public:
     void ChangeDataset();
 
     //void SaveAtlas(int type);
+	DenseMapper* mpDenseMapper;
 
 private:
 
@@ -247,7 +216,7 @@ private:
 
     FrameDrawer* mpFrameDrawer;
     MapDrawer* mpMapDrawer;
-	DenseMapper* mpDenseMapper;
+
 
     // System threads: Local Mapping, Loop Closing, Viewer.
     // The Tracking thread "lives" in the main execution thread that creates the System object.

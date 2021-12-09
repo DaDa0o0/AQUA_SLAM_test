@@ -105,6 +105,7 @@ public:
 	boost::shared_ptr<ros::Publisher> mMapPub;
 
 	bool mStop = false;
+	bool mEnable = true;
 
 public:
 	void InsertNewKF(KeyFrame *pKF);
@@ -115,6 +116,7 @@ public:
 	void Run();
 	void Stop();
 	void Resume();
+	void Save(string path);
 
 protected:
 	double fx, fy, cx, cy, bf;

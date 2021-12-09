@@ -70,10 +70,6 @@ public:
     bool ParseIMUParamFile(cv::FileStorage &fSettings);
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
-    cv::Mat GrabImageStereo(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, string filename);
-    cv::Mat GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename);
-    cv::Mat GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename);
-    // cv::Mat GrabImageImuMonocular(const cv::Mat &im, const double &timestamp);
 	cv::Mat GrabImageStereoDvl(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, bool bDvl, string filename);
 
     void GrabImuData(const IMU::ImuPoint &imuMeasurement);
@@ -186,7 +182,7 @@ public:
 	Frame mLastFrame_orb_ekf;
 	Frame mLastFrame_ekf;
 
-    cv::Mat mImGray;
+    cv::Mat mImLeft;
 
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;

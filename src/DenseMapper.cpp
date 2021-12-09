@@ -62,6 +62,8 @@ DenseMapper::DenseMapper(string settingFile)
 	cy = (double)fs["Camera.cy"] * image_scale;
 	bf = (double)fs["Camera.bf"] * image_scale;
 
+	mEnable = !((float)fs["enable"] == 0);
+
 }
 
 void DenseMapper::InsertNewKF(KeyFrame *pKF)
@@ -245,7 +247,7 @@ void DenseMapper::GetSubMap(const Mat &img_l, const Mat &img_r, pcl::PointCloud<
 			unsigned char r = static_cast<int>(img_l_rgb.at<Vec3b>(y, x)[2]);
 //				cout << "disp confidence: " << d_f << endl;
 
-			if (d_f <= 50 || (bf / d) > 10) {
+			if (d_f <= 125 || (bf / d) > 10) {
 				continue;
 			}
 			Eigen::Vector3d p_3d(0, 0, 0);
@@ -261,11 +263,11 @@ void DenseMapper::GetSubMap(const Mat &img_l, const Mat &img_r, pcl::PointCloud<
 			local_map->push_back(p);
 		}
 	}
-//	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
-//	sor.setInputCloud(local_map);
-//	sor.setMeanK(50);
-//	sor.setStddevMulThresh(0.5);
-//	sor.filter(sub_map);
+	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+	sor.setInputCloud(local_map);
+	sor.setMeanK(100);
+	sor.setStddevMulThresh(0.5);
+	sor.filter(sub_map);
 	sub_map = *local_map;
 }
 void DenseMapper::MergeSubMap(pcl::PointCloud<pcl::PointXYZRGB> &sub_map, KeyFrame *pKF)
@@ -349,12 +351,18 @@ void DenseMapper::PublishMap()
 	pcl::PointCloud<pcl::PointXYZRGB> filtered_cloud;
 	pcl::VoxelGrid<pcl::PointXYZRGB> sor;
 	sor.setInputCloud(boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>(mGlobalMap));
-	sor.setLeafSize(0.01f, 0.01f, 0.01f);
+	sor.setLeafSize(0.05f, 0.05f, 0.05f);
 	sor.filter(filtered_cloud);
 	pcl::toROSMsg(filtered_cloud, dense_map);
 	dense_map.header.frame_id = "orb_slam";
 	mMapPub->publish(dense_map);
 //	mMapPub->publish(mGlobalMap);
+}
+void DenseMapper::Save(string path)
+{
+	std::lock_guard<std::mutex> lock(mDenseMapMutex);
+	string file_name = path+"KF_map.pcd";
+	pcl::io::savePCDFileBinary(file_name,mGlobalMap);
 }
 
 }

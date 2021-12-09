@@ -176,6 +176,7 @@ DvlTopic: "/falcon/odometry"
 #DvlTopic: "/bluerov2/odometry"
 
 DenseMapper:
+  enable: 0
   P1: 200.0
   P2: 400.0
   correlation_window_size: 21
