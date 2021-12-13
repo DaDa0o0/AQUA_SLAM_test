@@ -507,7 +507,7 @@ void DvlGyroOptimizer::LocalDVLBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag,
 		map<KeyFrame *, int> mspInitialConnectedKFs;
 		map<KeyFrame *, int> mspInitialObservationKFs;
 		if (bRedrawError) {
-			for (KeyFrame *pKFi : OptDVLKFs) {
+			for (KeyFrame *pKFi: OptDVLKFs) {
 
 				mspInitialConnectedKFs[pKFi] = pKFi->GetConnectedKeyFrames().size();
 				mspInitialObservationKFs[pKFi] = pKFi->GetNumberMPs();
@@ -530,7 +530,7 @@ void DvlGyroOptimizer::LocalDVLBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag,
 			f_lba << "# KF id, Initial Num CovKFs, Final Num CovKFs, Initial Num MPs, Fimal Num MPs" << endl;
 			f_lba << fixed;
 
-			for (KeyFrame *pKFi : OptDVLKFs) {
+			for (KeyFrame *pKFi: OptDVLKFs) {
 				pKFi->UpdateConnections();
 				int finalNumberCovKFs = pKFi->GetConnectedKeyFrames().size();
 				int finalNumberMPs = pKFi->GetNumberMPs();
@@ -810,7 +810,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 
 				const map<KeyFrame *, tuple<int, int>> observations = pMP->GetObservations();
 
-				for (auto ob:observations) {
+				for (auto ob: observations) {
 					KeyFrame *pKFi = ob.first;
 					if (pKFi->mnBALocalForKF != pKF->mnId && pKFi->mnBAFixedForKF != pKF->mnId) {
 						continue;
@@ -915,7 +915,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 				continue;
 			}
 //				EdgeInertialGS *ei = new EdgeInertialGS(pKFi->mpImuPreintegrated);
-EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
+			EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
 //				ei->setVertex(0, VP1);
 
 //			g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber;
@@ -956,7 +956,7 @@ EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
 		stereo_outlier = 0;
 		visula_chi2 = 0;
 		dvl_chi2 = 0;
-		for (auto e_mono:mono_edges) {
+		for (auto e_mono: mono_edges) {
 			e_mono->computeError();
 			const float chi2 = e_mono->chi2();
 			if (chi2 > chi2Mono[i]) {
@@ -964,7 +964,7 @@ EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
 			}
 			visula_chi2 += chi2;
 		}
-		for (auto e_stereo:stereo_edges) {
+		for (auto e_stereo: stereo_edges) {
 			e_stereo->computeError();
 			const float chi2 = e_stereo->chi2();
 			if (chi2 > chi2Stereo[i]) {
@@ -972,7 +972,7 @@ EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
 			}
 			visula_chi2 += chi2;
 		}
-		for (auto e_dvl:dvl_edges) {
+		for (auto e_dvl: dvl_edges) {
 			e_dvl->computeError();
 			const float chi2 = e_dvl->chi2();
 			dvl_chi2 += chi2;
@@ -1077,7 +1077,7 @@ void DvlGyroOptimizer::FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, 
 	optimizer.setAlgorithm(solver);
 
 	// set keyframe vertex
-	for (auto pKFi:OptKFs) {
+	for (auto pKFi: OptKFs) {
 		if (pKFi->mnId > maxKFid) {
 			continue;
 		}
@@ -1160,7 +1160,7 @@ void DvlGyroOptimizer::FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, 
 
 				const map<KeyFrame *, tuple<int, int>> observations = pMP->GetObservations();
 
-				for (auto ob:observations) {
+				for (auto ob: observations) {
 					KeyFrame *pKFi = ob.first;
 
 					if (!pKFi->isBad()) {
@@ -1304,7 +1304,7 @@ void DvlGyroOptimizer::FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, 
 		stereo_outlier = 0;
 		visula_chi2 = 0;
 		dvl_chi2 = 0;
-		for (auto e_mono:mono_edges) {
+		for (auto e_mono: mono_edges) {
 			e_mono->computeError();
 			const float chi2 = e_mono->chi2();
 			if (chi2 > chi2Mono[i]) {
@@ -1312,7 +1312,7 @@ void DvlGyroOptimizer::FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, 
 			}
 			visula_chi2 += chi2;
 		}
-		for (auto e_stereo:stereo_edges) {
+		for (auto e_stereo: stereo_edges) {
 			e_stereo->computeError();
 			const float chi2 = e_stereo->chi2();
 			if (chi2 > chi2Stereo[i]) {
@@ -1320,7 +1320,7 @@ void DvlGyroOptimizer::FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, 
 			}
 			visula_chi2 += chi2;
 		}
-		for (auto e_dvl:dvl_edges) {
+		for (auto e_dvl: dvl_edges) {
 			e_dvl->computeError();
 			const float chi2 = e_dvl->chi2();
 			dvl_chi2 += chi2;
@@ -1403,7 +1403,8 @@ void DvlGyroOptimizer::FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, 
 	for (int i = 0; i < N_map_points; i++) {
 		MapPoint *pMP = AllMapPoints[i];
 		g2o::VertexSBAPointXYZ
-			*vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(maxKFid + maxKFid + 2 + 1 + 1 + pMP->mnId));
+			*vPoint =
+			static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex(maxKFid + maxKFid + 2 + 1 + 1 + pMP->mnId));
 		pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
 		pMP->UpdateNormalAndDepth();
 	}

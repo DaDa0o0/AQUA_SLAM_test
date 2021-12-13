@@ -44,7 +44,7 @@ RosHandling::RosHandling(System *pSys)
 
 	ros::Publisher pose_orb_pub = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/orb_pose", 10);
 	mp_pose_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_orb_pub));
-	ros::Publisher odom_orb_pub = nh_.advertise<nav_msgs::Odometry>("orb_odom", 10);
+	ros::Publisher odom_orb_pub = nh_.advertise<nav_msgs::Odometry>("/ORBSLAM3_tightly/orb_odom", 10);
 	mp_odom_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(odom_orb_pub));
 	ros::Publisher path_orb_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tightly/orb_path", 10);
 	mp_path_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(path_orb_pub));
@@ -172,7 +172,7 @@ void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Ti
 	pose_to_pub.pose.orientation.y = rotation_q.y();
 	pose_to_pub.pose.orientation.z = rotation_q.z();
 	pose_to_pub.pose.orientation.w = rotation_q.w();
-	BroadcastTF(T_c0_cj_orb, stamp, "orb_slam", "orb_odom");
+//	BroadcastTF(T_c0_cj_orb, stamp, "orb_slam", "orb_odom");
 	nav_msgs::Odometry odom;
 	odom.header = pose_to_pub.header;
 	odom.pose.pose = pose_to_pub.pose;
@@ -528,15 +528,15 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 	m_path_orb.poses.clear();
 
 	// save trajectory to local file
-	fstream file_integration_trajectory, file_orb_trajectory;
-	file_integration_trajectory.open("data/stamped_traj_estimate_inte.txt", ios::out);
-	if (!file_integration_trajectory) {
-		cout << "fail to open data/stamped_traj_estimate_inte.txt" << endl;
-	}
-	file_orb_trajectory.open("data/stamped_traj_estimate_orb.txt", ios::out);
-	if (!file_orb_trajectory) {
-		cout << "fail to open data/stamped_traj_estimate_orb.txt" << endl;
-	}
+//	fstream file_integration_trajectory, file_orb_trajectory;
+//	file_integration_trajectory.open("data/stamped_traj_estimate_inte.txt", ios::out);
+//	if (!file_integration_trajectory) {
+//		cout << "fail to open data/stamped_traj_estimate_inte.txt" << endl;
+//	}
+//	file_orb_trajectory.open("data/stamped_traj_estimate_orb.txt", ios::out);
+//	if (!file_orb_trajectory) {
+//		cout << "fail to open data/stamped_traj_estimate_orb.txt" << endl;
+//	}
 
 	while (pKF) {
 		cv::Mat R_gi_gj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaRotation(pKF->GetImuBias()).clone();
@@ -600,31 +600,31 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 		m_path_orb.header = pose_to_pub.header;
 		m_path_orb.poses.push_back(pose_to_pub);
 
-		Eigen::Vector3d t = T_c0_cj_integration.translation();
-		Eigen::Quaterniond q(T_c0_cj_integration.rotation());
+//		Eigen::Vector3d t = T_c0_cj_integration.translation();
+//		Eigen::Quaterniond q(T_c0_cj_integration.rotation());
 
-		file_integration_trajectory << fixed << setprecision(12)
-									<< pKF->mTimeStamp << " "
-									<< t.x() << " " << t.y() << " " << t.z() << " "
-									<< q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
-									<< endl;
-
-		t = T_c0_cj_orb.translation();
-		q = Eigen::Quaterniond(T_c0_cj_orb.rotation());
-
-		file_orb_trajectory << fixed << setprecision(12)
-							<< pKF->mTimeStamp << " "
-							<< t.x() << " " << t.y() << " " << t.z() << " "
-							<< q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
-							<< endl;
+//		file_integration_trajectory << fixed << setprecision(12)
+//									<< pKF->mTimeStamp << " "
+//									<< t.x() << " " << t.y() << " " << t.z() << " "
+//									<< q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
+//									<< endl;
+//
+//		t = T_c0_cj_orb.translation();
+//		q = Eigen::Quaterniond(T_c0_cj_orb.rotation());
+//
+//		file_orb_trajectory << fixed << setprecision(12)
+//							<< pKF->mTimeStamp << " "
+//							<< t.x() << " " << t.y() << " " << t.z() << " "
+//							<< q.x() << " " << q.y() << " " << q.z() << " " << q.w() << " "
+//							<< endl;
 
 		pKF = pKF->mNextKF;
 
 	}
 	mp_integration_path_pub->publish(m_integration_path);
 	mp_path_orb_pub->publish(m_path_orb);
-	file_integration_trajectory.close();
-	file_orb_trajectory.close();
+//	file_integration_trajectory.close();
+//	file_orb_trajectory.close();
 
 }
 void RosHandling::PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec)

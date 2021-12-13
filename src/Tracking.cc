@@ -683,6 +683,8 @@ bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
 	if (mSensor == System::STEREO || mSensor == System::RGBD || mSensor == System::IMU_STEREO
 		|| mSensor == System::DVL_STEREO) {
 		float fx = mpCamera->getParameter(0);
+		mThFarDepth = (float) fSettings["ThFarDepth"];
+		mThCloseDepth = (float) fSettings["ThCloaseDepth"];
 		cv::FileNode node = fSettings["ThDepth"];
 		if (!node.empty() && node.isReal()) {
 			mThDepth = node.real();
@@ -1003,7 +1005,8 @@ cv::Mat Tracking::GrabImageStereoDvl(const cv::Mat &imRectLeft,
 							  mK,
 							  mDistCoef,
 							  mbf,
-							  mThDepth,
+							  mThFarDepth,
+							  mThCloseDepth,
 							  mpCamera,
 							  bDvl,
 							  &mLastFrame,
@@ -4025,7 +4028,7 @@ bool Tracking::NeedNewKeyFrame()
 		}
 	}
 	if (mSensor == System::DVL_STEREO && !mCalibrated) {
-		if (mCurrentFrame.mTimeStamp - mpLastKeyFrame->mTimeStamp >= mKF_init_step) {
+		if (mCurrentFrame.mTimeStamp - mpLastKeyFrame->mTimeStamp >= mKF_init_step && mpDvlPreintegratedFromLastKF->bDVL) {
 			return true;
 		}
 		else {

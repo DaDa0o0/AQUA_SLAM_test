@@ -172,9 +172,9 @@ link_directories(
 )
 add_definitions(${PCL_DEFINITIONS})
 
-add_subdirectory(Thirdparty/g2o)
-add_subdirectory(Thirdparty/DBoW2)
-add_subdirectory(Thirdparty/octomap)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Thirdparty/g2o)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2)
+add_subdirectory(${PROJECT_SOURCE_DIR}/Thirdparty/octomap)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -266,16 +266,19 @@ target_link_libraries(${PROJECT_NAME}
         ${PCL_LIBRARIES}
         fmt::fmt-header-only
         ${Sophus_LIBRARIES}
-        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-        ${PROJECT_SOURCE_DIR}/lib/liboctomap.so
+#        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+#        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+#        ${PROJECT_SOURCE_DIR}/Thirdparty/octomap/lib/liboctomap.so
+        DBoW2
+        g2o
+        octomap
         ${catkin_LIBRARIES}
         -lboost_serialization
         -lboost_system
         -lcrypto
         )
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 ## Declare a C++ executable
@@ -317,9 +320,9 @@ target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS stereo_dvl2
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        )
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html

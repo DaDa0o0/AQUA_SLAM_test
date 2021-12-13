@@ -488,7 +488,7 @@ bool LoopClosing::NewDetectCommonRegions()
         // Search in BoW
         mpKeyFrameDB->DetectNBestCandidates(mpCurrentKF, vpLoopBowCand, vpMergeBowCand,3);
     }
-	ROS_INFO_STREAM("find "<<vpMergeBowCand.size()<<" merge Candidate");
+	//ROS_INFO_STREAM("find "<<vpMergeBowCand.size()<<" merge Candidate");
 	if (!vpMergeBowCand.empty()){
 		mpRosHandler->PublishImgMergeCandidate(vpMergeBowCand[0]->imgLeft);
 	}
@@ -582,11 +582,11 @@ bool LoopClosing::DetectAndReffineSim3FromLastKF(KeyFrame* pCurrentKF, KeyFrame*
 bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, KeyFrame* &pMatchedKF2, KeyFrame* &pLastCurrentKF, g2o::Sim3 &g2oScw,
                                              int &nNumCoincidences, std::vector<MapPoint*> &vpMPs, std::vector<MapPoint*> &vpMatchedMPs)
 {
-    int nBoWMatches = 10;
-    int nBoWInliers = 7;
-    int nSim3Inliers = 5;
-    int nProjMatches = 20;
-    int nProjOptMatches = 30;
+    int nBoWMatches = 30;
+    int nBoWInliers = 20;
+    int nSim3Inliers = 30;
+    int nProjMatches = 50;
+    int nProjOptMatches = 40;
     /*if(mpTracker->mSensor==System::IMU_MONOCULAR ||mpTracker->mSensor==System::IMU_STEREO)
     {
         nBoWMatches = 20;
@@ -713,11 +713,11 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
 //		cout<<"bAbortByNearKF: "<<bAbortByNearKF<<endl;
 //        cout<<"numBoWMatches: "<<numBoWMatches<<endl;
 //        cout<<"nBoWMatches: "<<nBoWMatches<<endl;
-		ROS_INFO_STREAM("bAbortByNearKF: "<<bAbortByNearKF);
-		ROS_INFO_STREAM("numBoWMatches: "<<numBoWMatches<<" threshold: "<<nBoWMatches);
+		//ROS_INFO_STREAM("bAbortByNearKF: "<<bAbortByNearKF);
+		//ROS_INFO_STREAM("numBoWMatches: "<<numBoWMatches<<" threshold: "<<nBoWMatches);
         if(!bAbortByNearKF && numBoWMatches >= nBoWMatches) // TODO pick a good threshold
         {
-			ROS_INFO_STREAM("Geometric validation with " << numBoWMatches);
+			//ROS_INFO_STREAM("Geometric validation with " << numBoWMatches);
 //            cout << "-------------------------------" << endl;
 //            cout << "Geometric validation with " << numBoWMatches << endl;
 //            cout << "KFc: " << mpCurrentKF->mnId << "; KFm: " << pMostBoWMatchesKF->mnId << endl;
@@ -734,7 +734,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
             Sim3Solver solver = Sim3Solver(mpCurrentKF, pMostBoWMatchesKF, vpMatchedPoints, bFixedScale, vpKeyFrameMatchedMP);
             solver.SetRansacParameters(0.99, nBoWInliers, 300); // at least 15 inliers
 //			cout<<"set Ransac solver: "<<endl;
-			ROS_INFO_STREAM("set Ransac solver");
+			//ROS_INFO_STREAM("set Ransac solver");
 
             bool bNoMore = false;
             vector<bool> vbInliers;
@@ -748,8 +748,8 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
 
 //            cout << "Num inliers: " << nInliers << endl;
 //			cout<<"Ransac solver converged?: "<<bConverge<<endl;
-			ROS_INFO_STREAM("Num inliers: " << nInliers);
-			ROS_INFO_STREAM("Ransac solver converged?: "<<bConverge);
+			//ROS_INFO_STREAM("Num inliers: " << nInliers);
+			//ROS_INFO_STREAM("Ransac solver converged?: "<<bConverge);
             if(bConverge)
             {
                 //cout <<"BoW: " << nInliers << " inliers in Sim3Solver" << endl;
@@ -804,7 +804,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                 vpMatchedKF.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<KeyFrame*>(NULL));
                 int numProjMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpKeyFrames, vpMatchedMP, vpMatchedKF, 8, 1.5);
 //                cout <<"BoW: " << numProjMatches << " matches between " << vpMapPoints.size() << " points with coarse Sim3" << endl;
-				ROS_INFO_STREAM("re-projection matched points: "<<numProjMatches<<" threshold: "<<nProjMatches);
+				//ROS_INFO_STREAM("re-projection matched points: "<<numProjMatches<<" threshold: "<<nProjMatches);
 
                 if(numProjMatches >= nProjMatches)
                 {
@@ -818,7 +818,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                     int numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedMP, gScm, 10, mbFixScale, mHessian7x7, true);
                     //cout <<"BoW: " << numOptMatches << " inliers in the Sim3 optimization" << endl;
                     //cout << "Inliers in Sim3 optimization: " << numOptMatches << endl;
-					ROS_INFO_STREAM("Inliers in Sim3 optimization: " << numOptMatches<<" threshold: "<<nSim3Inliers);
+					//ROS_INFO_STREAM("Inliers in Sim3 optimization: " << numOptMatches<<" threshold: "<<nSim3Inliers);
 
                     if(numOptMatches >= nSim3Inliers)
                     {
@@ -836,7 +836,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         vpMatchedMP.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
                         int numProjOptMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpMatchedMP, 5, 1.0);
                         //cout <<"BoW: " << numProjOptMatches << " matches after of the Sim3 optimization" << endl;
-						ROS_INFO_STREAM(numProjOptMatches << " matches after of the Sim3 optimization"<<", threshold: "<<numProjOptMatches);
+						//ROS_INFO_STREAM(numProjOptMatches << " matches after of the Sim3 optimization"<<", threshold: "<<numProjOptMatches);
 
                         /**
                          * if the inliers are more than a threshold
@@ -966,7 +966,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         index++;
     }
 
-	ROS_INFO_STREAM("KF Coindicendes: "<<nBestNumCoindicendes<<", threshold: "<<3);
+	//ROS_INFO_STREAM("KF Coindicendes: "<<nBestNumCoindicendes<<", threshold: "<<3);
     if(nBestMatchesReproj > 0)
     {
         pLastCurrentKF = mpCurrentKF;
