@@ -1208,14 +1208,14 @@ void Tracking::PreintegrateDvlGro()
 					mlQueueImuData.pop_front();
 				}
 					// IMU measurement is between Frame_i and Frame_j
-				else if (m->t < mCurrentFrame.mTimeStamp) {
+				else if (m->t <= mCurrentFrame.mTimeStamp + 0.001l) {
 //					cout<<"push_back IMU Meas acc: "<<m->a<<" timestamp: "<< m->t <<endl;
 					mvImuFromLastFrame.push_back(*m);
 					mlQueueImuData.pop_front();
 				}
 					// IMU measurement is after Frame_j
 				else {
-					cout << "Error! IMU measurement is after Frame_j!!!" << endl;
+//					cout << "Error! IMU measurement is after Frame_j!!!" << endl;
 					mvImuFromLastFrame.push_back(*m);
 					break;
 				}

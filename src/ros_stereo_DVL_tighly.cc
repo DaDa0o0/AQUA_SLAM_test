@@ -355,17 +355,17 @@ void ImageGrabber::SyncWithImu()
 			//virtual IMU Meas for DVL
 			// in that virtual Meas, we save velocity to acc
 			if (!vDVLMeas.empty() && !vImuMeas.empty()) {
-				if (vImuMeas[0].t > vDVLMeas[0].t) {
+				if (vImuMeas[0].t >= vDVLMeas[0].t) {
 					vImuMeas.insert(vImuMeas.begin(),
 									ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[0].w, vDVLMeas[0].t));
 				}
-				else if (vImuMeas[vImuMeas.size() - 1].t < vDVLMeas[0].t) {
+				else if (vImuMeas[vImuMeas.size() - 1].t <= vDVLMeas[0].t) {
 					vImuMeas.push_back(ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v,
 																vImuMeas[vImuMeas.size() - 1].w,
 																vDVLMeas[0].t));
 				}
 				else {
-					for (int i = 0; i < vImuMeas.size(); i++) {
+					for (int i = 0; i <= vImuMeas.size(); i++) {
 						if (vImuMeas[i].t > vDVLMeas[0].t) {
 							vImuMeas.insert(vImuMeas.begin() + i,
 											ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[i].w, vDVLMeas[0].t));
