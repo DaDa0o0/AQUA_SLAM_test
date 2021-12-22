@@ -2111,7 +2111,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
                             bestIdx2=i2;
                         }
                     }
-
+                    // distance lower than threshold, add data association for left img
                     if(bestDist<=TH_HIGH)
                     {
                         CurrentFrame.mvpMapPoints[bestIdx2]=pMP;
@@ -2178,7 +2178,7 @@ int ORBmatcher::SearchBySim3(KeyFrame *pKF1, KeyFrame *pKF2, vector<MapPoint*> &
                                 bestIdx2=i2;
                             }
                         }
-
+                        // distance lower than threshold, add data association for right img
                         if(bestDist<=TH_HIGH)
                         {
                             CurrentFrame.mvpMapPoints[bestIdx2 + CurrentFrame.Nleft]=pMP;
@@ -2418,6 +2418,11 @@ int ORBmatcher::DescriptorDistance(const cv::Mat &a, const cv::Mat &b)
     }
 
     return dist;
+}
+int ORBmatcher::searchByLKTracking(Frame &CurrentFrame, const Frame &LastFrame)
+{
+
+	return 0;
 }
 
 } //namespace ORB_SLAM

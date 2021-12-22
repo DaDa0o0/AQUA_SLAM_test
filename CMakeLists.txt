@@ -18,8 +18,8 @@ add_definitions(-DCOMPILEDWITHC11)
 ## is used, also find other catkin packages
 
 
-set(OpenCV_DIR /home/da/project/Thirdparty/opencv3.2/share)
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} /home/da/project/Thirdparty/opencv3.2)
+set(OpenCV_DIR /home/da/project/Thirdparty/opencv3.2/share/OpenCV)
+#set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} /home/da/project/Thirdparty/opencv3.2)
 find_package(OpenCV 3.2 REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -36,9 +36,9 @@ find_package(catkin REQUIRED COMPONENTS
         vehicle_interface
         )
 
+find_package(Pangolin REQUIRED)
 set(Eigen3_DIR ${PROJECT_SOURCE_DIR}/Thirdparty/eigen3.3.4)
 find_package(Eigen3 3.3 REQUIRED)
-find_package(Pangolin REQUIRED)
 find_package(PCL REQUIRED)
 find_package(fmt REQUIRED)
 find_package(Boost REQUIRED COMPONENTS log_setup log)
@@ -224,6 +224,7 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/include/TwoViewReconstruction.h
         ${PROJECT_SOURCE_DIR}/include/RosHandling.h
         ${PROJECT_SOURCE_DIR}/include/DenseMapper.h
+        ${PROJECT_SOURCE_DIR}/src/LKTracker.h
         ${PROJECT_SOURCE_DIR}/src/System.cc
         ${PROJECT_SOURCE_DIR}/src/Tracking.cc
         ${PROJECT_SOURCE_DIR}/src/LocalMapping.cc
@@ -256,7 +257,8 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/src/RosHandling.cpp
         ${PROJECT_SOURCE_DIR}/src/DenseMapper.cpp
         ${PROJECT_SOURCE_DIR}/src/cv_bridge.cpp
-        ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp)
+        ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp
+        ${PROJECT_SOURCE_DIR}/src/LKTracker.cpp)
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}
@@ -288,6 +290,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(stereo_dvl2 ${PROJECT_SOURCE_DIR}/src/ros_stereo_DVL_tighly.cc)
 target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME})
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
+
+add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
+#target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})
+target_link_libraries(lk_tracker ${Boost_LIBRARIES} ${PROJECT_NAME})
+target_compile_features(lk_tracker PUBLIC cxx_std_17)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

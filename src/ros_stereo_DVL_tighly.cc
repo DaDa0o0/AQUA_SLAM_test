@@ -64,8 +64,8 @@ void init_logging()
 //	logging::add_file_log("debug_log.log");
 	logging::add_file_log
 		(
-			keywords::file_name = "log/log_%N.log",
-			keywords::rotation_size = 10 * 1024 * 1024,
+			keywords::file_name = "/home/da/project/ros/orb_dvl2_ws/src/dvl2/log/log_%N.log",
+			keywords::rotation_size = 20 * 1024 * 1024,
 			keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
 			keywords::format = "%Message%",
 			keywords::auto_flush = true
@@ -286,12 +286,14 @@ void ImageGrabber::SyncWithImu()
 			// cannot find image with good timestamp diff, waiting for the following image
 			if ((tImLeft - tImRight) > maxTimeDiff || (tImRight - tImLeft) > maxTimeDiff) {
 //				std::cout << "big time difference" << std::endl;
+				BOOST_LOG_TRIVIAL(warning) << "big time difference bwtween left and right img\nleft img:"<<tImLeft<<"\nright img:"<<tImRight;
 				continue;
 			}
 
 			// keep saving IMU data until the timestamp of lasted IMU data > the timestamp of lasted Image
 			if (tImLeft > mpImuGb->imuBuf.back()->header.stamp.toSec()) {
 //				cout<<"continue waiting for IMU Meas"<<endl;
+				BOOST_LOG_TRIVIAL(warning) << "continue waiting for IMU Meas";
 				continue;
 			}
 
@@ -338,14 +340,15 @@ void ImageGrabber::SyncWithImu()
 			}
 			mpDvlGb->mBufMutex.unlock();
 
-			if (vDVLMeas.size() >= 2) {
-				BOOST_LOG_TRIVIAL(info) << "there are two DVL measurement between Frames!";
-				vDVLMeas.clear();
-				continue;
+			while (vDVLMeas.size() >= 2) {
+				BOOST_LOG_TRIVIAL(warning) << "there are two DVL measurement between Frames!";
+				vDVLMeas.pop_back();
+//				vDVLMeas.clear();
+//				continue;
 			}
 
 			if (vImuMeas.empty()) {
-				BOOST_LOG_TRIVIAL(info) << "no IMU measurement between Frames!";
+				BOOST_LOG_TRIVIAL(warning) << "no IMU measurement between Frames!";
 				vImuMeas.clear();
 				continue;
 			}

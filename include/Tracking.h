@@ -45,7 +45,7 @@
 
 namespace ORB_SLAM3
 {
-
+class LKTracker;
 class Viewer;
 class FrameDrawer;
 class Atlas;
@@ -449,12 +449,15 @@ public:
 	bool mVisualIntegration;
 	int mKF_num_for_init;
 	int mKFThresholdForMap;
+	bool mDetectLoop=true;
 
 	std::mutex mLossIntegrationRefMutex;
 	DVLGroPreIntegration *mpDvlPreintegratedFromLastKFBeforeLost;
 	bool mDoLossIntegration;
 	DVLGroPreIntegration* getLossIntegrationRef();
 	void setLossIntegrationRef(DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost);
+
+	LKTracker* mpLKTracker;
 };
 
 } //namespace ORB_SLAM

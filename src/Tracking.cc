@@ -23,6 +23,7 @@
 #include<opencv2/features2d/features2d.hpp>
 #include<opencv2/core/eigen.hpp>
 
+#include"LKTracker.h"
 #include"ORBmatcher.h"
 #include"FrameDrawer.h"
 #include"Converter.h"
@@ -126,6 +127,7 @@ Tracking::Tracking(System *pSys,
 		mCalibrated = dCalibrated == 1;
 		mKFThresholdForMap = (int)fSettings["Tracker.KFThresholdForMap"];
 		time_recently_lost = (double)fSettings["Tracker.ReLocalTime"];
+		mDetectLoop = ((int)fSettings["EnableLoopDetection"]) == 1;
 
 		int visualIntegration;
 		visualIntegration = (int)fSettings["VisualIntegration"];
@@ -240,6 +242,9 @@ Tracking::Tracking(System *pSys,
 	mT_g_e.rotate(r);
 	mT_g_e.pretranslate(t);
 	mCurT_g0_gj = Eigen::Isometry3d::Identity();
+
+	// init LK tracker
+	mpLKTracker = new LKTracker(mSensor==System::DVL_STEREO);
 }
 
 Tracking::~Tracking()
@@ -1920,6 +1925,7 @@ void Tracking::Track()
 
 
 						bOK = TrackWithMotionModel();
+//						bOK = mpLKTracker->trackFrame(mCurrentFrame,mLastFrame);
 
 					}
 

@@ -6,10 +6,10 @@
 Camera.type: "PinHole"
 
 # Camera calibration and distortion parameters (OpenCV)
-Camera.fx: 407.0646129842357
-Camera.fy: 407.0646129842357
-Camera.cx: 384.5
-Camera.cy: 246.5
+Camera.fx: 655.0
+Camera.fy: 655.0
+Camera.cx: 306.0
+Camera.cy: 256.0
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -18,23 +18,20 @@ Camera.p2: 0.0
 
 Camera.bFishEye: 0
 
-Camera.width: 768
-Camera.height: 492
+Camera.width: 612
+Camera.height: 512
 
 # Camera frames per second
 Camera.fps: 15
 
 # stereo baseline times fx
-Camera.bf: 97.68
+Camera.bf: 78.89165891925023
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 0
 
 # Close/Far threshold. Baseline times.
 ThDepth: 35.0
-# far threshold 10.0m
-ThFarDepth: 20.0
-ThCloaseDepth: 0.2
 
 # scale image by a factor
 ImageScale: 1.0
@@ -45,7 +42,7 @@ ImageScale: 1.0
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 1000
+ORBextractor.nFeatures: 700
 
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2
@@ -57,8 +54,8 @@ ORBextractor.nLevels: 8
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
 # You can lower these values if your images have low contrast
-ORBextractor.iniThFAST: 21
-ORBextractor.minThFAST: 7
+ORBextractor.iniThFAST: 15
+ORBextractor.minThFAST: 3
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
@@ -80,21 +77,21 @@ Optimizer.DVL_lamda: 1
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
-Optimizer.KF_num_for_init: 30
-Optimizer.calibrated: 0 # 0 or 1
+Optimizer.KF_num_for_init: 25
+Optimizer.calibrated: 1 # 0 or 1
 Tracker.KFThresholdForMap: 5
-EnableLoopDetection: 0
+Tracker.ReLocalTime: 0.5
 
 # IMU Parameters  -0.0539971  0.0286326
 Tbc: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 0, 0, 1, 1.35,
-          -1,  0, 0, 0.12,
-          0, -1, 0, 0.2,
-          0, 0, 0, 1 ] # simulator_rexrov
-IMU.Frequency: 40
+  data: [ 0,  0,   1,   0.4, # real rov
+          -1,  0,   0,    0,
+          0,  -1,  0,    0.1,
+          0,  0,   0,    1 ]
+IMU.Frequency: 90
 IMU.NoiseGyro: 0.1
 IMU.NoiseAcc: 0.1
 IMU.GyroWalk: 0.01
@@ -102,42 +99,32 @@ IMU.AccWalk: 0.01
 
 VisualIntegration: 0
 
+LeftImgTopic: "/suv3d/left/rgb_rect"
+RightImgTopic: "/suv3d/right/rgb_rect"
+ImuTopic: "/kvh_1750_imu/imu"
+DvlTopic: "/bluerov2/DVL"
+
+
 # IMU to orb
 # only use rotation
 T_gyro_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 1, 0, 0, 0,
-          0,  1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1 ] # simulator_rexrov
-#  data: [ 0, 0, 1, 1.35,
-#          -1,  0, 0, 0.12,
-#          0, -1, 0, 0.2,
-#          0, 0, 0, 1 ] # simulator_rexrov
+  data: [ 0,  -1,   0,   0, # real rov
+          0,  0,   -1,    0,
+          1,  0,  0,    0,
+          0,  0,   0,    1 ]
 
-
-
-# dvl to orb
 T_dvl_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 0,  1,   0,   -0.880, #falcon/odom linear velocity , , 1.056
-          -1,  0,   0,    -0.348,
-          0,  0,  1,    1.056,
+  data: [ 0,  0,   1,   0.4, # real rov
+          -1,  0,   0,    0,
+          0,  -1,  0,    0.1,
           0,  0,   0,    1 ]
 
-#rovco
-LeftImgTopic: "/img_l"
-RightImgTopic: "/img_r"
-#LeftImgTopic: "/rexrov2/rexrov2/cameraleft/camera_image"
-#RightImgTopic: "/rexrov2/rexrov2/cameraright/camera_image"
-ImuTopic: "/rexrov2/imu"
-DvlTopic: "/rexrov2/DVL"
-#ImuTopic: "/kvh_1750_imu/imu"
-#DvlTopic: "/bluerov2/odometry"
 DenseMapper:
   enable: 0
   P1: 200.0

@@ -296,6 +296,8 @@ bool LoopClosing::NewDetectCommonRegions()
 
         mpLastMap = mpCurrentKF->GetMap();
     }
+	if (! mpTracker->mDetectLoop)
+		return false;
 	//	??? if using inertial, return false
     if(mpLastMap->IsInertial() && !mpLastMap->GetIniertialBA1())
     {
@@ -582,11 +584,11 @@ bool LoopClosing::DetectAndReffineSim3FromLastKF(KeyFrame* pCurrentKF, KeyFrame*
 bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, KeyFrame* &pMatchedKF2, KeyFrame* &pLastCurrentKF, g2o::Sim3 &g2oScw,
                                              int &nNumCoincidences, std::vector<MapPoint*> &vpMPs, std::vector<MapPoint*> &vpMatchedMPs)
 {
-    int nBoWMatches = 30;
-    int nBoWInliers = 20;
-    int nSim3Inliers = 30;
-    int nProjMatches = 50;
-    int nProjOptMatches = 40;
+    int nBoWMatches = 10;
+    int nBoWInliers = 7;
+    int nSim3Inliers = 5;
+    int nProjMatches = 20;
+    int nProjOptMatches = 30;
     /*if(mpTracker->mSensor==System::IMU_MONOCULAR ||mpTracker->mSensor==System::IMU_STEREO)
     {
         nBoWMatches = 20;
