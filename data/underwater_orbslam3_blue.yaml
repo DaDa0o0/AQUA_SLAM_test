@@ -73,11 +73,11 @@ Viewer.ViewpointF: 500
 
 # Optimization Parameters
 Optimizer.visual_lamda: 1
-Optimizer.DVL_lamda: 1
+Optimizer.DVL_lamda: 10000
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
-Optimizer.KF_num_for_init: 25
+Optimizer.KF_num_for_init: 30
 Optimizer.calibrated: 1 # 0 or 1
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
@@ -99,8 +99,8 @@ IMU.AccWalk: 0.01
 
 VisualIntegration: 0
 
-LeftImgTopic: "/suv3d/left/rgb_rect"
-RightImgTopic: "/suv3d/right/rgb_rect"
+LeftImgTopic: "/camera/left/image_dehazed"
+RightImgTopic: "/camera/right/image_dehazed"
 ImuTopic: "/kvh_1750_imu/imu"
 DvlTopic: "/bluerov2/DVL"
 
@@ -115,6 +115,10 @@ T_gyro_c: !!opencv-matrix
           0,  0,   -1,    0,
           1,  0,  0,    0,
           0,  0,   0,    1 ]
+#  data: [ 1,  0,   0,   0, # I
+#          0,  1,   0,    0,
+#          0,  0,  1,    0,
+#          0,  0,   0,    1 ]
 
 T_dvl_c: !!opencv-matrix
   rows: 4

@@ -1467,15 +1467,15 @@ bool Tracking::PredictStateDvlGro()
 			f_test.mPredBias = mCurrentFrame.mImuBias;
 
 			//publish loss integration pose
-			cv::Mat T_gr_g0_cv = mLastFrameBeforeLoss.mImuCalib.mT_gyro_c * mLastFrameBeforeLoss.mTcw * mLastFrameBeforeLoss.mImuCalib.mT_c_gyro;
-			Eigen::Isometry3d T_gr_g0;
-			cv::cv2eigen(T_gr_g0_cv, T_gr_g0.matrix());
-			Eigen::Isometry3d T_g0_gr =T_gr_g0.inverse();
-			cv::Mat T_gj_g0_cv = f_test.mImuCalib.mT_gyro_c * f_test.mTcw * f_test.mImuCalib.mT_c_gyro;
-			Eigen::Isometry3d T_gj_g0, T_g0_gj;
-			cv::cv2eigen(T_gj_g0_cv,T_gj_g0.matrix());
-			T_g0_gj = T_gj_g0.inverse();
-			mpRosHandler->PublishLossInteration(T_g0_gr,T_g0_gj);
+			cv::Mat T_dr_d0_cv = mLastFrameBeforeLoss.mImuCalib.mT_dvl_c * mLastFrameBeforeLoss.mTcw * mLastFrameBeforeLoss.mImuCalib.mT_c_dvl;
+			Eigen::Isometry3d T_dr_d0;
+			cv::cv2eigen(T_dr_d0_cv, T_dr_d0.matrix());
+			Eigen::Isometry3d T_d0_dr =T_dr_d0.inverse();
+			cv::Mat T_dj_d0_cv = f_test.mImuCalib.mT_dvl_c * f_test.mTcw * f_test.mImuCalib.mT_c_dvl;
+			Eigen::Isometry3d T_dj_d0, T_d0_dj;
+			cv::cv2eigen(T_dj_d0_cv, T_dj_d0.matrix());
+			T_d0_dj = T_dj_d0.inverse();
+			mpRosHandler->PublishLossInteration(T_d0_dr, T_d0_dj);
 
 			mCurrentFrame.SetDvlPoseVelocity(Rwgro2, twdvl2, Vwdvl2);
 			mCurrentFrame.mImuBias = mLastFrame.mImuBias;
@@ -1802,29 +1802,6 @@ void Tracking::Track()
 			}
 		}
 
-		// only for test preintegration
-		if (PredictStateDvlGro()) {
-			cv::Mat T_c_w = mCurrentFrame.mTcw.clone();
-			Eigen::Isometry3d T_dvl_camera;
-			cv::cv2eigen(mpImuCalib->mT_dvl_c, T_dvl_camera.matrix());
-			Eigen::Isometry3d T_c0_cj;
-			cv::cv2eigen(T_c_w, T_c0_cj.matrix());
-			T_c0_cj = T_c0_cj.inverse();
-			Eigen::Isometry3d T_e0_ej_orb = T_dvl_camera * T_c0_cj * T_dvl_camera.inverse();
-			Eigen::Isometry3d T_c0_cj_orb = mT_c_cm * T_c0_cj * mT_c_cm.inverse();
-			geometry_msgs::PoseStamped pose_to_pub;
-			pose_to_pub.header.frame_id = "orb_slam";
-			pose_to_pub.header.stamp = ros::Time(mCurrentFrame.mTimeStamp);
-			pose_to_pub.pose.position.x = T_c0_cj_orb.translation().x();
-			pose_to_pub.pose.position.y = T_c0_cj_orb.translation().y();
-			pose_to_pub.pose.position.z = T_c0_cj_orb.translation().z();
-			Eigen::Quaterniond rotation_q(T_c0_cj_orb.rotation());
-			pose_to_pub.pose.orientation.x = rotation_q.x();
-			pose_to_pub.pose.orientation.y = rotation_q.y();
-			pose_to_pub.pose.orientation.z = rotation_q.z();
-			pose_to_pub.pose.orientation.w = rotation_q.w();
-			mEKFPose_pub.publish(pose_to_pub);
-		}
 
 	}
 	mbCreatedMap = false;
@@ -1890,33 +1867,6 @@ void Tracking::Track()
 
 				// no IMU, visual only, no velocity information
 				if (mSensor == System::DVL_STEREO) {
-//					// only for test preintegration
-//					bOK = true;
-//					mState = OK;
-//					if (!mLastFrame.mTcw.empty() && !mCurrentFrame.mTcw.empty()) {
-//						cv::Mat LastTwc = cv::Mat::eye(4, 4, CV_32F);
-//						mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0, 3).colRange(0, 3));
-//						mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0, 3).col(3));
-//						mVelocity = mCurrentFrame.mTcw * LastTwc;
-//					}
-//					else {
-//						mVelocity = cv::Mat();
-//					}
-//					fstream file_velocity;
-//					file_velocity << fixed;
-//					file_velocity
-//						.open("/home/da/project/ORB_SLAM3_DVL_tightly/data/velocity_debug.txt", ios::out | ios::app);
-//					if (!file_velocity) {
-//						cout << "fail to create file: /home/da/project/ORB_SLAM3_DVL_tightly/data/velocity_debug.txt"
-//							 << endl;
-//					}
-//
-//					file_velocity << setprecision(6) << mCurrentFrame.mTimeStamp << " " << mLastFrame.mTimeStamp << " "
-//								  << mVelocity.col(3).t() << endl;
-//					mLastFrame = Frame(mCurrentFrame);
-//					return;
-
-
 					// Track from ReferenceKeyFrame after relocalization
 					if (mCurrentFrame.mnId < mnLastRelocFrameId + 2) {
 						bOK = TrackReferenceKeyFrame();
@@ -1993,7 +1943,7 @@ void Tracking::Track()
 							bOK = false;
 						}
 					}
-					else if ((mSensor == System::DVL_STEREO)) {
+					else if ((mSensor == System::DVL_STEREO && mCalibrated )) {
 						PredictStateDvlGro();
 
 						if (mCurrentFrame.mTimeStamp - mTimeStampLost > time_recently_lost) {
@@ -5067,7 +5017,7 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
 	Eigen::Isometry3d T_ci_c0 = Eigen::Isometry3d::Identity();
 	cv::cv2eigen(T_ci_c0_cv, T_ci_c0.matrix());
 	Eigen::Isometry3d T_c0_ci = T_ci_c0.inverse();
-	cout << "pose before update bias"<<T_c0_ci.matrix() << endl;
+//	cout << "pose before update bias"<<T_c0_ci.matrix() << endl;
 
 
 	cv::Mat twdvl1;
@@ -5103,7 +5053,7 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
 	T_ci_c0 = Eigen::Isometry3d::Identity();
 	cv::cv2eigen(T_ci_c0_cv, T_ci_c0.matrix());
 	T_c0_ci = T_ci_c0.inverse();
-	cout << "pose after update bias"<<T_c0_ci.matrix() << endl;
+//	cout << "pose after update bias"<<T_c0_ci.matrix() << endl;
 
 	if (mCurrentFrame.mpImuPreintegrated) {
 		twdvl1 = mCurrentFrame.mpLastKeyFrame->GetDvlPosition();

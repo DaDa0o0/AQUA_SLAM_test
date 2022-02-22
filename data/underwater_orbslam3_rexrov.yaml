@@ -80,7 +80,7 @@ Optimizer.DVL_lamda: 1
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
-Optimizer.KF_num_for_init: 30
+Optimizer.KF_num_for_init: 20
 Optimizer.calibrated: 0 # 0 or 1
 Tracker.KFThresholdForMap: 5
 EnableLoopDetection: 0
@@ -128,6 +128,10 @@ T_dvl_c: !!opencv-matrix
           -1,  0,   0,    -0.348,
           0,  0,  1,    1.056,
           0,  0,   0,    1 ]
+#  data: [ 1, 0, 0, 0,
+#          0,  1, 0, 0,
+#          0, 0, 1, 0,
+#          0, 0, 0, 1 ] # simulator_rexrov
 
 #rovco
 LeftImgTopic: "/img_l"

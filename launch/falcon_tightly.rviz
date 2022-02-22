@@ -33,7 +33,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: PointCloud2
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -407,7 +407,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6.538342475891113
+      Distance: 13.631843566894531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -415,17 +415,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: -0.9161285161972046
+        Y: 8.020665168762207
+        Z: -3.4388599395751953
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.31539881229400635
+      Pitch: 0.780398428440094
       Target Frame: orb_odom
-      Yaw: 2.925384044647217
+      Yaw: 2.985387086868286
     Saved: ~
 Window Geometry:
   Displays:
@@ -446,4 +446,4 @@ Window Geometry:
     collapsed: false
   Width: 1920
   X: 900
-  Y: 304
+  Y: 281

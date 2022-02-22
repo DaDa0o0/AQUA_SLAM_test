@@ -2422,21 +2422,16 @@ void DvlGyroOptimizer::DvlGyroInitOptimization(Map *pMap,
 
 	Eigen::Isometry3d T_dvl_c = vT_d_c->estimate();
 	Eigen::Isometry3d T_gyros_dvl = vT_g_d->estimate();
+	Eigen::Isometry3d T_gyros_c = T_gyros_dvl * T_dvl_c;
 
 	IMU::Bias b(vb[3], vb[4], vb[5], vb[0], vb[1], vb[2]);
 
-	Eigen::Matrix3d R_gt;
-	R_gt << 0, 0, 1,
-		-1, 0, 0,
-		0, -1, 0;
+
 	cout << "init optimization result: \n"
 		 << "bias_gyro:\n" << bg << "\n"
 		 << "R_dvl_c:\n" << T_dvl_c.rotation() << "\n"
-		 << "R_dvl_c(eular yaw-pitch-roll):" << T_dvl_c.rotation().eulerAngles(2, 1, 0).transpose() << "\n"
 		 << "t_dvl_c:" << T_dvl_c.translation().transpose() << "\n"
-		 << "R_dvl_c distance with R_gt(LogSO3()): " << LogSO3(T_dvl_c.rotation().inverse() * R_gt).transpose() << "\n"
-		 << "R_gyros_dvl:\n" << T_gyros_dvl.rotation() << "\n"
-		 << "R_gyros_dvl(eular yaw-pitch-roll):" << T_gyros_dvl.rotation().eulerAngles(2, 1, 0).transpose() << "\n"
+		 << "R_gyros_c:\n" << T_gyros_c.rotation() << "\n"
 		 << endl;
 
 

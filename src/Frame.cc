@@ -385,7 +385,7 @@ cv::Mat Frame::GetDvlRotation()
 cv::Mat Frame::GetDvlVelocity()
 {
 	std::lock_guard<std::mutex> lock(*mpExtrinsic_mutex);
-	if (mVw.empty()) {
+	if (mVw.empty()||mRwc.empty()) {
 		return cv::Mat();
 	}
 	// R_c0_cj * R_c_dvl = R_c0_dj
