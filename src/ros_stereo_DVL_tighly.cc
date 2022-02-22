@@ -293,7 +293,7 @@ void ImageGrabber::SyncWithImu()
 			// keep saving IMU data until the timestamp of lasted IMU data > the timestamp of lasted Image
 			if (tImLeft > mpImuGb->imuBuf.back()->header.stamp.toSec()) {
 //				cout<<"continue waiting for IMU Meas"<<endl;
-				BOOST_LOG_TRIVIAL(warning) << "continue waiting for IMU Meas";
+//				BOOST_LOG_TRIVIAL(warning) << "continue waiting for IMU Meas";
 				continue;
 			}
 
