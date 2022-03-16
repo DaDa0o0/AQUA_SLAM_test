@@ -23,6 +23,7 @@
 #include "ORBmatcher.h"
 #include "ImuTypes.h"
 #include<mutex>
+#include <opencv2/core/eigen.hpp>
 
 namespace ORB_SLAM3
 {
@@ -136,6 +137,19 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     Ow.copyTo(Twc.rowRange(0,3).col(3));
     cv::Mat center = (cv::Mat_<float>(4,1) << mHalfBaseline, 0 , 0, 1);
     Cw = Twc*center;
+
+	//update velocity
+	if(mPrevKF){
+		Eigen::Isometry3d T_ci_w,T_w_cj;
+		cv::cv2eigen(mPrevKF->GetPose(),T_ci_w.matrix());
+		cv::cv2eigen(Twc,T_w_cj.matrix());
+		Eigen::Isometry3d T_ci_cj = T_ci_w * T_w_cj;
+		Eigen::Matrix3d R_cj_ci = T_ci_cj.rotation().transpose();
+		Eigen::Vector3d v_ci_ci_cj= T_ci_cj.translation() / (this->mTimeStamp - mPrevKF->mTimeStamp);
+		Eigen::Vector3d v_cj_ci_cj = R_cj_ci * v_ci_ci_cj;
+		mVc = v_cj_ci_cj;
+		mPrevKF->SetVelocity(v_ci_ci_cj);
+	}
 }
 
 void KeyFrame::SetVelocity(const cv::Mat &Vw_)
@@ -1308,6 +1322,11 @@ void KeyFrame::IntegrateDVL(KeyFrame *kp_i)
 {
 	Eigen::Isometry3d T_e0_ei=kp_i->mT_e0_ej;
 	mT_ei_ej = T_e0_ei.inverse()*mT_e0_ej;
+}
+void KeyFrame::SetVelocity(const Eigen::Vector3d &Vc)
+{
+	unique_lock<mutex> lock(mMutexPose);
+	mVc = Vc;
 }
 
 } //namespace ORB_SLAM

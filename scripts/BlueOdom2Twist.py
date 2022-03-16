@@ -5,7 +5,7 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 import tf
 import numpy as np
 
-odom_pub = rospy.Publisher('/bluerov2/DVL', Odometry, queue_size=10)
+odom_pub = rospy.Publisher('/bluerov2/DVL_odom', Odometry, queue_size=10)
 
 
 def get_homo_matrix_from_odom(Odom):

@@ -115,6 +115,7 @@ public:
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true, const int initFr = 0, const string &strSequence = std::string(), const string &strLoadingFile = std::string());
 
 	cv::Mat TrackStereoGroDVL(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), bool bDVL= false, string filename="");
+	cv::Mat TrackStereoGroDVLKLT(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), bool bDVL= false, string filename="");
 
     void dvlCallBack(const nav_msgs::OdometryConstPtr &dvl);
 
@@ -147,6 +148,7 @@ public:
     // Call first Shutdown()
     // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
     void SaveKeyFrameTrajectoryTUM(const string &filename);
+	void SaveKeyFrameDataToMat(const string &filename);
 
     void SaveTrajectoryEuRoC(const string &filename);
     void SaveKeyFrameTrajectoryEuRoC(const string &filename);

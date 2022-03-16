@@ -41,6 +41,10 @@ DenseMapper::DenseMapper(string settingFile)
 	int speckle_size = (int)node["speckle_size"];
 	int texture_threshold = (int)node["texture_threshold"];
 	float uniqueness_ratio = (float)node["uniqueness_ratio"];
+	mLeafSize = (float)node["leaf_size"];
+	mMeanK = (int)node["mean_k"];
+	mStdThred = (float)node["std_thred"];
+	mEnable = !((float)node["enable"] == 0);
 
 	mParam = DepthEstParamters(P1,
 							   P2,
@@ -62,7 +66,7 @@ DenseMapper::DenseMapper(string settingFile)
 	cy = (double)fs["Camera.cy"] * image_scale;
 	bf = (double)fs["Camera.bf"] * image_scale;
 
-	mEnable = !((float)fs["enable"] == 0);
+
 
 }
 
@@ -263,12 +267,19 @@ void DenseMapper::GetSubMap(const Mat &img_l, const Mat &img_r, pcl::PointCloud<
 			local_map->push_back(p);
 		}
 	}
-	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
-	sor.setInputCloud(local_map);
-	sor.setMeanK(100);
-	sor.setStddevMulThresh(0.5);
-	sor.filter(sub_map);
-	sub_map = *local_map;
+	pcl::VoxelGrid<pcl::PointXYZRGB> vgf;
+	vgf.setInputCloud(local_map);
+	vgf.setLeafSize(mLeafSize, mLeafSize, mLeafSize);
+	vgf.filter(*local_map);
+
+	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sorf;
+	sorf.setInputCloud(local_map);
+	sorf.setMeanK(mMeanK);
+	sorf.setStddevMulThresh(mStdThred);
+	sorf.filter(sub_map);
+
+
+//	sub_map = *local_map;
 }
 void DenseMapper::MergeSubMap(pcl::PointCloud<pcl::PointXYZRGB> &sub_map, KeyFrame *pKF)
 {
@@ -293,6 +304,10 @@ void DenseMapper::Run()
 {
 	while (1) {
 		{
+			if(!mEnable){
+				std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+				continue;
+			}
 			std::lock_guard<std::mutex> lock(mKFQueueMutex);
 			if (!mKFQueue.empty()) {
 				auto pKF = mKFQueue.front();
@@ -352,8 +367,8 @@ void DenseMapper::PublishMap()
 	pcl::VoxelGrid<pcl::PointXYZRGB> sor;
 	sor.setInputCloud(boost::make_shared<pcl::PointCloud<pcl::PointXYZRGB>>(mGlobalMap));
 	sor.setLeafSize(0.05f, 0.05f, 0.05f);
-	sor.filter(filtered_cloud);
-	pcl::toROSMsg(filtered_cloud, dense_map);
+//	sor.filter(filtered_cloud);
+	pcl::toROSMsg(mGlobalMap, dense_map);
 	dense_map.header.frame_id = "orb_slam";
 	mMapPub->publish(dense_map);
 //	mMapPub->publish(mGlobalMap);

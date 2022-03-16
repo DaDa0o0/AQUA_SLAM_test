@@ -98,6 +98,7 @@ IMU.GyroWalk: 0.01
 IMU.AccWalk: 0.01
 
 VisualIntegration: 0
+EnableLoopDetection: 1
 
 # IMU to orb
 # only use rotation
@@ -176,7 +177,7 @@ DvlTopic: "/falcon/odometry"
 #DvlTopic: "/bluerov2/odometry"
 
 DenseMapper:
-  enable: 0
+  enable: 1
   P1: 200.0
   P2: 400.0
   correlation_window_size: 21
@@ -189,5 +190,8 @@ DenseMapper:
   speckle_range: 10
   speckle_size: 10
   stereo_algorithm: 0
-  texture_threshold: 5
-  uniqueness_ratio: 15.0
+  texture_threshold: 15
+  uniqueness_ratio: 45.0
+  leaf_size: 0.05
+  mean_k: 50
+  std_thred: 0.2

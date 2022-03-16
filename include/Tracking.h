@@ -72,6 +72,7 @@ public:
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
 	cv::Mat GrabImageStereoDvl(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, bool bDvl, string filename);
 
+
     void GrabImuData(const IMU::ImuPoint &imuMeasurement);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);

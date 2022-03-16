@@ -189,8 +189,8 @@ void LocalMapping::Run()
 
 						std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 					}
-
-					mpDenseMapper->Update();
+					auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
+//					mpDenseMapper->Update();
 				}
 
 
@@ -270,7 +270,7 @@ void LocalMapping::Run()
 				}
 			}
 
-			mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+			mpTracker->mpRosHandler->UpdateMap(mpAtlas,mpCurrentKeyFrame->mImuCalib.mT_dvl_c);
 			mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
 			std::chrono::steady_clock::time_point t7 = std::chrono::steady_clock::now();
 
@@ -1656,7 +1656,7 @@ void LocalMapping::InitializeDvlGyro(float priorG, bool bFirst)
 	mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
 	mpTracker->mCalibrated = true;
 	bInitializing = false;
-	mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+	mpTracker->mpRosHandler->UpdateMap(mpAtlas,vpKF.front()->mImuCalib.mT_dvl_c);
 	mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
 	return;
 }

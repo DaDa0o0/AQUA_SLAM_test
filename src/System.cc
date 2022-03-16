@@ -899,6 +899,142 @@ void System::ChangeDataset()
 
 	mpTracker->NewDataset();
 }
+void System::SaveKeyFrameDataToMat(const string &filename)
+{
+	cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
+
+
+	auto all_map = mpAtlas->GetAllMaps();
+	for (auto pMap: all_map) {
+		ofstream f_views, f_mappoints;
+		f_views.open(filename.c_str() + std::to_string(pMap->GetId()) + (string)"_views.txt");
+		f_mappoints.open(filename.c_str() + std::to_string(pMap->GetId()) + (string)"_points.txt");
+
+		vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
+		sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
+
+		for(auto pKF:vpKFs){
+
+		}
+
+		// Transform all keyframes so that the first keyframe is at the origin.
+		// After a loop closure the first keyframe might not be at the origin.
+		// cv::Mat Two = vpKFs[0]->GetPoseInverse();
+
+		std::map<int, int> frameIDs;
+		for (size_t i = 0; i < vpKFs.size(); i++) {
+			KeyFrame *pKF = vpKFs[i];
+			frameIDs.emplace(pKF->mnFrameId, i);
+		}
+
+
+		for (size_t i = 0; i < vpKFs.size(); i++) {
+			KeyFrame *pKF = vpKFs[i];
+
+			if (pKF->isBad()) {
+				continue;
+			}
+
+			cv::Mat R = pKF->GetRotation();
+			cv::Mat t = pKF->GetCameraCenter();
+
+			vector<float> q = Converter::toQuaternion(R);
+			f_views << fixed;
+			f_views << frameIDs[pKF->mnFrameId] << " " << setprecision(6) << pKF->mTimeStamp
+			        << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " "
+			        << t.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
+		}
+
+
+		std::vector<MapPoint *> mPts = pMap->GetAllMapPoints();
+
+		f_mappoints << fixed;
+
+		for (size_t i = 0; i < mPts.size(); i++) {
+			MapPoint *mPt = mPts[i];
+			std::map<KeyFrame *, std::tuple<int, int>> ptObs = mPt->GetObservations();
+			if(mPt->isBad()){
+				continue;
+			}
+			bool bAllbad = true;
+			for(auto it:ptObs){
+				if(!it.first->isBad()){
+					bAllbad = false;
+					break;
+				}
+			}
+			if(bAllbad){
+				continue;
+			}
+
+
+
+			cv::Mat coord = mPt->GetWorldPos();
+
+			f_mappoints << coord.at<float>(0) << " " << coord.at<float>(1) << " " << coord.at<float>(2) << " ";
+
+
+
+			for (auto it = ptObs.begin(); it != ptObs.end(); ++it) {
+				KeyFrame *pKF = it->first;
+				if(pKF->isBad()){
+					continue;
+				}
+				f_mappoints << frameIDs[pKF->mnFrameId] << " ";
+			}
+
+			f_mappoints << endl;
+		}
+		f_views.close();
+		f_mappoints.close();
+	}
+	cout << endl << "trajectory saved!" << endl;
+}
+cv::Mat System::TrackStereoGroDVLKLT(const Mat &imLeft,
+                                     const Mat &imRight,
+                                     const double &timestamp,
+                                     const vector<IMU::ImuPoint> &vImuMeas,
+                                     bool bDVL,
+                                     string filename)
+
+{
+	if (mSensor != DVL_STEREO) {
+		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
+		exit(-1);
+	}
+
+	// Check reset
+	{
+		unique_lock<mutex> lock(mMutexReset);
+		if (mbReset) {
+			mpTracker->Reset();
+			cout << "Reset stereo..." << endl;
+			mbReset = false;
+			mbResetActiveMap = false;
+		}
+		else if (mbResetActiveMap) {
+			mpTracker->ResetActiveMap();
+			mbResetActiveMap = false;
+		}
+	}
+
+
+	for (size_t i_imu = 0; i_imu < vImuMeas.size(); i_imu++)
+		mpTracker->GrabImuData(vImuMeas[i_imu]);
+
+	// std::cout << "start GrabImageStereo" << std::endl;
+	cv::Mat Tcw = mpTracker->GrabImageStereoDvl(imLeft, imRight, timestamp, bDVL, filename);
+//	cv::Mat Tcw;
+
+	// std::cout << "out grabber" << std::endl;
+
+	unique_lock<mutex> lock2(mMutexState);
+	mTrackingState = mpTracker->mState;
+	mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+	mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+	return Tcw;
+}
 
 /*void System::SaveAtlas(int type){
 cout << endl << "Enter the name of the file if you want to save the current Atlas session. To exit press ENTER: ";

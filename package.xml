@@ -28,11 +28,13 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>tf</build_depend>
   <build_depend>vehicle_interface</build_depend>
+  <build_depend>waterlinked_a50_ros_driver</build_depend>
 <!--  <build_export_depend>cv_bridge_slam</build_export_depend>-->
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>image_transport</build_export_depend>
   <build_export_depend>message_filters</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
+  <build_export_depend>waterlinked_a50_ros_driver</build_export_depend>
 <!--  <build_export_depend>octomap</build_export_depend>-->
   <build_export_depend>octomap_msgs</build_export_depend>
   <build_export_depend>pose_graph_msgs</build_export_depend>
@@ -52,6 +54,7 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>tf</exec_depend>
   <exec_depend>vehicle_interface</exec_depend>
+  <exec_depend>waterlinked_a50_ros_driver</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

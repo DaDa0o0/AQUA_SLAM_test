@@ -285,6 +285,7 @@ public:
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
     void SetVelocity(const cv::Mat &Vw_);
+	void SetVelocity(const Eigen::Vector3d &Vc);
 
     cv::Mat GetPose();
     cv::Mat GetPoseInverse();
@@ -530,6 +531,7 @@ protected:
 
     // Velocity (Only used for inertial SLAM)
     cv::Mat Vw;
+	Eigen::Vector3d mVc; //velocity under camera frame(FOR DVL model)
 
     // Imu bias
     IMU::Bias mImuBias;

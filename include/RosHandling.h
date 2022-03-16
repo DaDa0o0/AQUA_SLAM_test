@@ -63,42 +63,40 @@ class System;
 class RosHandling
 {
 public:
-	RosHandling(System* pSys);
+	RosHandling(System *pSys);
 	void PublishLeftImg(const sensor_msgs::ImageConstPtr &img);
 	void PublishRightImg(const sensor_msgs::ImageConstPtr &img);
 	void PublishImgWithInfo(const sensor_msgs::ImageConstPtr &img);
 	void PublishImgMergeCandidate(const cv::Mat &img);
 	void PublishIntegration(Atlas *pAtlas);
 	void PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time &stamp);
-	void PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp);
+	void PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const Eigen::Isometry3d &T_d_c, const ros::Time &stamp);
 	void PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp);
 	void PublishEkf(const Eigen::Isometry3d &T_e0_ej_ekf, const ros::Time &stamp);
 	void PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, const ros::Time &stamp);
 	//publish pointcloud and octomap
-	void UpdateMap(ORB_SLAM3::Atlas *pAtlas);
+	void UpdateMap(ORB_SLAM3::Atlas *pAtlas, const cv::Mat &T_d_c);
 	void PublishMap(ORB_SLAM3::Atlas *pAtlas, int state);
 	void BroadcastTF(const Eigen::Isometry3d &T_c0_cj_orb,
-					 const ros::Time &stamp,
-					 const string &id,
-					 const string &child_id);
+	                 const ros::Time &stamp,
+	                 const string &id,
+	                 const string &child_id);
 	void GenerateFreePointcloud(const pcl::PointXYZRGB &start,
-								const pcl::PointXYZRGB &end,
-								float resolution,
-								pcl::PointCloud<pcl::PointXYZRGB> &cloud_free);
+	                            const pcl::PointXYZRGB &end,
+	                            float resolution,
+	                            pcl::PointCloud<pcl::PointXYZRGB> &cloud_free);
 	double LinearInterpolation(double start_x, double end_x, double start_y, double end_y, double x);
-	void PublishLossInteration(const  Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec);
-	bool SavePose(std_srvs::EmptyRequest &req,std_srvs::EmptyResponse &res);
+	void PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec);
+	bool SavePose(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
 
 protected:
-	System* mp_system;
+	System *mp_system;
 
 	boost::shared_ptr<image_transport::ImageTransport> mp_it;
 	boost::shared_ptr<image_transport::Publisher> mp_img_l_pub;
 	boost::shared_ptr<image_transport::Publisher> mp_img_r_pub;
 	boost::shared_ptr<image_transport::Publisher> mp_img_info_pub;
 	boost::shared_ptr<image_transport::Publisher> mp_img_merge_cond_pub;
-
-
 
 	//publish qualisys path
 	nav_msgs::Path m_integration_path;

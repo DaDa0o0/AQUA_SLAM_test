@@ -122,7 +122,9 @@ void RosHandling::PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time
 	mp_gt_path_pub->publish(m_gt_path);
 }
 
-void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp)
+void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb,
+                             const Eigen::Isometry3d &T_d_c,
+                             const ros::Time &stamp)
 {
 	//conversion from ENU to NED
 	// Eigen::AngleAxisd r_x(M_PI,Eigen::Vector3d::UnitX());
@@ -132,24 +134,28 @@ void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Ti
 	// T_enu_ned.rotate(r_z);
 	// Eigen::Isometry3d T_c0_cj_orb_NED=T_c0_cj_orb*T_enu_ned;
 
+	Eigen::Isometry3d T_d0_cj = T_d_c * T_c0_cj_orb;
+	Eigen::Isometry3d T_d0_dj = T_d_c * T_c0_cj_orb * T_d_c.inverse();
+
 	geometry_msgs::PoseStamped pose_to_pub;
 	pose_to_pub.header.frame_id = "orb_slam";
 	//pose_to_pub.header.stamp=ros::Time::now();
 	pose_to_pub.header.stamp = stamp;
-	pose_to_pub.pose.position.x = T_c0_cj_orb.translation().x();
-	pose_to_pub.pose.position.y = T_c0_cj_orb.translation().y();
-	pose_to_pub.pose.position.z = T_c0_cj_orb.translation().z();
+	pose_to_pub.pose.position.x = T_d0_cj.translation().x();
+	pose_to_pub.pose.position.y = T_d0_cj.translation().y();
+	pose_to_pub.pose.position.z = T_d0_cj.translation().z();
 	// Eigen::Matrix3d rotation_matrix;
 	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
 	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
 	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
-	Eigen::Quaterniond rotation_q(T_c0_cj_orb.rotation());
+	Eigen::Quaterniond rotation_q(T_d0_cj.rotation());
 	pose_to_pub.pose.orientation.x = rotation_q.x();
 	pose_to_pub.pose.orientation.y = rotation_q.y();
 	pose_to_pub.pose.orientation.z = rotation_q.z();
 	pose_to_pub.pose.orientation.w = rotation_q.w();
 
 	mp_pose_orb_pub->publish(pose_to_pub);
+	BroadcastTF(T_d0_dj, stamp, "orb_slam", "camera_dvl2_link");
 //	m_path_orb.header = pose_to_pub.header;
 //	m_path_orb.poses.push_back(pose_to_pub);
 //	mp_path_orb_pub->publish(m_path_orb);
@@ -158,16 +164,16 @@ void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Ti
 	// pose_to_pub.pose.position.x = T_c0_cj_orb_NED.translation().x();
 	// pose_to_pub.pose.position.y = T_c0_cj_orb_NED.translation().y();
 	// pose_to_pub.pose.position.z = T_c0_cj_orb_NED.translation().z();
-	pose_to_pub.pose.position.x = T_c0_cj_orb.translation().x();
-	pose_to_pub.pose.position.y = T_c0_cj_orb.translation().y();
-	pose_to_pub.pose.position.z = T_c0_cj_orb.translation().z();
+	pose_to_pub.pose.position.x = T_d0_cj.translation().x();
+	pose_to_pub.pose.position.y = T_d0_cj.translation().y();
+	pose_to_pub.pose.position.z = T_d0_cj.translation().z();
 	// Eigen::Matrix3d rotation_matrix;
 	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
 	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
 	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
 
 	// rotation_q =T_c0_cj_orb_NED.rotation();
-	rotation_q = T_c0_cj_orb.rotation();
+	rotation_q = T_d0_cj.rotation();
 	pose_to_pub.pose.orientation.x = rotation_q.x();
 	pose_to_pub.pose.orientation.y = rotation_q.y();
 	pose_to_pub.pose.orientation.z = rotation_q.z();
@@ -228,7 +234,7 @@ void RosHandling::PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, 
 
 }
 
-void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
+void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas, const cv::Mat &T_d_c)
 {
 	const std::lock_guard<std::mutex> guard(m_mutex_map);
 //	pcl::PointCloud<pcl::PointXYZRGB> cloud;
@@ -331,14 +337,16 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 	vector<KeyFrame *> vpKFs = pAtlas->GetAllKeyFrames();
 	KeyFrame *kp = vpKFs[0];
 //	Eigen::Isometry3d T_e_c=
+	Eigen::Isometry3d T_d_c_eigen;
+	cv::cv2eigen(T_d_c, T_d_c_eigen.matrix());
 	Eigen::Isometry3d T_rviz_orb = Eigen::Isometry3d::Identity();
 	Eigen::AngleAxisd r1(M_PI / 2, Eigen::Vector3d::UnitY());
 	Eigen::AngleAxisd r2(-M_PI / 2, Eigen::Vector3d::UnitZ());
 	T_rviz_orb.rotate(r1);
 	T_rviz_orb.rotate(r2);
 	// convert map point from orb frame to rviz frame
-	pcl::transformPointCloud(*mp_cloud_occupied, *mp_cloud_occupied, T_rviz_orb.matrix());
-	pcl::transformPointCloud(*mp_cloud_free, *mp_cloud_free, T_rviz_orb.matrix());
+	pcl::transformPointCloud(*mp_cloud_occupied, *mp_cloud_occupied, T_d_c_eigen.matrix());
+	pcl::transformPointCloud(*mp_cloud_free, *mp_cloud_free, T_d_c_eigen.matrix());
 
 	for (auto p: *mp_cloud_occupied) {
 		octomap::point3d p_oct(p.x, p.y, p.z);
@@ -375,24 +383,24 @@ void RosHandling::PublishMap(ORB_SLAM3::Atlas *pAtlas, int state)
 	mp_map_info_pub->publish(map_info);
 }
 void RosHandling::BroadcastTF(const Eigen::Isometry3d &T_c0_cj_orb,
-							  const ros::Time &stamp,
-							  const string &id,
-							  const string &child_id)
+                              const ros::Time &stamp,
+                              const string &id,
+                              const string &child_id)
 {
 	Eigen::Quaterniond rotation_q(T_c0_cj_orb.rotation());
 	m_tb.sendTransform(
 		tf::StampedTransform(
 			tf::Transform(tf::Quaternion(rotation_q.x(), rotation_q.y(), rotation_q.z(), rotation_q.w()),
-						  tf::Vector3(T_c0_cj_orb.translation().x(),
-									  T_c0_cj_orb.translation().y(),
-									  T_c0_cj_orb.translation().z())),
+			              tf::Vector3(T_c0_cj_orb.translation().x(),
+			                          T_c0_cj_orb.translation().y(),
+			                          T_c0_cj_orb.translation().z())),
 			stamp, id, child_id));
 }
 
 void RosHandling::GenerateFreePointcloud(const pcl::PointXYZRGB &start,
-										 const pcl::PointXYZRGB &end,
-										 float resolution,
-										 pcl::PointCloud<pcl::PointXYZRGB> &cloud_free)
+                                         const pcl::PointXYZRGB &end,
+                                         float resolution,
+                                         pcl::PointCloud<pcl::PointXYZRGB> &cloud_free)
 {
 	double start_x = start.x, start_y = start.y, start_z = start.z, end_x = end.x, end_y = end.y, end_z = end.z;
 	double dis_x = abs(end_x - start_x);

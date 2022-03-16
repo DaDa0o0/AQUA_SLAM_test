@@ -106,6 +106,9 @@ public:
 
 	bool mStop = false;
 	bool mEnable = true;
+	float mLeafSize;
+	int mMeanK;
+	float mStdThred;
 
 public:
 	void InsertNewKF(KeyFrame *pKF);
