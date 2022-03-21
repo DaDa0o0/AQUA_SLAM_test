@@ -427,7 +427,7 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
 		dV = mR_g_d.t() * dR * mR_g_d * v;
 //		cout<<"dR:"<<dR<<endl;
 //		cout<<"dV:"<<dV<<endl;
-		ROS_INFO_STREAM("reintegration with velocity");
+//		ROS_INFO_STREAM("reintegration with velocity");
 		ReintegrateWithVelocity();
 	}
 	else {

@@ -4,8 +4,8 @@ project(ORB_DVL2)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -w")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-#SET(ROS_BUILD_TYPE RelWithDebInfo)
-#SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+SET(ROS_BUILD_TYPE RelWithDebInfo)
+SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 add_definitions(-DCOMPILEDWITHC11)
@@ -295,22 +295,22 @@ target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME})
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
 add_dependencies(stereo_dvl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
-#target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})
-target_link_libraries(lk_tracker ${Boost_LIBRARIES} ${PROJECT_NAME})
-target_compile_features(lk_tracker PUBLIC cxx_std_17)
-
-add_executable(eigen_test ${PROJECT_SOURCE_DIR}/src/test/eigen_test.cpp)
-target_link_libraries(eigen_test ${catkin_LIBRARIES})
-target_compile_features(eigen_test PUBLIC cxx_std_17)
-
-add_executable(dvL_model_test ${PROJECT_SOURCE_DIR}/src/dvl_model/dvl.cpp)
-target_link_libraries(dvL_model_test ${catkin_LIBRARIES} ${PROJECT_NAME} -lmat -lmx)
-target_compile_features(dvL_model_test PUBLIC cxx_std_17)
-
-add_executable(matlab_write ${PROJECT_SOURCE_DIR}/src/dvl_model/matwrite.cpp)
-target_link_libraries(matlab_write -lmat -lmx)
-target_compile_features(matlab_write PUBLIC cxx_std_17)
+#add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
+##target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})
+#target_link_libraries(lk_tracker ${Boost_LIBRARIES} ${PROJECT_NAME})
+#target_compile_features(lk_tracker PUBLIC cxx_std_17)
+#
+#add_executable(eigen_test ${PROJECT_SOURCE_DIR}/src/test/eigen_test.cpp)
+#target_link_libraries(eigen_test ${catkin_LIBRARIES})
+#target_compile_features(eigen_test PUBLIC cxx_std_17)
+#
+#add_executable(dvL_model_test ${PROJECT_SOURCE_DIR}/src/dvl_model/dvl.cpp)
+#target_link_libraries(dvL_model_test ${catkin_LIBRARIES} ${PROJECT_NAME} -lmat -lmx)
+#target_compile_features(dvL_model_test PUBLIC cxx_std_17)
+#
+#add_executable(matlab_write ${PROJECT_SOURCE_DIR}/src/dvl_model/matwrite.cpp)
+#target_link_libraries(matlab_write -lmat -lmx)
+#target_compile_features(matlab_write PUBLIC cxx_std_17)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

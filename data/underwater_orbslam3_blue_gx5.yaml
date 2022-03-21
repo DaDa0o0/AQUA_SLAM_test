@@ -42,7 +42,7 @@ ImageScale: 1.0
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 700
+ORBextractor.nFeatures: 1000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2
@@ -73,12 +73,12 @@ Viewer.ViewpointF: 500
 
 # Optimization Parameters
 Optimizer.visual_lamda: 1
-Optimizer.DVL_lamda: 1
+Optimizer.DVL_lamda: 10000
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
-Optimizer.KF_num_for_init: 50
-Optimizer.calibrated: 0 # 0 or 1
+Optimizer.KF_num_for_init: 60
+Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
@@ -124,9 +124,9 @@ T_gyro_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ -0.0146092377370724,  -0.0010329024436264711,   -0.99989274589092003,   0, # real rov
-          -0.020941509884008114,  0.99978043834885066,   -0.00072681411519202876,    0,
-          0.99967395851673535, 0.020928645620823694,  -0.014627660645445281,    0,
+  data: [ -0.025627013068640403,  -0.027523668915143649,   -0.99929260171915124,   0, # real rov
+          0.0019232000194252391,    0.99961769576091752,  -0.027581943791494354,    0,
+          0.99966972421038436, -0.0026286823850409039,   -0.02556428223231702,    0,
           0,  0,   0,    1 ]
 #  data: [ 1,  0,   0,   0, # I
 #          0,  1,   0,    0,
@@ -141,9 +141,9 @@ T_dvl_c: !!opencv-matrix
 #          -1,  0,   0,    0,
 #          0,  -1,  0,    0.1,
 #          0,  0,   0,    1 ]
-  data: [ 0.0061,  -0.0341,   0.9993,   0.1153, # real rov 4-beam
-          0.9994,  0.0338,   -0.0049,    0.003,
-          -0.0336,  0.9988,  0.0343,    -0.2524,
+  data: [ 0.0011888419381439509,    0.02851617044875765,    0.99959262436143614,   0.10060381898008802, # real rov 4-beam
+          0.99937623712471568,   0.035246597423590931, -0.0021940921822520229,    0.044242992513024326,
+          -0.035294805925107663,     0.9989717240207534,  -0.028456480487092373,    -0.24123071505358376,
           0,  0,   0,    1 ]
 
 DenseMapper:

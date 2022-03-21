@@ -33,9 +33,7 @@ using namespace std;
 namespace ORB_SLAM3
 {
 
-// descriptor distance threshold
 const int ORBmatcher::TH_HIGH = 100;
-// descriptor distance threshold
 const int ORBmatcher::TH_LOW = 50;
 const int ORBmatcher::HISTO_LENGTH = 30;
 

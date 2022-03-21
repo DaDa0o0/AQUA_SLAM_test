@@ -9864,7 +9864,7 @@ int Optimizer::PoseDvlGyrosOPtimizationLastFrame(Frame *pFrame, double lamda_DVL
 	ei->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
 	ei->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(vT_d_c));
 	ei->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(vT_g_d));
-	ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * 1000);
+	ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_DVL);
 	ei->setId(pFrame->mnId);
 	optimizer.addEdge(ei);
 
