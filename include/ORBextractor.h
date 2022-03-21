@@ -43,7 +43,7 @@ public:
 class ORBextractor
 {
 public:
-    
+
     enum {HARRIS_SCORE=0, FAST_SCORE=1 };
 
     ORBextractor(int nfeatures, float scaleFactor, int nlevels,
@@ -57,6 +57,20 @@ public:
     int operator()( cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
                     cv::OutputArray _descriptors, std::vector<int> &vLappingArea);
+
+	int DetectKeyPoints(cv::InputArray _image, cv::InputArray _mask,
+	                    std::vector<cv::KeyPoint>& _keypoints,
+	                    cv::OutputArray _descriptors);
+	int ComputeDescriptor(cv::InputArray _image, cv::InputArray _mask,
+	                      std::vector<cv::KeyPoint>& _keypoints,
+	                      cv::OutputArray _descriptors);
+	// ANMS: from https://github.com/BAILOOL/ANMS-Codes
+	void ssc(std::vector<cv::KeyPoint> keyPoints,
+	         int numRetPoints,
+	         float tolerance,
+	         int cols,
+	         int rows,
+	         std::vector<cv::KeyPoint> &out);
 
     int inline GetLevels(){
         return nlevels;}
@@ -85,7 +99,7 @@ public:
 protected:
 
     void ComputePyramid(cv::Mat image);
-    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);    
+    void ComputeKeyPointsOctTree(std::vector<std::vector<cv::KeyPoint> >& allKeypoints);
     std::vector<cv::KeyPoint> DistributeOctTree(const std::vector<cv::KeyPoint>& vToDistributeKeys, const int &minX,
                                            const int &maxX, const int &minY, const int &maxY, const int &nFeatures, const int &level);
 
@@ -103,7 +117,7 @@ protected:
     std::vector<int> umax;
 
     std::vector<float> mvScaleFactor;
-    std::vector<float> mvInvScaleFactor;    
+    std::vector<float> mvInvScaleFactor;
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
 };
