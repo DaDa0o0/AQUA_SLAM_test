@@ -71,9 +71,13 @@ public:
 
     // Preprocess the input and call Track(). Extract features and performs stereo matching.
 	cv::Mat GrabImageStereoDvl(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, bool bDvl, string filename);
+	cv::Mat GrabImageStereoDvlgyro(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, bool bDvl, string filename);
+
+	cv::Mat GrabImageStereoDvlKLT(const cv::Mat &imRectLeft,const cv::Mat &imRectRight, const double &timestamp, bool bDvl, string filename);
 
 
     void GrabImuData(const IMU::ImuPoint &imuMeasurement);
+	void GrabDVLGyroData(const IMU::GyroDvlPoint &DVLGyrosMeasurement);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
     void SetLoopClosing(LoopClosing* pLoopClosing);
@@ -258,9 +262,12 @@ protected:
 
     // Main tracking function. It is independent of the input sensor.
     void Track();
+	void TrackDVLGyro();
+	void TrackKLT();
 
     // Map initialization for stereo and RGB-D
     void StereoInitialization();
+	void StereoInitializationKLT();
 
     // Map initialization for monocular
     void MonocularInitialization();
@@ -292,11 +299,13 @@ protected:
 
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();
+	void CreateNewKeyFrameKLT();
 
     // Perform preintegration from last frame
     void PreintegrateIMU();
 
 	void PreintegrateDvlGro();
+	void PreintegrateDvlGro2();
 
     // Reset IMU biases and compute frame velocity
     void ResetFrameIMU();
@@ -318,6 +327,8 @@ protected:
 
     // Queue of IMU measurements between frames
     std::list<IMU::ImuPoint> mlQueueImuData;
+
+	std::list<IMU::GyroDvlPoint> mlQueueDVLGyroData;
 
     // Vector of IMU measurements from previous to current frame (to be filled by PreintegrateIMU)
     std::vector<IMU::ImuPoint> mvImuFromLastFrame;
@@ -368,7 +379,7 @@ protected:
 
     //Atlas
     Atlas* mpAtlas;
-
+	Map* mpMapToReset;
 	DenseMapper* mpDenseMapper;
 
     //Calibration matrix

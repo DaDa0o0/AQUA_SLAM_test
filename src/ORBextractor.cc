@@ -1034,16 +1034,16 @@ int ORBextractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoin
                              OutputArray _descriptors, std::vector<int> &vLappingArea)
 {
 	//cout << "[ORBextractor]: Max Features: " << nfeatures << endl;
-	if (_image.empty()) {
-		return -1;
-	}
-
-	Mat image = _image.getMat();
-	assert(image.type() == CV_8UC1);
-
-	// Pre-compute the scale pyramid
-	ComputePyramid(image);
-
+//	if (_image.empty()) {
+//		return -1;
+//	}
+//
+//	Mat image = _image.getMat();
+//	assert(image.type() == CV_8UC1);
+//
+//	// Pre-compute the scale pyramid
+//	ComputePyramid(image);
+//
 //	vector<vector<KeyPoint> > allKeypoints;
 //	ComputeKeyPointsOctTree(allKeypoints);
 //	//ComputeKeyPointsOld(allKeypoints);
@@ -1114,8 +1114,13 @@ int ORBextractor::operator()(InputArray _image, InputArray _mask, vector<KeyPoin
 //	cout << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
 //	return monoIndex;
 
-	DetectKeyPoints(_image,_mask,_keypoints,_descriptors);
-	ComputeDescriptor(_image,_mask,_keypoints,_descriptors);
+	vector<vector<cv::KeyPoint>> allKeypoints;
+	vector<cv::KeyPoint> kps;
+	DetectKeyPoints(_image,_mask,kps,allKeypoints);
+	ComputeDescriptor(_image,_mask,_keypoints,allKeypoints,_descriptors,vLappingArea);
+
+//	DetectKeyPointsOpenCV(_image,_mask,_keypoints);
+//	ComputeDescriptorOpenCV(_image,_mask,_keypoints,_descriptors);
 	return _keypoints.size();
 }
 
@@ -1142,26 +1147,24 @@ void ORBextractor::ComputePyramid(cv::Mat image)
 	}
 
 }
-int ORBextractor::DetectKeyPoints(const _InputArray &_image,
-                                  const _InputArray &_mask,
+int ORBextractor::DetectKeyPoints(const cv::InputArray &_image,
+								  const cv::InputArray &_mask,
                                   vector<cv::KeyPoint> &_keypoints,
-                                  const _OutputArray &_descriptors)
+                                  vector<vector<cv::KeyPoint>> &_all_keypoints)
 {
-//	cv::Ptr<cv::ORB> detector = cv::ORB::create(nfeatures * 2);
-//	detector->setNLevels(nlevels);
-//	detector->setMaxFeatures(nfeatures*2);
-//	detector->setScaleFactor(scaleFactor);
-//	detector->setFastThreshold(minThFAST);
-	vector<cv::KeyPoint> kp;
-//	detector->detect(_image, kp);
-	cv::FAST(_image, kp, iniThFAST, true);
-	ssc(kp, nfeatures, 0.1, _image.cols(), _image.rows(), _keypoints);
-//	cv::Mat fastDetectionResults; // draw FAST detections
-//	cv::drawKeypoints(_image, _keypoints, fastDetectionResults,
-//	                  cv::Scalar(94.0, 206.0, 165.0, 0.0));
-//	cv::imshow("FAST SSC Detections", fastDetectionResults);
-//	cv::waitKey(0);
-//	_keypoints = kp;
+	if (_image.empty()) {
+		return -1;
+	}
+
+	Mat image = _image.getMat();
+	assert(image.type() == CV_8UC1);
+
+	// Pre-compute the scale pyramid
+	ComputePyramid(image);
+
+//	vector<vector<KeyPoint> > allKeypoints;
+	ComputeKeyPointsOctTree(_all_keypoints);
+	_keypoints = _all_keypoints[0];
 	return 0;
 }
 void ORBextractor::ssc(std::vector<cv::KeyPoint> keyPoints,
@@ -1263,22 +1266,107 @@ void ORBextractor::ssc(std::vector<cv::KeyPoint> keyPoints,
 		out.push_back(keyPoints[ResultVec[i]]);
 
 }
-int ORBextractor::ComputeDescriptor(const _InputArray &_image,
-                                    const _InputArray &_mask,
+int ORBextractor::ComputeDescriptor(const cv::InputArray &_image,
+                                    const cv::InputArray &_mask,
                                     vector<cv::KeyPoint> &_keypoints,
-                                    const _OutputArray &_descriptors)
+                                    vector<vector<cv::KeyPoint>> &allKeypoints,
+                                    OutputArray &_descriptors,
+                                    std::vector<int> &vLappingArea)
 {
-	cv::Mat img = _image.getMat().clone();
-	if (img.channels() > 1) {
-		cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+
+	Mat descriptors;
+
+	int nkeypoints = 0;
+	for (int level = 0; level < nlevels; ++level)
+		nkeypoints += (int)allKeypoints[level].size();
+	if (nkeypoints == 0) {
+		_descriptors.release();
+	}
+	else {
+		_descriptors.create(nkeypoints, 32, CV_8U);
+		descriptors = _descriptors.getMat();
 	}
 
+	//_keypoints.clear();
+	//_keypoints.reserve(nkeypoints);
+	_keypoints = vector<cv::KeyPoint>(nkeypoints);
+
+	int offset = 0;
+	//Modified for speeding up stereo fisheye matching
+	int monoIndex = 0, stereoIndex = nkeypoints - 1;
+	for (int level = 0; level < nlevels; ++level) {
+		vector<KeyPoint> &keypoints = allKeypoints[level];
+		int nkeypointsLevel = (int)keypoints.size();
+
+		if (nkeypointsLevel == 0) {
+			continue;
+		}
+
+		// preprocess the resized image
+		Mat workingMat = mvImagePyramid[level].clone();
+		GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+
+		// Compute the descriptors
+		//Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
+		Mat desc = cv::Mat(nkeypointsLevel, 32, CV_8U);
+		computeDescriptors(workingMat, keypoints, desc, pattern);
+
+		offset += nkeypointsLevel;
+
+
+		float scale = mvScaleFactor[level]; //getScale(level, firstLevel, scaleFactor);
+		int i = 0;
+		for (vector<KeyPoint>::iterator keypoint = keypoints.begin(),
+			     keypointEnd = keypoints.end(); keypoint != keypointEnd; ++keypoint) {
+
+			// Scale keypoint coordinates
+			if (level != 0) {
+				keypoint->pt *= scale;
+			}
+
+			if (keypoint->pt.x >= vLappingArea[0] && keypoint->pt.x <= vLappingArea[1]) {
+				_keypoints.at(stereoIndex) = (*keypoint);
+				desc.row(i).copyTo(descriptors.row(stereoIndex));
+				stereoIndex--;
+			}
+			else {
+				_keypoints.at(monoIndex) = (*keypoint);
+				desc.row(i).copyTo(descriptors.row(monoIndex));
+				monoIndex++;
+			}
+			i++;
+		}
+	}
+//	cout << "[ORBextractor]: extracted " << _keypoints.size() << " KeyPoints" << endl;
+	return monoIndex;
+}
+int ORBextractor::DetectKeyPointsOpenCV(const _InputArray &_image,
+                                        const _InputArray &_mask,
+                                        vector<cv::KeyPoint> &_keypoints)
+{
+	if (_image.empty()) {
+		return -1;
+	}
+
+	Mat image = _image.getMat();
+	assert(image.type() == CV_8UC1);
+
+	// Pre-compute the scale pyramid
+	ComputePyramid(image);
+
 	cv::Ptr<cv::ORB> detector = cv::ORB::create(nfeatures);
-	detector->setNLevels(nlevels);
-	detector->setMaxFeatures(nfeatures*2);
-	detector->setScaleFactor(scaleFactor);
-	detector->setFastThreshold(minThFAST);
-	detector->compute(img, _keypoints, _descriptors);
+//	vector<cv::KeyPoint> kp_l;
+	detector->setFastThreshold(iniThFAST);
+	detector->detect(_image, _keypoints);
+	return _keypoints.size();
+}
+int ORBextractor::ComputeDescriptorOpenCV(const cv::InputArray &_image,
+                                          const cv::InputArray &_mask,
+                                          std::vector<cv::KeyPoint> &_keypoints,
+                                          cv::OutputArray &_descriptors)
+{
+	cv::Ptr<cv::ORB> detector = cv::ORB::create(nfeatures);
+	detector->compute(_image, _keypoints, _descriptors);
 	return 0;
 }
 

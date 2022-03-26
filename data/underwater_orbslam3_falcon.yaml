@@ -79,6 +79,7 @@ Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.6
 Optimizer.KF_num_for_init: 25
 Optimizer.calibrated: 1 # 0 or 1
+Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
 

@@ -77,7 +77,7 @@ public:
     ~Atlas();
 
     void CreateNewMap();
-    void ChangeMap(Map* pMap);
+    void ChangeMap(Map* pMapFrom, Map* pMapTo);
 
     unsigned long int GetLastInitKFid();
 
@@ -109,6 +109,8 @@ public:
     int CountMaps();
 
     void clearMap();
+	void clearMap(Map* pMap);
+	void clearSmallMaps();
 
     void clearAtlas();
 

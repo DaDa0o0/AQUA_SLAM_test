@@ -31,6 +31,7 @@ namespace ORB_SLAM3
 {
 class MapPoint;
 class Frame;
+class FrameKLT;
 class KeyFrame;
 
 class LKTracker
@@ -39,23 +40,52 @@ public:
 	LKTracker();
 	LKTracker(bool bStereo);
 	void drawTrack(const cv::Mat &imLeft, const cv::Mat &imRight,
-				   vector<int> &curLeftIds,
-				   vector<cv::Point2f> &curLeftPts,
-				   vector<cv::Point2f> &curRightPts,
-				   map<int, cv::Point2f> &prevLeftPtsMap);
+	               vector<int> &curLeftIds,
+	               vector<cv::Point2f> &curLeftPts,
+	               vector<cv::Point2f> &curRightPts,
+	               map<int, cv::Point2f> &prevLeftPtsMap);
 	map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> trackImage(double _cur_time,
-																		const cv::Mat &_img,
-																		const cv::Mat &_img1);
+	                                                                    const cv::Mat &_img,
+	                                                                    const cv::Mat &_img1);
 	bool trackFrame(Frame &cur_frame, const Frame &prev_frame);
+	bool TrackReferenceKeyFrameKLT(KeyFrame *cur_frame, const Frame &prev_frame);
+	bool InitializeFrame(Frame &cur_f);
 	void drawTrackFrame(Frame &cur_frame, const Frame &prev_frame, cv::Mat &result);
+	void DetectORBPoints(FrameKLT &f);
+	void DetectFeature(FrameKLT &f, int max_num);
+	void ComputeFeatureDescriptor(FrameKLT &f, int max_num);
+
+	// ANMS: from https://github.com/BAILOOL/ANMS-Codes
+	void ssc(vector<cv::KeyPoint> keyPoints,
+	         int numRetPoints,
+	         float tolerance,
+	         int cols,
+	         int rows,
+	         vector<cv::KeyPoint> &out);
 
 protected:
+	///
+	/// \param ids id
+	/// \param pts point_2d
+	/// \param cur_id_pts (id,point_2d)
+	/// \param prev_id_pts (id,point_2d)
+	/// \return
 	vector<cv::Point2f> ptsVelocity(vector<int> &ids, vector<cv::Point2f> &pts,
-									map<int, cv::Point2f> &cur_id_pts, map<int, cv::Point2f> &prev_id_pts);
+	                                map<int, cv::Point2f> &cur_id_pts, map<int, cv::Point2f> &prev_id_pts);
 	double distance(cv::Point2f &pt1, cv::Point2f &pt2);
+
+	// set mask, to ignore the are already covered by feature points,and detect feature from new area
 	void setMask();
+
 	bool inBorder(const cv::Point2f &pt, int col, int row);
+	/// delete v[i], if status[i]==0
+	/// \param v 2d-point
+	/// \param status point status
 	void reduceVector(vector<cv::Point2f> &v, vector<uchar> status);
+
+	/// delete v[i], if status[i]==0
+	/// \param v 2d-point id
+	/// \param status point status
 	void reduceVector(vector<int> &v, vector<uchar> status);
 	void cv2Eigen_3d(const cv::Mat &T, Eigen::Isometry3d &T_eigen);
 	void eigen2CV_3d(const Eigen::Isometry3d &T_eigen, cv::Mat &T);

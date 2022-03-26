@@ -21,12 +21,10 @@
 #define LOOPCLOSING_H
 
 #include "KeyFrame.h"
-#include "LocalMapping.h"
+
 #include "Atlas.h"
 #include "ORBVocabulary.h"
-#include "Tracking.h"
 
-#include "KeyFrameDatabase.h"
 
 #include <boost/algorithm/string.hpp>
 #include <thread>
@@ -37,7 +35,7 @@
 #include <sensor_msgs/Image.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
-
+#include <ros/ros.h>
 
 namespace ORB_SLAM3
 {
@@ -53,15 +51,18 @@ class LoopClosing
 {
 public:
 
-    typedef pair<set<KeyFrame*>,int> ConsistentGroup;    
-    typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
-        Eigen::aligned_allocator<std::pair<KeyFrame* const, g2o::Sim3> > > KeyFrameAndPose;
+    typedef pair<set<KeyFrame*>,int> ConsistentGroup;
+	typedef map<KeyFrame*,g2o::Sim3> KeyFrameAndPose;
+//    typedef map<KeyFrame*,g2o::Sim3,std::less<KeyFrame*>,
+//        Eigen::aligned_allocator<std::pair<KeyFrame*, g2o::Sim3> > > KeyFrameAndPose;
 
 public:
 
-    LoopClosing(Atlas* pAtlas, KeyFrameDatabase* pDB, ORBVocabulary* pVoc, RosHandling* pRosHandler, const bool bFixScale);
+    LoopClosing(Atlas* pAtlas, KeyFrameDatabase* pDB, ORBVocabulary* pVoc, RosHandling* pRosHandler, const bool bFixScale,int mergingThreshold);
 
     void SetTracker(Tracking* pTracker);
+
+	void SetTargetMap(int ID);
 
     void SetLocalMapper(LocalMapping* pLocalMapper);
 
@@ -88,6 +89,8 @@ public:
     void RequestFinish();
 
     bool isFinished();
+
+	void ClearQueue();
 
     Viewer* mpViewer;
     ros::NodeHandlePtr mpNH;
@@ -237,7 +240,12 @@ protected:
     bool mbFixScale;
 
 
-    long mnFullBAIdx;
+    int mnFullBAIdx;
+
+    // service for planner
+	ros::ServiceClient mMergingSrv;
+	int mMergingThreshold;
+	int mTargetMapID;
 
 
 

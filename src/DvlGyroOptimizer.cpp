@@ -501,7 +501,7 @@ void DvlGyroOptimizer::LocalDVLBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag,
 	}
 
 	// Get Map Mutex
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	if (!vToErase.empty()) {
 		map<KeyFrame *, int> mspInitialConnectedKFs;

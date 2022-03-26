@@ -224,8 +224,9 @@ else
 
 	//Initialize the Loop Closing thread and launch
 	// mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR
+	int mergingThreshold = fsSettings["Optimizer.mergingThreshold"];
 	mpLoopCloser =
-		new LoopClosing(mpAtlas, mpKeyFrameDatabase, mpVocabulary,mRosHandler, mSensor != MONOCULAR); // mSensor!=MONOCULAR);
+		new LoopClosing(mpAtlas, mpKeyFrameDatabase, mpVocabulary,mRosHandler, mSensor != MONOCULAR,mergingThreshold); // mSensor!=MONOCULAR);
 	mptLoopClosing = new thread(&ORB_SLAM3::LoopClosing::Run, mpLoopCloser);
 
 	//Initialize the Viewer thread and launch
@@ -336,6 +337,73 @@ cv::Mat System::TrackStereoGroDVL(const cv::Mat &imLeft,
 	return Tcw;
 }
 
+cv::Mat System::TrackStereoGroDVL(const Mat &imLeft,
+                                  const Mat &imRight,
+                                  const double &timestamp,
+                                  const vector<IMU::GyroDvlPoint> &vDVLGyroMeas,
+                                  bool bDVL,
+                                  string filename)
+
+{
+	if (mSensor != DVL_STEREO) {
+		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
+		exit(-1);
+	}
+
+	// Check mode change
+	{
+		unique_lock<mutex> lock(mMutexMode);
+		if (mbActivateLocalizationMode) {
+			mpLocalMapper->RequestStop();
+
+			// Wait until Local Mapping has effectively stopped
+			while (!mpLocalMapper->isStopped()) {
+				usleep(1000);
+			}
+
+			mpTracker->InformOnlyTracking(true);
+			mbActivateLocalizationMode = false;
+		}
+		if (mbDeactivateLocalizationMode) {
+			mpTracker->InformOnlyTracking(false);
+			mpLocalMapper->Release();
+			mbDeactivateLocalizationMode = false;
+		}
+	}
+
+	// Check reset
+	{
+		unique_lock<mutex> lock(mMutexReset);
+		if (mbReset) {
+			mpTracker->Reset();
+			cout << "Reset stereo..." << endl;
+			mbReset = false;
+			mbResetActiveMap = false;
+		}
+		else if (mbResetActiveMap) {
+			mpTracker->ResetActiveMap();
+			mbResetActiveMap = false;
+		}
+	}
+
+
+	for (size_t i_imu = 0; i_imu < vDVLGyroMeas.size(); i_imu++)
+		mpTracker->GrabDVLGyroData(vDVLGyroMeas[i_imu]);
+
+	// std::cout << "start GrabImageStereo" << std::endl;
+	cv::Mat Tcw = mpTracker->GrabImageStereoDvl(imLeft, imRight, timestamp, bDVL, filename);
+//	cv::Mat Tcw;
+
+	// std::cout << "out grabber" << std::endl;
+
+	unique_lock<mutex> lock2(mMutexState);
+	mTrackingState = mpTracker->mState;
+	mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+	mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+	return Tcw;
+}
+
 
 void System::ActivateLocalizationMode()
 {
@@ -371,6 +439,7 @@ void System::Reset()
 void System::ResetActiveMap()
 {
 	unique_lock<mutex> lock(mMutexReset);
+	mpLoopCloser->RequestResetActiveMap(mpAtlas->GetCurrentMap());
 	mbResetActiveMap = true;
 }
 

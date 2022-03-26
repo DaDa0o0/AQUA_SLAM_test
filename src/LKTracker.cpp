@@ -6,7 +6,10 @@
 #include "Frame.h"
 #include "MapPoint.h"
 #include "KeyFrame.h"
+#include "FrameKLT.h"
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/features2d.hpp>
 namespace ORB_SLAM3
 {
 LKTracker::LKTracker()
@@ -176,6 +179,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> LKTracker::trackImage(d
 	if (1) {
 		//rejectWithF();
 		ROS_DEBUG("set mask begins");
+		// set a
 		setMask();
 
 		ROS_DEBUG("detect feature begins");
@@ -193,6 +197,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> LKTracker::trackImage(d
 			n_pts.clear();
 		}
 
+		// add new points
 		for (auto &p: n_pts) {
 			cur_pts.push_back(p);
 			ids.push_back(n_id++);
@@ -285,6 +290,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> LKTracker::trackImage(d
 		velocity_y = pts_velocity[i].y;
 
 		Eigen::Matrix<double, 7, 1> xyz_uv_velocity;
+		// ??? difference between cur_un_pts and cur_pts
 		xyz_uv_velocity << x, y, z, p_u, p_v, velocity_x, velocity_y;
 		featureFrame[feature_id].emplace_back(camera_id, xyz_uv_velocity);
 	}
@@ -361,6 +367,7 @@ void LKTracker::setMask()
 	mask = cv::Mat(row, col, CV_8UC1, cv::Scalar(255));
 
 	// prefer to keep features that are tracked for long time
+	//(tracked_times, (point_2d, id))
 	vector<pair<int, pair<cv::Point2f, int>>> cnt_pts_id;
 
 	for (unsigned int i = 0; i < cur_pts.size(); i++)
@@ -378,6 +385,7 @@ void LKTracker::setMask()
 	track_cnt.clear();
 
 	for (auto &it: cnt_pts_id) {
+		// it.second.first 2d-point, pixel position of
 		if (mask.at<uchar>(it.second.first) == 255) {
 			cur_pts.push_back(it.second.first);
 			ids.push_back(it.second.second);
@@ -662,6 +670,366 @@ void LKTracker::drawTrackFrame(Frame &cur_frame, const Frame &prev_frame, cv::Ma
 		cv::circle(result_prev, p, 3, cv::Scalar(255, 0, 0), 1);
 	}
 	cv::hconcat(result_prev, result_cur, result);
+}
+bool LKTracker::TrackReferenceKeyFrameKLT(KeyFrame *pKF, const Frame &cur_frame)
+{
+	/*matching steps
+	 * 1. get pixel position of map points on previous frame and their prediction on current image
+	 * 2. track pixel position of map points
+	 * 3. link orb feature points extracted on current image to tracked points
+	 * 4. adjust orb feature point position
+	 * 5. update orb feature desciptor(optional)
+	 * */
+
+
+	cv::Mat cur_img_rgb = cur_frame.imgLeft.clone();
+	cv::Mat prev_img_rgb = pKF->imgLeft.clone();
+	if (cur_img_rgb.channels() > 1) {
+		cv::cvtColor(cur_img_rgb, cur_img, cv::COLOR_BGR2GRAY);
+	}
+	if (prev_img_rgb.channels() > 1) {
+		cv::cvtColor(prev_img_rgb, prev_img, cv::COLOR_BGR2GRAY);
+	}
+
+	prev_pts.clear();
+	cur_pts.clear();
+	vector<int> prev_feature_ids;
+	vector<int> map_point_ids;
+
+
+	// get camera pose
+	int nmatches = 0;
+	Eigen::Isometry3d T_cj_c0, T_ci_c0, T_c0_cj, T_c0_ci;
+	cv::Mat Tcw, Tlw;
+	Tcw = cur_frame.mTcw.clone();
+	// Tcw
+	Tlw = pKF->GetPose();
+	if (!Tcw.empty()) {
+//		cv2Eigen_3d(Tcw, T_cj_c0);
+		cv::cv2eigen(Tcw, T_cj_c0.matrix());
+	}
+	else {
+		ROS_ERROR_STREAM('LK_Tracker: cannot get current camera pose!');
+		return false;
+	}
+	T_c0_cj = T_cj_c0.inverse();
+	if (!Tlw.empty()) {
+//		cv2Eigen_3d(Tlw, T_ci_c0);
+		cv::cv2eigen(Tlw, T_ci_c0.matrix());
+	}
+	else {
+		ROS_ERROR_STREAM('LK_Tracker: cannot get previous camera pose!');
+		return false;
+	}
+	T_c0_ci = T_ci_c0.inverse();
+
+	//get pixel position of map points on previous frame and their prediction on current image
+	for (int i = 0; i < pKF->N; i++) {
+		MapPoint *pMP = pKF->GetMapPoint(i);
+		if (pMP) {
+			if (!pMP->isBad()) {
+				//get map point 3D position in camera0 frame
+				cv::Mat p_w_cv = pMP->GetWorldPos();
+				//get map point 3D position in current camera frame
+				Eigen::Vector3d p_c0(p_w_cv.at<float>(0), p_w_cv.at<float>(1), p_w_cv.at<float>(2));
+				Eigen::Vector3d p_cj = T_cj_c0 * p_c0;
+				cv::Mat p_c_cv = (cv::Mat_<float>(3, 1) << p_cj.x(), p_cj.y(), p_cj.z());
+				//get pixel position on current image and previous image
+				cv::Point2f uv_cur = cur_frame.mpCamera->project(p_c_cv);
+				if (uv_cur.x < cur_frame.mnMinX || uv_cur.x > cur_frame.mnMaxX) {
+					continue;
+				}
+				if (uv_cur.y < cur_frame.mnMinY || uv_cur.y > cur_frame.mnMaxY) {
+					continue;
+				}
+				cur_pts.push_back(uv_cur);
+
+				// add points
+				if (i < pKF->NLeft || pKF->NLeft == -1) {
+					cv::Point2f uv_pre_l = pKF->mvKeys[i].pt;
+					prev_pts.push_back(uv_pre_l);
+				}
+				else {
+					cv::Point2f uv_pre_r = pKF->mvKeysRight[i].pt;
+					//todo_lktracker handle previous right
+//					prev_pts.push_back(uv_pre_r);
+				}
+
+				prev_feature_ids.push_back(i);
+
+			}
+		}
+	}
+
+	// 2. track pixel position of map points
+	/*todo_lktracker
+	 * -add cur left to previous right
+	 * -only match cur left to cur left here
+	 */
+	vector<uchar> status;
+	vector<float> matching_err;
+	cv::calcOpticalFlowPyrLK(prev_img,
+	                         cur_img,
+	                         prev_pts,
+	                         cur_pts,
+	                         status,
+	                         matching_err,
+	                         cv::Size(15, 15),
+	                         1,
+	                         cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
+	                         cv::OPTFLOW_USE_INITIAL_FLOW);
+	int succ_num = 0;
+	for (size_t i = 0; i < status.size(); i++) {
+		if (status[i]) {
+			succ_num++;
+		}
+	}
+	if (succ_num < 10) {
+		cv::calcOpticalFlowPyrLK(prev_img,
+		                         cur_img,
+		                         prev_pts,
+		                         cur_pts,
+		                         status,
+		                         matching_err,
+		                         cv::Size(21, 21),
+		                         3);
+	}
+//	ROS_INFO_STREAM("LKTracker: first tracked points =" << succ_num);
+
+	if (FLOW_BACK) {
+		vector<uchar> reverse_status;
+		vector<cv::Point2f> reverse_pts = prev_pts;
+		cv::calcOpticalFlowPyrLK(cur_img,
+		                         prev_img,
+		                         cur_pts,
+		                         reverse_pts,
+		                         reverse_status,
+		                         matching_err,
+		                         cv::Size(15, 15),
+		                         3,
+		                         cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01),
+		                         cv::OPTFLOW_USE_INITIAL_FLOW);
+		//cv::calcOpticalFlowPyrLK(cur_img, prev_img, cur_pts, reverse_pts, reverse_status, err, cv::Size(21, 21), 3);
+//		succ_num = 0;
+//		for (size_t i = 0; i < reverse_status.size(); i++) {
+//			if (reverse_status[i]) {
+//				succ_num++;
+//			}
+//		}
+//		ROS_INFO_STREAM("LKTracker: BackFlow tracked points =" << succ_num);
+		for (size_t i = 0; i < status.size(); i++) {
+			double dis = distance(prev_pts[i], reverse_pts[i]);
+//			ROS_INFO_STREAM("LKTracker: BackFlow tracked points distance=" << dis);
+			if (status[i] && reverse_status[i] && dis <= 1.0) {
+				status[i] = 1;
+			}
+			else {
+				status[i] = 0;
+			}
+		}
+//		succ_num = 0;
+//		for (size_t i = 0; i < status.size(); i++) {
+//			if (status[i]) {
+//				succ_num++;
+//			}
+//		}
+//		ROS_INFO_STREAM("LKTracker: Foward-BackFlow tracked points =" << succ_num);
+	}
+
+	//3. link orb feature points extracted on current image to tracked points
+	//4. adjust orb feature point position
+//	for (int i = 0; i < status.size(); i++) {
+//		if (status[i]) {
+//			cv::Point2f uv_cur_tracked = cur_pts[i];
+//			unsigned long best_index = 0;
+//			double best_distance = 256;
+//			auto indices = cur_frame.GetFeaturesInArea(uv_cur_tracked.x, uv_cur_tracked.y, 30);
+//			if (indices.empty()) {
+//				status[i] = 0;
+//				continue;
+//			}
+//			for (auto index: indices) {
+//				if (i < cur_frame.Nleft || cur_frame.Nleft == -1) {
+//					cv::Point2f uv_cur_orb = cur_frame.mvKeys[i].pt;
+//					double dis = distance(uv_cur_tracked, uv_cur_orb);
+//					if (dis < best_distance) {
+//						best_index = i;
+//						best_distance = dis;
+//					}
+//				}
+//			}
+//			if (best_index == 0) {
+//				status[i] = 0;
+//				continue;
+//			}
+//
+//			cur_frame.mvpMapPoints[best_index] = prev_frame.mvpMapPoints[prev_feature_ids[i]];
+//			cur_frame.mvKeys[best_index].pt = uv_cur_tracked;
+//			nmatches++;
+//		}
+//	}
+
+//	ROS_INFO_STREAM("LKTracker: final tracked points =" << nmatches);
+
+	// draw and publish track result
+//	drawTrackFrame(cur_frame, prev_frame, imTrack);
+//	std_msgs::Header header; // empty header
+//	header.stamp = ros::Time::now();
+//	cv_bridge::CvImage img_bridge(header, sensor_msgs::image_encodings::BGR8, imTrack);
+//	pTrack_img_pub->publish(img_bridge.toImageMsg());
+
+	return nmatches > 10;
+}
+bool LKTracker::InitializeFrame(Frame &cur_f)
+{
+//	for (int i = 0; i < cur_f.N; i++) {
+//		float z = cur_f.mvDepth[i];
+//		if (z > 0) {
+//			// x3D.at<fload>(col,row)
+//			cv::Mat x3D = cur_f.UnprojectStereo(i);
+//			// calculate the map point in world coordinate
+//			MapPoint *pNewMP = new MapPoint(x3D, pKFini, mpAtlas->GetCurrentMap());
+//			pNewMP->AddObservation(pKFini, i);
+//			pKFini->AddMapPoint(pNewMP, i);
+//			pNewMP->ComputeDistinctiveDescriptors();
+//			pNewMP->UpdateNormalAndDepth();
+//			mpAtlas->AddMapPoint(pNewMP);
+//
+//			mCurrentFrame.mvpMapPoints[i] = pNewMP;
+//		}
+//	}
+}
+void LKTracker::DetectORBPoints(FrameKLT &f)
+{
+
+}
+void LKTracker::DetectFeature(FrameKLT &f, int max_num)
+{
+	cv::Mat img_l = f.imgLeft.clone(), img_r = f.imgRight.clone();
+	if (img_l.channels() > 1) {
+		cv::cvtColor(img_l, img_l, cv::COLOR_BGR2GRAY);
+	}
+	if (img_r.channels() > 1) {
+		cv::cvtColor(img_r, img_r, cv::COLOR_BGR2GRAY);
+	}
+	cv::Ptr<cv::ORB> detector = cv::ORB::create(max_num * 5);
+	vector<cv::KeyPoint> kp_l, kp_r;
+	detector->detect(img_l, kp_l);
+	detector->detect(img_r, kp_r);
+	ssc(kp_l, max_num, 0.1, img_l.cols, img_r.rows, f.mKP_l);
+	ssc(kp_r, max_num, 0.1, img_r.cols, img_r.rows, f.mKP_r);
+
+}
+void LKTracker::ComputeFeatureDescriptor(FrameKLT &f, int max_num)
+{
+	cv::Mat img_l = f.imgLeft.clone(), img_r = f.imgRight.clone();
+	if (img_l.channels() > 1) {
+		cv::cvtColor(img_l, img_l, cv::COLOR_BGR2GRAY);
+	}
+	if (img_r.channels() > 1) {
+		cv::cvtColor(img_r, img_r, cv::COLOR_BGR2GRAY);
+	}
+
+	cv::Ptr<cv::ORB> detector = cv::ORB::create(max_num);
+
+	detector->compute(img_l, f.mKP_l, f.mDsp_l);
+	detector->compute(img_r, f.mKP_r, f.mDsp_r);
+}
+
+void LKTracker::ssc(vector<cv::KeyPoint> keyPoints, int numRetPoints,
+                    float tolerance, int cols, int rows, vector<cv::KeyPoint> &out)
+{
+	// several temp expression variables to simplify solution equation
+	int exp1 = rows + cols + 2 * numRetPoints;
+	long long exp2 =
+		((long long)4 * cols + (long long)4 * numRetPoints +
+			(long long)4 * rows * numRetPoints + (long long)rows * rows +
+			(long long)cols * cols - (long long)2 * rows * cols +
+			(long long)4 * rows * cols * numRetPoints);
+	double exp3 = sqrt(exp2);
+	double exp4 = numRetPoints - 1;
+
+	double sol1 = -round((exp1 + exp3) / exp4); // first solution
+	double sol2 = -round((exp1 - exp3) / exp4); // second solution
+
+	// binary search range initialization with positive solution
+	int high = (sol1 > sol2) ? sol1 : sol2;
+	int low = floor(sqrt((double)keyPoints.size() / numRetPoints));
+	low = max(1, low);
+
+	int width;
+	int prevWidth = -1;
+
+	vector<int> ResultVec;
+	bool complete = false;
+	unsigned int K = numRetPoints;
+	unsigned int Kmin = round(K - (K * tolerance));
+	unsigned int Kmax = round(K + (K * tolerance));
+
+	vector<int> result;
+	result.reserve(keyPoints.size());
+	while (!complete) {
+		width = low + (high - low) / 2;
+		if (width == prevWidth ||
+			low >
+				high) { // needed to reassure the same radius is not repeated again
+			ResultVec = result; // return the keypoints from the previous iteration
+			break;
+		}
+		result.clear();
+		double c = (double)width / 2.0; // initializing Grid
+		int numCellCols = floor(cols / c);
+		int numCellRows = floor(rows / c);
+		vector<vector<bool>> coveredVec(numCellRows + 1,
+		                                vector<bool>(numCellCols + 1, false));
+
+		for (unsigned int i = 0; i < keyPoints.size(); ++i) {
+			int row =
+				floor(keyPoints[i].pt.y /
+					c); // get position of the cell current point is located at
+			int col = floor(keyPoints[i].pt.x / c);
+			if (coveredVec[row][col] == false) { // if the cell is not covered
+				result.push_back(i);
+				int rowMin = ((row - floor(width / c)) >= 0)
+				             ? (row - floor(width / c))
+				             : 0; // get range which current radius is covering
+				int rowMax = ((row + floor(width / c)) <= numCellRows)
+				             ? (row + floor(width / c))
+				             : numCellRows;
+				int colMin =
+					((col - floor(width / c)) >= 0) ? (col - floor(width / c)) : 0;
+				int colMax = ((col + floor(width / c)) <= numCellCols)
+				             ? (col + floor(width / c))
+				             : numCellCols;
+				for (int rowToCov = rowMin; rowToCov <= rowMax; ++rowToCov) {
+					for (int colToCov = colMin; colToCov <= colMax; ++colToCov) {
+						if (!coveredVec[rowToCov][colToCov]) {
+							coveredVec[rowToCov][colToCov] =
+								true;
+						} // cover cells within the square bounding box with width
+						// w
+					}
+				}
+			}
+		}
+
+		if (result.size() >= Kmin && result.size() <= Kmax) { // solution found
+			ResultVec = result;
+			complete = true;
+		}
+		else if (result.size() < Kmin) {
+			high = width - 1; // update binary search range
+		}
+		else {
+			low = width + 1;
+		}
+		prevWidth = width;
+	}
+	// retrieve final keypoints
+
+	for (unsigned int i = 0; i < ResultVec.size(); i++)
+		out.push_back(keyPoints[ResultVec[i]]);
+
 }
 
 }

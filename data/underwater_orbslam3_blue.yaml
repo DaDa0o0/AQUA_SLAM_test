@@ -42,7 +42,7 @@ ImageScale: 1.0
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 700
+ORBextractor.nFeatures: 1000
 
 # ORB Extractor: Scale factor between levels in the scale pyramid
 ORBextractor.scaleFactor: 1.2
@@ -79,6 +79,7 @@ Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
 Optimizer.KF_num_for_init: 30
 Optimizer.calibrated: 1 # 0 or 1
+Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
 
@@ -130,7 +131,7 @@ T_dvl_c: !!opencv-matrix
           0,  0,   0,    1 ]
 
 DenseMapper:
-  enable: 1
+  enable: 0
   P1: 200.0
   P2: 400.0
   correlation_window_size: 21

@@ -37,8 +37,8 @@ int main(int argc, char **argv)
 
 
 	image_transport::TransportHints hints("compressed");
-	image_transport::SubscriberFilter img_l_sub(it, "/img_l", 50, hints);
-	image_transport::SubscriberFilter img_r_sub(it, "/img_r", 50, hints);
+	image_transport::SubscriberFilter img_l_sub(it, "/camera/left/image_dehazed", 50, hints);
+	image_transport::SubscriberFilter img_r_sub(it, "/camera/right/image_dehazed", 50, hints);
 	typedef sync_policies::ApproximateTime<Image, Image> Img_sync;
 	Synchronizer<Img_sync> img_sync(Img_sync(50), img_l_sub, img_r_sub);
 	img_sync.registerCallback(boost::bind(&img_callback, _1, _2));

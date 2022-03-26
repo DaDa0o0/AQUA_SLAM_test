@@ -2505,7 +2505,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, vector<Ke
 	bool bWriteStats = false;
 
 	// Get Map Mutex
-	unique_lock<mutex> lock(pCurrentMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pCurrentMap->mMutexMapUpdate);
 
 	if (!vToErase.empty()) {
 
@@ -3002,7 +3002,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map *pMap
 	}
 
 	// Get Map Mutex
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	if (!vToErase.empty()) {
 		map<KeyFrame *, int> mspInitialConnectedKFs;
@@ -3605,7 +3605,7 @@ void Optimizer::LocalDVLBundleAdjustment(KeyFrame *pKF, bool *pbStopFlag, Map *p
 	}
 
 	// Get Map Mutex
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	if (!vToErase.empty()) {
 		map<KeyFrame *, int> mspInitialConnectedKFs;
@@ -4178,7 +4178,7 @@ void Optimizer::OptimizeEssentialGraph(Map *pMap, KeyFrame *pLoopKF, KeyFrame *p
 	optimizer.computeActiveErrors();
 	float errEnd = optimizer.activeRobustChi2();
 	//cout << "err_0/err_end: " << err0 << "/" << errEnd << endl;
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	// SE3 Pose Recovering. Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
 	for (size_t i = 0; i < vpKFs.size(); i++) {
@@ -4548,7 +4548,7 @@ void Optimizer::OptimizeEssentialGraph6DoF(KeyFrame *pCurKF,
 
 	Verbose::PrintMess("Opt_Essential: Finish the optimization", Verbose::VERBOSITY_DEBUG);
 
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	Verbose::PrintMess("Opt_Essential: Apply the new pose to the KFs", Verbose::VERBOSITY_DEBUG);
 	// SE3 Pose Recovering. Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
@@ -4674,11 +4674,8 @@ void Optimizer::OptimizeEssentialGraph6DoF(KeyFrame *pCurKF,
 	Verbose::PrintMess("Opt_Essential: End of the optimization", Verbose::VERBOSITY_DEBUG);
 }
 
-void Optimizer::OptimizeEssentialGraph(KeyFrame *pCurKF,
-                                       vector<KeyFrame *> &vpFixedKFs,
-                                       vector<KeyFrame *> &vpFixedCorrectedKFs,
-                                       vector<KeyFrame *> &vpNonFixedKFs,
-                                       vector<MapPoint *> &vpNonCorrectedMPs)
+void Optimizer::OptimizeEssentialGraph(KeyFrame *pCurKF, vector<KeyFrame *> &vpFixedKFs, vector<KeyFrame *> &vpFixedCorrectedKFs,
+                                       vector<KeyFrame *> &vpNonFixedKFs, vector<MapPoint *> &vpNonCorrectedMPs, bool &bFinished, bool* bReSet)
 {
 	Verbose::PrintMess("Opt_Essential: There are " + to_string(vpFixedKFs.size()) + " KFs fixed in the merged map",
 	                   Verbose::VERBOSITY_DEBUG);
@@ -4941,7 +4938,13 @@ void Optimizer::OptimizeEssentialGraph(KeyFrame *pCurKF,
 
 	Verbose::PrintMess("Opt_Essential: Finish the optimization", Verbose::VERBOSITY_DEBUG);
 
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate, std::defer_lock);
+	while(!lock.try_lock_for(std::chrono::milliseconds(300))){
+		if(*bReSet){
+			bFinished=false;
+			return;
+		}
+	}
 
 	Verbose::PrintMess("Opt_Essential: Apply the new pose to the KFs", Verbose::VERBOSITY_DEBUG);
 	// SE3 Pose Recovering. Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
@@ -5241,7 +5244,7 @@ void Optimizer::OptimizeEssentialGraph(KeyFrame *pCurKF,
 	optimizer.setVerbose(false);
 	optimizer.optimize(20);
 
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	// SE3 Pose Recovering. Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
 	for (size_t i = 0; i < vpKFs.size(); i++) {
@@ -6526,7 +6529,7 @@ void Optimizer::LocalInertialBA(KeyFrame *pKF, bool *pbStopFlag, Map *pMap, bool
 	}
 
 	// Get Map Mutex and erase outliers
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	// TODO: Some convergence problems have been detected here
 	//cout << "err0 = " << err << endl;
@@ -7655,7 +7658,7 @@ void Optimizer::MergeBundleAdjustmentVisual(KeyFrame *pCurrentKF,
 	}
 
 	// Get Map Mutex
-	unique_lock<mutex> lock(pCurrentKF->GetMap()->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pCurrentKF->GetMap()->mMutexMapUpdate);
 
 	if (!vToErase.empty()) {
 		for (size_t i = 0; i < vToErase.size(); i++) {
@@ -8079,7 +8082,9 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pMainKF,
 			+ " sterero bad edges", Verbose::VERBOSITY_DEBUG);
 
 	// Get Map Mutex
-	unique_lock<mutex> lock(pMainKF->GetMap()->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMainKF->GetMap()->mMutexMapUpdate,std::defer_lock);
+	if(!lock.try_lock())
+		return;
 
 	if (!vToErase.empty()) {
 		map<KeyFrame *, int> mpMPs_in_KF;
@@ -8339,6 +8344,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pMainKF,
 		pMPi->UpdateNormalAndDepth();
 	}
 	//cout << "End to update MapPoint" << endl;
+	lock.unlock();
 }
 
 void Optimizer::MergeInertialBA(KeyFrame *pCurrKF,
@@ -8813,7 +8819,7 @@ void Optimizer::MergeInertialBA(KeyFrame *pCurrKF,
 	}
 
 	// Get Map Mutex and erase outliers
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 	if (!vToErase.empty()) {
 		for (size_t i = 0; i < vToErase.size(); i++) {
 			KeyFrame *pKFi = vToErase[i].first;
@@ -10734,7 +10740,7 @@ void Optimizer::OptimizeEssentialGraph4DoF(Map *pMap, KeyFrame *pLoopKF, KeyFram
 	optimizer.computeActiveErrors();
 	optimizer.optimize(20);
 
-	unique_lock<mutex> lock(pMap->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
 
 	// SE3 Pose Recovering. Sim3:[sR t;0 1] -> SE3:[R t/s;0 1]
 	for (size_t i = 0; i < vpKFs.size(); i++) {

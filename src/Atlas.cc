@@ -64,17 +64,17 @@ void Atlas::CreateNewMap()
     unique_lock<mutex> lock(mMutexAtlas);
     cout << "Creation of new map with id: " << Map::nNextId << endl;
     if(mpCurrentMap){
-        //cout << "Exits current map " << endl;
+        cout << "Exits current map " << endl;
         if(!mspMaps.empty() && mnLastInitKFidMap < mpCurrentMap->GetMaxKFid())
             mnLastInitKFidMap = mpCurrentMap->GetMaxKFid()+1; //The init KF is the next of current maximum
 
         mpCurrentMap->SetStoredMap();
-        //cout << "Saved map with ID: " << mpCurrentMap->GetId() << endl;
+        cout << "Saved map with ID: " << mpCurrentMap->GetId() << endl;
 
         //if(mHasViewer)
         //    mpViewer->AddMapToCreateThumbnail(mpCurrentMap);
     }
-    //cout << "Creation of new map with last KF id: " << mnLastInitKFidMap << endl;
+//    cout << "Creation of new map with last KF id: " << mnLastInitKFidMap << endl;
 	cv::RNG rng(mnLastInitKFidMap);
 	float r	= rng.uniform(0.0,1.0);
 	float g	= rng.uniform(0.0,1.0);
@@ -85,16 +85,23 @@ void Atlas::CreateNewMap()
     mspMaps.insert(mpCurrentMap);
 }
 
-void Atlas::ChangeMap(Map* pMap)
+void Atlas::ChangeMap(Map *pMapFrom, Map *pMapTo)
 {
     unique_lock<mutex> lock(mMutexAtlas);
-    cout << "Chage to map with id: " << pMap->GetId() << endl;
-    if(mpCurrentMap){
-        mpCurrentMap->SetStoredMap();
+    cout << "Chage map from "<<pMapFrom->GetId()<<" to : " << pMapTo->GetId() << endl;
+    if(pMapFrom){
+		pMapFrom->SetStoredMap();
     }
 
-    mpCurrentMap = pMap;
-    mpCurrentMap->SetCurrentMap();
+	if(mpCurrentMap==pMapFrom)
+	{
+		mpCurrentMap = pMapTo;
+		mpCurrentMap->SetCurrentMap();
+	}
+	else{
+		ROS_ERROR_STREAM("try to merge inactive maps!!");
+	}
+
 }
 
 unsigned long int Atlas::GetLastInitKFid()
@@ -200,6 +207,18 @@ void Atlas::clearMap()
     unique_lock<mutex> lock(mMutexAtlas);
     mpCurrentMap->clear();
 }
+void Atlas::clearSmallMaps()
+{
+//	unique_lock<mutex> lock(mMutexAtlas);
+	auto all_Maps = GetAllMaps();
+	for(auto pMap:all_Maps)
+	{
+		auto all_KFs = pMap->GetAllKeyFrames();
+		if (all_KFs.size()<5){
+			pMap->clear();
+		}
+	}
+}
 
 void Atlas::clearAtlas()
 {
@@ -217,29 +236,35 @@ void Atlas::clearAtlas()
 Map* Atlas::GetCurrentMap()
 {
     unique_lock<mutex> lock(mMutexAtlas);
-    if(!mpCurrentMap)
-        CreateNewMap();
-    while(mpCurrentMap->IsBad())
-        usleep(3000);
+    if(!mpCurrentMap||mpCurrentMap->IsBad())
+	{
+		lock.unlock();
+		CreateNewMap();
+		ROS_ERROR_STREAM("current map bad");
+	}
+
+//    while(mpCurrentMap->IsBad())
+//        usleep(3000);
 
     return mpCurrentMap;
 }
 
 void Atlas::SetMapBad(Map* pMap)
 {
+//	usleep(500);
     mspMaps.erase(pMap);
-    pMap->SetBad();
 
     mspBadMaps.insert(pMap);
 }
 
 void Atlas::RemoveBadMaps()
 {
-    /*for(Map* pMap : mspBadMaps)
+    for(Map* pMap : mspBadMaps)
     {
-        delete pMap;
-        pMap = static_cast<Map*>(NULL);
-    }*/
+//		clearMap(pMap);
+		pMap->SetBad();
+    }
+	unique_lock<mutex> lock(mMutexAtlas);
     mspBadMaps.clear();
 }
 
@@ -382,6 +407,20 @@ long unsigned int Atlas::GetNumLivedMP() {
     }
 
     return num;
+}
+void Atlas::clearMap(Map *pMap)
+{
+	unique_lock<mutex> lock(mMutexAtlas);
+	if(pMap&&!pMap->IsBad()){
+		pMap->clear();
+//		pMap->SetBad();
+//		if(mspMaps.find(pMap)!=mspMaps.end()){
+//			mspMaps.erase(mspMaps.find(pMap));
+//		}
+		cout<<"clear map: "<<pMap->GetId()<<endl;
+	}
+	else
+		ROS_ERROR_STREAM("fail to clear map!!!");
 }
 
 } //namespace ORB_SLAM3

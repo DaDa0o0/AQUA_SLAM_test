@@ -31,6 +31,8 @@
 #include <nav_msgs/Odometry.h>
 //#include <ds_sensor_msgs/Dvl.h>
 #include <image_transport/image_transport.h>
+#include <waterlinked_a50_ros_driver/DVL.h>
+#include <waterlinked_a50_ros_driver/DVLBeam.h>
 
 
 #include<opencv2/core/core.hpp>
@@ -100,8 +102,10 @@ public:
 	{};
 	void GrabDVL(const nav_msgs::OdometryConstPtr &odo);
 //	void GrabDVL2(const ds_sensor_msgs::DvlConstPtr &odo);
+	void GrabDVL2(const waterlinked_a50_ros_driver::DVLConstPtr &msg);
 
 	queue<nav_msgs::OdometryConstPtr> dvlBuf;
+	queue<waterlinked_a50_ros_driver::DVLConstPtr> dvlBuf2;
 //	queue<ds_sensor_msgs::DvlConstPtr> dvlBuf2;
 	std::mutex mBufMutex;
 };
@@ -117,6 +121,7 @@ public:
 	void GrabImageRight(const sensor_msgs::ImageConstPtr &msg);
 	cv::Mat GetImage(const sensor_msgs::ImageConstPtr &img_msg);
 	void SyncWithImu();
+	void SyncWithImu2();
 
 	queue<sensor_msgs::ImageConstPtr> imgLeftBuf, imgRightBuf;
 	std::mutex mBufMutexLeft, mBufMutexRight;
@@ -141,8 +146,8 @@ int main(int argc, char **argv)
 	bool bEqual = false;
 	if (argc < 4 || argc > 5) {
 		cerr << endl
-			 << "Usage: rosrun ORB_SLAM3 Stereo_Inertial path_to_vocabulary path_to_settings do_rectify [do_equalize]"
-			 << endl;
+		     << "Usage: rosrun ORB_SLAM3 Stereo_Inertial path_to_vocabulary path_to_settings do_rectify [do_equalize]"
+		     << endl;
 		ros::shutdown();
 		return 1;
 	}
@@ -174,26 +179,27 @@ int main(int argc, char **argv)
 	ros::Subscriber sub_imu = n.subscribe(imu_topic, 100, &ImuGrabber::GrabImu, &imugb);
 	// flowave/falcon DVL
 	ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL, &dvlgb);
+	ros::Subscriber sub_dvl2 = n.subscribe("/dvl/data", 100, &DVLGrabber::GrabDVL2, &dvlgb);
 	// rovco DVL
 //	ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL2, &dvlgb);
 	image_transport::ImageTransport it(n);
 	auto it_sub_l = it.subscribe(img_l_topic,
-								 100,
-								 &ImageGrabber::GrabImageLeft,
-								 &igb,
-								 image_transport::TransportHints("compressed"));
+	                             100,
+	                             &ImageGrabber::GrabImageLeft,
+	                             &igb,
+	                             image_transport::TransportHints("compressed"));
 	auto it_sub_r = it.subscribe(img_r_topic,
-								 100,
-								 &ImageGrabber::GrabImageRight,
-								 &igb,
-								 image_transport::TransportHints("compressed"));
+	                             100,
+	                             &ImageGrabber::GrabImageRight,
+	                             &igb,
+	                             image_transport::TransportHints("compressed"));
 
 	ros::Publisher img_test_pub = n.advertise<sensor_msgs::Image>("/ORBSLAM3_tightly/img_test", 10);
 	pimg_test_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(img_test_pub));
 //	ros::Subscriber sub_img_left = n.subscribe("/suv3d/left/rgb_rect", 100, &ImageGrabber::GrabImageLeft, &igb);
 //	ros::Subscriber sub_img_right = n.subscribe("/suv3d/right/rgb_rect", 100, &ImageGrabber::GrabImageRight, &igb);
 
-	std::thread sync_thread(&ImageGrabber::SyncWithImu, &igb);
+	std::thread sync_thread(&ImageGrabber::SyncWithImu2, &igb);
 
 	ros::spin();
 
@@ -286,7 +292,8 @@ void ImageGrabber::SyncWithImu()
 			// cannot find image with good timestamp diff, waiting for the following image
 			if ((tImLeft - tImRight) > maxTimeDiff || (tImRight - tImLeft) > maxTimeDiff) {
 //				std::cout << "big time difference" << std::endl;
-				BOOST_LOG_TRIVIAL(warning) << "big time difference bwtween left and right img\nleft img:"<<tImLeft<<"\nright img:"<<tImRight;
+				BOOST_LOG_TRIVIAL(warning) << "big time difference bwtween left and right img\nleft img:" << tImLeft
+				                           << "\nright img:" << tImRight;
 				continue;
 			}
 
@@ -319,8 +326,8 @@ void ImageGrabber::SyncWithImu()
 					double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
 					cv::Point3f acc(0, 0, 0);
 					cv::Point3f gyr(mpImuGb->imuBuf.front()->angular_velocity.x,
-									mpImuGb->imuBuf.front()->angular_velocity.y,
-									mpImuGb->imuBuf.front()->angular_velocity.z);
+					                mpImuGb->imuBuf.front()->angular_velocity.y,
+					                mpImuGb->imuBuf.front()->angular_velocity.z);
 					vImuMeas.push_back(ORB_SLAM3::IMU::ImuPoint(acc, gyr, t));
 					mpImuGb->imuBuf.pop();
 				}
@@ -332,8 +339,8 @@ void ImageGrabber::SyncWithImu()
 				while (!mpDvlGb->dvlBuf.empty() && mpDvlGb->dvlBuf.front()->header.stamp.toSec() <= tImLeft) {
 					double t = mpDvlGb->dvlBuf.front()->header.stamp.toSec();
 					cv::Point3f vel(mpDvlGb->dvlBuf.front()->twist.twist.linear.x,
-									mpDvlGb->dvlBuf.front()->twist.twist.linear.y,
-									mpDvlGb->dvlBuf.front()->twist.twist.linear.z);
+					                mpDvlGb->dvlBuf.front()->twist.twist.linear.y,
+					                mpDvlGb->dvlBuf.front()->twist.twist.linear.z);
 					vDVLMeas.push_back(ORB_SLAM3::IMU::DvlPoint(vel, t));
 					mpDvlGb->dvlBuf.pop();
 				}
@@ -360,18 +367,18 @@ void ImageGrabber::SyncWithImu()
 			if (!vDVLMeas.empty() && !vImuMeas.empty()) {
 				if (vImuMeas[0].t >= vDVLMeas[0].t) {
 					vImuMeas.insert(vImuMeas.begin(),
-									ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[0].w, vDVLMeas[0].t));
+					                ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[0].w, vDVLMeas[0].t));
 				}
 				else if (vImuMeas[vImuMeas.size() - 1].t <= vDVLMeas[0].t) {
 					vImuMeas.push_back(ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v,
-																vImuMeas[vImuMeas.size() - 1].w,
-																vDVLMeas[0].t));
+					                                            vImuMeas[vImuMeas.size() - 1].w,
+					                                            vDVLMeas[0].t));
 				}
 				else {
 					for (int i = 0; i <= vImuMeas.size(); i++) {
 						if (vImuMeas[i].t > vDVLMeas[0].t) {
 							vImuMeas.insert(vImuMeas.begin() + i,
-											ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[i].w, vDVLMeas[0].t));
+							                ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[i].w, vDVLMeas[0].t));
 							break;
 						}
 					}
@@ -384,21 +391,213 @@ void ImageGrabber::SyncWithImu()
 //			}
 
 			BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
-									<< "Track Stereo!\n"
-									<< "left image time: " << tImLeft;
+			                        << "Track Stereo!\n"
+			                        << "left image time: " << tImLeft;
 			for (int i = 0; i < vImuMeas.size(); ++i) {
 				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
-										<< "IMU[" << i << "] time: "
-										<< vImuMeas[i].t << "\n"
-										<< "a: " << vImuMeas[i].a << "\n"
-										<< "w: " << vImuMeas[i].w << "\n";
+				                        << "IMU[" << i << "] time: "
+				                        << vImuMeas[i].t << "\n"
+				                        << "a: " << vImuMeas[i].a << "\n"
+				                        << "w: " << vImuMeas[i].w << "\n";
 			}
 			for (int i = 0; i < vDVLMeas.size(); ++i) {
 				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
-										<< "DVL[" << i << "] time: "
-										<< vDVLMeas[i].t << "\n"
-										<< vDVLMeas[i].v << "\n";
+				                        << "DVL[" << i << "] time: "
+				                        << vDVLMeas[i].t << "\n"
+				                        << vDVLMeas[i].v << "\n";
 			}
+			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vImuMeas, !vDVLMeas.empty());
+//			mpSLAM->TrackStereo(imLeft,imRight,tImLeft);
+			std_msgs::Header header;
+			header.stamp = ros::Time::now();
+			cv_bridge::CvImage cv_ptr_test(header, "bgr8", imLeft);
+			pimg_test_pub->publish(cv_ptr_test.toImageMsg());
+
+
+//			std::chrono::milliseconds tSleep(1);
+//			std::this_thread::sleep_for(tSleep);
+		}
+
+	}
+}
+
+void ImageGrabber::SyncWithImu2()
+{
+	const double maxTimeDiff = 0.1;
+	ros::NodeHandle nh;
+	ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
+	while (1) {
+		cv::Mat imLeft, imRight;
+		double tImLeft = 0, tImRight = 0;
+		if (!imgLeftBuf.empty() && !imgRightBuf.empty() && !mpImuGb->imuBuf.empty()) {
+//			mBufMutexLeft.lock();
+			tImLeft = imgLeftBuf.front()->header.stamp.toSec();
+//			mBufMutexLeft.unlock();
+//			mBufMutexRight.lock();
+			tImRight = imgRightBuf.front()->header.stamp.toSec();
+//			mBufMutexRight.unlock();
+
+			this->mBufMutexRight.lock();
+			// right timestamp is too smaller than left
+			while ((tImLeft - tImRight) > maxTimeDiff && imgRightBuf.size() > 1) {
+				cout << "pop right" << endl;
+				imgRightBuf.pop();
+				tImRight = imgRightBuf.front()->header.stamp.toSec();
+			}
+			this->mBufMutexRight.unlock();
+
+			this->mBufMutexLeft.lock();
+			// left timestamp is too smaller than right
+			while ((tImRight - tImLeft) > maxTimeDiff && imgLeftBuf.size() > 1) {
+				cout << "pop left" << endl;
+				imgLeftBuf.pop();
+				tImLeft = imgLeftBuf.front()->header.stamp.toSec();
+			}
+			this->mBufMutexLeft.unlock();
+
+			// cannot find image with good timestamp diff, waiting for the following image
+			if ((tImLeft - tImRight) > maxTimeDiff || (tImRight - tImLeft) > maxTimeDiff) {
+//				std::cout << "big time difference" << std::endl;
+				BOOST_LOG_TRIVIAL(warning) << "big time difference bwtween left and right img\nleft img:" << tImLeft
+				                           << "\nright img:" << tImRight;
+				continue;
+			}
+
+			// keep saving IMU data until the timestamp of lasted IMU data > the timestamp of lasted Image
+			if (tImLeft > mpImuGb->imuBuf.back()->header.stamp.toSec()) {
+//				cout<<"continue waiting for IMU Meas"<<endl;
+//				BOOST_LOG_TRIVIAL(warning) << "continue waiting for IMU Meas";
+				continue;
+			}
+
+
+			this->mBufMutexLeft.lock();
+			imLeft = GetImage(imgLeftBuf.front());
+			imgLeftBuf.pop();
+			this->mBufMutexLeft.unlock();
+
+			this->mBufMutexRight.lock();
+			imRight = GetImage(imgRightBuf.front());
+			imgRightBuf.pop();
+			this->mBufMutexRight.unlock();
+
+			vector<ORB_SLAM3::IMU::ImuPoint> vImuMeas;
+			vector<ORB_SLAM3::IMU::DvlPoint> vDVLMeas;
+			vector<ORB_SLAM3::IMU::GyroDvlPoint> vGyroDVLMeas;
+			mpImuGb->mBufMutex.lock();
+			if (!mpImuGb->imuBuf.empty()) {
+				// Load imu measurements from buffer
+				vImuMeas.clear();
+				// save all IMU data between last Frame and current Frame to current Frame
+				while (!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec() <= tImLeft) {
+					double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
+					cv::Point3f acc(0, 0, 0);
+					cv::Point3f gyr(mpImuGb->imuBuf.front()->angular_velocity.x,
+					                mpImuGb->imuBuf.front()->angular_velocity.y,
+					                mpImuGb->imuBuf.front()->angular_velocity.z);
+					vImuMeas.push_back(ORB_SLAM3::IMU::ImuPoint(acc, gyr, t));
+					vGyroDVLMeas.push_back(ORB_SLAM3::IMU::GyroDvlPoint(gyr.x, gyr.y, gyr.z, 0, 0, 0, 0, 0, 0, 0, t));
+					mpImuGb->imuBuf.pop();
+				}
+			}
+			mpImuGb->mBufMutex.unlock();
+			mpDvlGb->mBufMutex.lock();
+			if (!mpDvlGb->dvlBuf2.empty()) {
+				vDVLMeas.clear();
+				while (!mpDvlGb->dvlBuf2.empty() && mpDvlGb->dvlBuf2.front()->header.stamp.toSec() <= tImLeft) {
+					double t = mpDvlGb->dvlBuf2.front()->header.stamp.toSec();
+//					cv::Point3f vel(mpDvlGb->dvlBuf2.front()->twist.twist.linear.x,
+//					                mpDvlGb->dvlBuf2.front()->twist.twist.linear.y,
+//					                mpDvlGb->dvlBuf2.front()->twist.twist.linear.z);
+					vDVLMeas.push_back(ORB_SLAM3::IMU::DvlPoint(mpDvlGb->dvlBuf2.front()->velocity.x,
+					                                            mpDvlGb->dvlBuf2.front()->velocity.y,
+					                                            mpDvlGb->dvlBuf2.front()->velocity.z,
+					                                            mpDvlGb->dvlBuf2.front()->beams[0].velocity,
+					                                            mpDvlGb->dvlBuf2.front()->beams[1].velocity,
+					                                            mpDvlGb->dvlBuf2.front()->beams[2].velocity,
+					                                            mpDvlGb->dvlBuf2.front()->beams[3].velocity,
+					                                            t));
+					vGyroDVLMeas.push_back(ORB_SLAM3::IMU::GyroDvlPoint(0, 0, 0, mpDvlGb->dvlBuf2.front()->velocity.x,
+					                                                    mpDvlGb->dvlBuf2.front()->velocity.y,
+					                                                    mpDvlGb->dvlBuf2.front()->velocity.z,
+					                                                    mpDvlGb->dvlBuf2.front()->beams[0].velocity,
+					                                                    mpDvlGb->dvlBuf2.front()->beams[1].velocity,
+					                                                    mpDvlGb->dvlBuf2.front()->beams[2].velocity,
+					                                                    mpDvlGb->dvlBuf2.front()->beams[3].velocity,
+					                                                    t));
+					mpDvlGb->dvlBuf2.pop();
+				}
+			}
+			mpDvlGb->mBufMutex.unlock();
+
+			while (vDVLMeas.size() >= 2) {
+				BOOST_LOG_TRIVIAL(warning) << "there are two DVL measurement between Frames!";
+				vDVLMeas.pop_back();
+//				vDVLMeas.clear();
+//				continue;
+			}
+
+			if (vImuMeas.empty()) {
+				BOOST_LOG_TRIVIAL(warning) << "no IMU measurement between Frames!";
+				vImuMeas.clear();
+				continue;
+			}
+
+
+
+			//virtual IMU Meas for DVL
+			// in that virtual Meas, we save velocity to acc
+			if (!vDVLMeas.empty() && !vImuMeas.empty()) {
+				if (vImuMeas[0].t >= vDVLMeas[0].t) {
+					vImuMeas.insert(vImuMeas.begin(),
+					                ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[0].w, vDVLMeas[0].t));
+				}
+				else if (vImuMeas[vImuMeas.size() - 1].t <= vDVLMeas[0].t) {
+					vImuMeas.push_back(ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v,
+					                                            vImuMeas[vImuMeas.size() - 1].w,
+					                                            vDVLMeas[0].t));
+				}
+				else {
+					for (int i = 0; i <= vImuMeas.size(); i++) {
+						if (vImuMeas[i].t > vDVLMeas[0].t) {
+							vImuMeas.insert(vImuMeas.begin() + i,
+							                ORB_SLAM3::IMU::ImuPoint(vDVLMeas[0].v, vImuMeas[i].w, vDVLMeas[0].t));
+							break;
+						}
+					}
+				}
+			}
+
+			//sort by timestamp
+			sort(vGyroDVLMeas.begin(), vGyroDVLMeas.end(),
+			     [](const ORB_SLAM3::IMU::GyroDvlPoint & a, const ORB_SLAM3::IMU::GyroDvlPoint & b) -> bool
+			     {
+				     return a.t < b.t;
+			     });
+
+			// skip image frames without DVL measurement
+//			else
+//			{
+//				continue;
+//			}
+
+			BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
+			                        << "Track Stereo!\n"
+			                        << "left image time: " << tImLeft;
+			for (int i = 0; i < vImuMeas.size(); ++i) {
+				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
+				                        << "IMU[" << i << "] time: "
+				                        << vImuMeas[i].t << "\n"
+				                        << "a: " << vImuMeas[i].a << "\n"
+				                        << "w: " << vImuMeas[i].w << "\n";
+			}
+			for (int i = 0; i < vDVLMeas.size(); ++i) {
+				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
+				                        << "DVL[" << i << "] time: "
+				                        << vDVLMeas[i].t << "\n"
+				                        << vDVLMeas[i].v << "\n";
+			}
+
 			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vImuMeas, !vDVLMeas.empty());
 //			mpSLAM->TrackStereo(imLeft,imRight,tImLeft);
 			std_msgs::Header header;
@@ -420,16 +619,19 @@ void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 //	cout<<"IMU recieved! time:"<<imu_msg->header.stamp.toNSec()<<endl;
 	mBufMutex.lock();
 	Eigen::AngleAxisd r_x(1,
-						  Eigen::Vector3d(imu_msg->angular_velocity.x,
-										  imu_msg->angular_velocity.y,
-										  imu_msg->angular_velocity.z));
+	                      Eigen::Vector3d(imu_msg->angular_velocity.x,
+	                                      imu_msg->angular_velocity.y,
+	                                      imu_msg->angular_velocity.z));
 
 	sensor_msgs::ImuPtr p_new_msg(new sensor_msgs::Imu());
 	p_new_msg->header = imu_msg->header;
 	p_new_msg->angular_velocity = imu_msg->angular_velocity;
-	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z*2;
-	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y*2;
-	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x*2;
+//	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z * 2;
+//	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y * 2;
+//	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x * 2;
+	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
+	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
+	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
 
 
 	Eigen::Quaterniond q_r(1, 0, 0, 0);
@@ -446,9 +648,9 @@ void ImuGrabber::GrabImu2(const nav_msgs::OdometryConstPtr &odo_msg)
 	imu->header = odo_msg->header;
 
 	Eigen::Quaterniond q_r(odo_msg->pose.pose.orientation.w,
-						   odo_msg->pose.pose.orientation.x,
-						   odo_msg->pose.pose.orientation.y,
-						   odo_msg->pose.pose.orientation.z);
+	                       odo_msg->pose.pose.orientation.x,
+	                       odo_msg->pose.pose.orientation.y,
+	                       odo_msg->pose.pose.orientation.z);
 	Eigen::Vector3d t(odo_msg->pose.pose.position.x, odo_msg->pose.pose.position.y, odo_msg->pose.pose.position.z);
 	Eigen::Isometry3d T_e0_ej = Eigen::Isometry3d::Identity();
 	T_e0_ej.rotate(q_r);
@@ -493,6 +695,16 @@ void DVLGrabber::GrabDVL(const nav_msgs::OdometryConstPtr &odo)
 //	cout<<"DVL recieved! time:"<<odo->header.stamp.toNSec()<<endl;
 	mBufMutex.lock();
 	dvlBuf.push(odo);
+	mBufMutex.unlock();
+	return;
+}
+
+void DVLGrabber::GrabDVL2(const waterlinked_a50_ros_driver::DVLConstPtr &msg)
+{
+	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "DVL recieved! time:" << msg->header.stamp.toSec();
+//	cout<<"DVL recieved! time:"<<odo->header.stamp.toNSec()<<endl;
+	mBufMutex.lock();
+	dvlBuf2.push(msg);
 	mBufMutex.unlock();
 	return;
 }

@@ -261,7 +261,7 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/src/DenseMapper.cpp
         ${PROJECT_SOURCE_DIR}/src/cv_bridge.cpp
         ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp
-        ${PROJECT_SOURCE_DIR}/src/LKTracker.cpp)
+        ${PROJECT_SOURCE_DIR}/src/LKTracker.cpp src/FrameKLT.cpp src/FrameKLT.h)
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}

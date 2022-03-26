@@ -81,7 +81,7 @@ Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
 Optimizer.KF_num_for_init: 20
-Optimizer.calibrated: 0 # 0 or 1
+Optimizer.calibrated: 1 # 0 or 1
 Tracker.KFThresholdForMap: 5
 EnableLoopDetection: 0
 
@@ -108,14 +108,14 @@ T_gyro_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 1, 0, 0, 0,
-          0,  1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1 ] # simulator_rexrov
-#  data: [ 0, 0, 1, 1.35,
-#          -1,  0, 0, 0.12,
-#          0, -1, 0, 0.2,
+#  data: [ 1, 0, 0, 0,
+#          0,  1, 0, 0,
+#          0, 0, 1, 0,
 #          0, 0, 0, 1 ] # simulator_rexrov
+  data: [ 0, 0, 1, 1.35,
+          -1,  0, 0, 0.12,
+          0, -1, 0, 0.2,
+          0, 0, 0, 1 ] # simulator_rexrov
 
 
 

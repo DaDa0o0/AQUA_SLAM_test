@@ -109,12 +109,14 @@ public:
         BINARY_FILE=1,
     };
 
+public: bool mbResetActiveMap;
 public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
     System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true, const int initFr = 0, const string &strSequence = std::string(), const string &strLoadingFile = std::string());
 
 	cv::Mat TrackStereoGroDVL(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), bool bDVL= false, string filename="");
+	cv::Mat TrackStereoGroDVL(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::GyroDvlPoint>& vDVLGyroMeas = vector<IMU::GyroDvlPoint>(), bool bDVL= false, string filename="");
 	cv::Mat TrackStereoGroDVLKLT(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timestamp, const vector<IMU::ImuPoint>& vImuMeas = vector<IMU::ImuPoint>(), bool bDVL= false, string filename="");
 
     void dvlCallBack(const nav_msgs::OdometryConstPtr &dvl);
@@ -229,9 +231,8 @@ private:
     // Reset flag
     std::mutex mMutexReset;
     bool mbReset;
-    bool mbResetActiveMap;
 
-    // Change mode flags
+	// Change mode flags
     std::mutex mMutexMode;
     bool mbActivateLocalizationMode;
     bool mbDeactivateLocalizationMode;

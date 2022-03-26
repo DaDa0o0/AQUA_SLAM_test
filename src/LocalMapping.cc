@@ -1407,7 +1407,7 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
 
 	// Before this line we are not changing the map
 
-	unique_lock<mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
 	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 	if ((fabs(mScale - 1.f) > 0.00001) || !mbMonocular) {
 		mpAtlas->GetCurrentMap()->ApplyScaledRotation(Converter::toCvMat(mRwg).t(), mScale, true);
@@ -1519,7 +1519,7 @@ void LocalMapping::ScaleRefinement()
 	}
 
 	// Before this line we are not changing the map
-	unique_lock<mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+	unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
 	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 	if ((fabs(mScale - 1.f) > 0.00001) || !mbMonocular) {
 		mpAtlas->GetCurrentMap()->ApplyScaledRotation(Converter::toCvMat(mRwg).t(), mScale, true);

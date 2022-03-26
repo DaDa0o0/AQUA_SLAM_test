@@ -734,14 +734,20 @@ void Frame::ComputeImageBounds(const cv::Mat &imLeft)
 
 void Frame::ComputeStereoMatches()
 {
+	//what is mvuRight?????
 	mvuRight = vector<float>(N, -1.0f);
 	mvDepth = vector<float>(N, -1.0f);
 
+	// descriptor distance threshold
 	const int thOrbDist = (ORBmatcher::TH_HIGH + ORBmatcher::TH_LOW) / 2;
-
+	//mpORBextractorLeft->mvImagePyramid: images with different scale
+	// nRows: rows of original image
 	const int nRows = mpORBextractorLeft->mvImagePyramid[0].rows;
 
 	//Assign keypoints to row table
+	// what is vRowIndices?????
+	// vRowIndices[i] stores all keypoint index, from row[i-2] to row[i+2]
+	// bacause after rectification, each row in left should match each row in left
 	vector<vector<size_t>> vRowIndices(nRows, vector<size_t>());
 
 	for (int i = 0; i < nRows; i++)
@@ -752,6 +758,7 @@ void Frame::ComputeStereoMatches()
 	for (int iR = 0; iR < Nr; iR++) {
 		const cv::KeyPoint &kp = mvKeysRight[iR];
 		const float &kpY = kp.pt.y;
+		// mvScaleFactors[mvKeysRight[iR].octave]: scale factor of current pyramid
 		const float r = 2.0f * mvScaleFactors[mvKeysRight[iR].octave];
 		const int maxr = ceil(kpY + r);
 		const int minr = floor(kpY - r);

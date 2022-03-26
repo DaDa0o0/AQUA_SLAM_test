@@ -86,6 +86,35 @@ public:
 	}
 };
 
+class VertexVelocity: public g2o::BaseVertex<3, Eigen::Vector3d>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	VertexVelocity()
+	{}
+	VertexVelocity(const Eigen::Vector3d &r)
+	{
+		setEstimate(Eigen::Vector3d(r));
+	}
+
+	virtual bool read(std::istream &is)
+	{}
+	virtual bool write(std::ostream &os) const
+	{}
+
+	virtual void setToOriginImpl()
+	{
+	}
+
+	virtual void oplusImpl(const double *update_)
+	{
+		_estimate.x() += update_[0];
+		_estimate.y() += update_[1];
+		_estimate.z() += update_[2];
+		updateCache();
+	}
+};
+
 class VertexDVLBeamSphericalOritenstion: public g2o::BaseVertex<8, Eigen::Matrix<double, 8, 1>>
 {
 public:
@@ -398,6 +427,78 @@ public:
 
 };
 
+class EdgeDVLBeamCalibration4: public g2o::BaseUnaryEdge<4, DvlData, VertexDVLBeamSphericalOritenstion>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDVLBeamCalibration4()
+	{}
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError()
+	{
+		const VertexDVLBeamSphericalOritenstion
+			*V = static_cast<const VertexDVLBeamSphericalOritenstion *>(_vertices[0]);
+		const Eigen::Vector3d velocity_est(_measurement.mVelocity);
+		//r[0] alpha in paper, rotation from horizental plane
+		//r[1] beta in paper, rotation arround z-axis
+		Eigen::Matrix<double, 8, 1> r = V->estimate();
+		std::vector<double> v_beam_est;
+
+		Eigen::Vector4d err(0, 0, 0, 0);
+//		r(1) = 45.0 / 180 * M_PI;
+
+		for (int id = 0; id < 4; id++) {
+			if (id == 0) {
+				double v_beam = -velocity_est.x() * cos(r(1)) * cos(r(0)) + velocity_est.y() * sin(r(1)) * cos(r(0))
+					+ sin(r(0)) * velocity_est.z();
+				double e = _measurement.mBeams[id] - v_beam;
+				err.x() = e;
+			}
+			else if (id == 1) {
+				double v_beam = -velocity_est.x() * cos(r(3)) * cos(r(2)) - velocity_est.y() * sin(r(3)) * cos(r(2))
+					+ sin(r(2)) * velocity_est.z();
+				double e = _measurement.mBeams[id] - v_beam;
+				err.y() = e;
+
+			}
+			else if (id == 2) {
+				double v_beam = velocity_est.x() * cos(r(5)) * cos(r(4)) - velocity_est.y() * sin(r(5)) * cos(r(4))
+					+ sin(r(4)) * velocity_est.z();
+				double e = _measurement.mBeams[id] - v_beam;
+				err.z() = e;
+
+			}
+			else if (id == 3) {
+				double v_beam = velocity_est.x() * cos(r(7)) * cos(r(6)) + velocity_est.y() * sin(r(7)) * cos(r(6))
+					+ sin(r(6)) * velocity_est.z();
+				double e = _measurement.mBeams[id] - v_beam;
+				err.w() = e;
+			}
+		}
+
+
+		_error << err;
+//		_error << Eigen::Matrix<double,12,1>::Identity();
+	}
+
+//	virtual void linearizeOplus();
+
+//	Eigen::Matrix<double, 12, 12> GetHessian()
+//	{
+//		linearizeOplus();
+//		return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
+//	}
+
+public:
+
+};
+
 std::mutex dvl_mutex;
 
 std::vector<DvlData> all_dvl;
@@ -422,6 +523,7 @@ void dvl_cb(const waterlinked_a50_ros_driver::DVL &msg)
 
 void OptimizeBeam(const ros::TimerEvent &)
 {
+
 	{
 		std::lock_guard<std::mutex> lock(dvl_mutex);
 		MATFile *pmat = matOpen("velocity.mat", "w");
@@ -544,6 +646,89 @@ void OptimizeBeamSphere(const ros::TimerEvent &)
 
 }
 
+void OptimizeBeam2(const ros::TimerEvent &)
+{
+	{
+		std::lock_guard<std::mutex> lock(dvl_mutex);
+		MATFile *pmat = matOpen("velocity.mat", "w");
+		if (pmat) {
+			//save data to local file
+			mxArray *pm_v_x = mxCreateDoubleMatrix(v_x.size(), 1, mxREAL),
+				*pm_v_y = mxCreateDoubleMatrix(v_y.size(), 1, mxREAL),
+				*pm_v_z = mxCreateDoubleMatrix(v_z.size(), 1, mxREAL),
+				*pm_vb_x = mxCreateDoubleMatrix(vb_x.size(), 1, mxREAL),
+				*pm_vb_y = mxCreateDoubleMatrix(vb_y.size(), 1, mxREAL),
+				*pm_vb_z = mxCreateDoubleMatrix(vb_z.size(), 1, mxREAL);
+
+			memcpy((void *)(mxGetPr(pm_v_x)), (void *)v_x.data(), v_x.size() * sizeof(double));
+			memcpy((void *)(mxGetPr(pm_v_y)), (void *)v_y.data(), v_y.size() * sizeof(double));
+			memcpy((void *)(mxGetPr(pm_v_z)), (void *)v_z.data(), v_z.size() * sizeof(double));
+			memcpy((void *)(mxGetPr(pm_vb_x)), (void *)vb_x.data(), vb_x.size() * sizeof(double));
+			memcpy((void *)(mxGetPr(pm_vb_y)), (void *)vb_y.data(), vb_y.size() * sizeof(double));
+			memcpy((void *)(mxGetPr(pm_vb_z)), (void *)vb_z.data(), vb_z.size() * sizeof(double));
+			auto status = matPutVariable(pmat, "v_x", pm_v_x);
+			matPutVariable(pmat, "v_y", pm_v_y);
+			matPutVariable(pmat, "v_z", pm_v_z);
+			matPutVariable(pmat, "vb_x", pm_vb_x);
+			matPutVariable(pmat, "vb_y", pm_vb_y);
+			matPutVariable(pmat, "vb_z", pm_vb_z);
+			matClose(pmat);
+		}
+	}
+
+	g2o::SparseOptimizer optimizer;
+	g2o::BlockSolverX::LinearSolverType *linearSolver;
+	linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>();
+	g2o::BlockSolverX *solver_ptr = new g2o::BlockSolverX(linearSolver);
+
+	g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+//	g2o::OptimizationAlgorithmGaussNewton *solver = new g2o::OptimizationAlgorithmGaussNewton(solver_ptr);
+	optimizer.setAlgorithm(solver);
+	optimizer.setVerbose(true);
+
+	// add vertex
+	Eigen::Matrix<double, 8, 1> r;
+	r << 0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI,
+		0 / 180.0 * M_PI;
+	VertexDVLBeamSphericalOritenstion *v = new VertexDVLBeamSphericalOritenstion(r);
+	v->setId(0);
+	v->setFixed(false);
+	optimizer.addVertex(v);
+
+	//add edge
+	{
+		std::lock_guard<std::mutex> lock(dvl_mutex);
+		for (auto d: all_dvl) {
+			EdgeDVLBeamCalibration4 *e = new EdgeDVLBeamCalibration4();
+			e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(v));
+			e->setMeasurement(d);
+			e->setInformation(Eigen::Matrix<double, 4, 4>::Identity() * 180.0 / M_PI);
+			optimizer.addEdge(e);
+		}
+	}
+
+	optimizer.initializeOptimization();
+	optimizer.optimize(6);
+
+	Eigen::Matrix<double, 8, 1> r_opt = v->estimate();
+
+	ROS_INFO_STREAM(
+		"DVL Calibration:\nbeam1_theta=" << r_opt(0) / M_PI * 180.0 << " beam1_phi=" << r_opt(1) / M_PI * 180.0
+		                                 << "\nbeam2_theta=" << r_opt(2) / M_PI * 180.0 << " beam2_phi="
+		                                 << r_opt(3) / M_PI * 180.0
+		                                 << "\nbeam3_theta=" << r_opt(4) / M_PI * 180.0 << " beam3_phi="
+		                                 << r_opt(5) / M_PI * 180.0
+		                                 << "\nbeam4_theta=" << r_opt(6) / M_PI * 180.0 << " beam4_phi="
+		                                 << r_opt(7) / M_PI * 180.0);
+
+}
+
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "dvl_model");
@@ -551,7 +736,7 @@ int main(int argc, char **argv)
 
 	ros::Subscriber dvl_sub = n.subscribe("/dvl/data", 100, dvl_cb);
 //	ros::Timer opt_timer = n.createTimer(ros::Duration(3.0), OptimizeBeamSphere);
-	ros::Timer opt_timer = n.createTimer(ros::Duration(3.0), OptimizeBeam);
+	ros::Timer opt_timer = n.createTimer(ros::Duration(3.0), OptimizeBeam2);
 	ros::spin();
 	return 0;
 }

@@ -284,8 +284,8 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3f &velocity)
 	// V_dk
 	cv::Mat_<float> v(3, 1);
 	v << velocity.x, velocity.y, velocity.z;
-	if (cv::norm(v)>(double)mVelocityThreshold)
-		return;
+//	if (cv::norm(v)>(double)mVelocityThreshold)
+//		return;
 	mVelocity = v;
 	bDVL = true;
 //	ReintegrateWithVelocity();

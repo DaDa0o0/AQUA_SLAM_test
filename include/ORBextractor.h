@@ -58,12 +58,23 @@ public:
                     std::vector<cv::KeyPoint>& _keypoints,
                     cv::OutputArray _descriptors, std::vector<int> &vLappingArea);
 
-	int DetectKeyPoints(cv::InputArray _image, cv::InputArray _mask,
+	int DetectKeyPoints(const cv::InputArray &_image, const cv::InputArray &_mask,
 	                    std::vector<cv::KeyPoint>& _keypoints,
-	                    cv::OutputArray _descriptors);
-	int ComputeDescriptor(cv::InputArray _image, cv::InputArray _mask,
-	                      std::vector<cv::KeyPoint>& _keypoints,
-	                      cv::OutputArray _descriptors);
+	                    std::vector<std::vector<cv::KeyPoint>> &allKeypoints);
+	int DetectKeyPointsOpenCV(const cv::InputArray &_image, const cv::InputArray &_mask,
+	                    std::vector<cv::KeyPoint>& _keypoints);
+
+	int ComputeDescriptor(const cv::InputArray &_image,
+	                      const cv::InputArray &_mask,
+	                      std::vector<cv::KeyPoint> &_keypoints,
+	                      std::vector<std::vector<cv::KeyPoint>> &allKeypoints,
+	                      cv::OutputArray &_descriptors,
+	                      std::vector<int> &vLappingArea);
+
+	int ComputeDescriptorOpenCV(const cv::InputArray &_image,
+	                      const cv::InputArray &_mask,
+	                      std::vector<cv::KeyPoint> &_keypoints,
+	                      cv::OutputArray &_descriptors);
 	// ANMS: from https://github.com/BAILOOL/ANMS-Codes
 	void ssc(std::vector<cv::KeyPoint> keyPoints,
 	         int numRetPoints,
@@ -116,7 +127,9 @@ protected:
 
     std::vector<int> umax;
 
+	// mvScaleFactor[0] = 1.0
     std::vector<float> mvScaleFactor;
+	// mvInvScaleFactor[0] = 1.0
     std::vector<float> mvInvScaleFactor;
     std::vector<float> mvLevelSigma2;
     std::vector<float> mvInvLevelSigma2;
