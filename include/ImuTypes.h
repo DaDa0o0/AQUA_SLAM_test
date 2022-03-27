@@ -103,7 +103,7 @@ public:
 public:
 	cv::Point3f angular_v;
 	cv::Point3f v;
-	Eigen::Vector4f vb;
+	Eigen::Vector4d vb;
 	double t;
 };
 

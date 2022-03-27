@@ -1141,7 +1141,7 @@ void LocalMapping::KeyFrameCulling()
 				}
 
 				if (pKF->mPrevKF && pKF->mNextKF) {
-					pKF->mNextKF->mpDvlPreintegrationKeyFrame->MergePrevious(pKF->mpDvlPreintegrationKeyFrame);
+					pKF->mNextKF->mpDvlPreintegrationKeyFrame->MergePrevious2(pKF->mpDvlPreintegrationKeyFrame);
 					pKF->mNextKF->mPrevKF = pKF->mPrevKF;
 					pKF->mPrevKF->mNextKF = pKF->mNextKF;
 					pKF->mNextKF = NULL;

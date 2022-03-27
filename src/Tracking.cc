@@ -142,51 +142,6 @@ Tracking::Tracking(System *pSys,
 	mbInitWith3KFs = false;
 
 
-	//Rectification parameters
-	/*mbNeedRectify = false;
-    if((mSensor == System::STEREO || mSensor == System::IMU_STEREO) && sCameraName == "PinHole")
-    {
-        cv::Mat K_l, K_r, P_l, P_r, R_l, R_r, D_l, D_r;
-        fSettings["LEFT.K"] >> K_l;
-        fSettings["RIGHT.K"] >> K_r;
-
-        fSettings["LEFT.P"] >> P_l;
-        fSettings["RIGHT.P"] >> P_r;
-
-        fSettings["LEFT.R"] >> R_l;
-        fSettings["RIGHT.R"] >> R_r;
-
-        fSettings["LEFT.D"] >> D_l;
-        fSettings["RIGHT.D"] >> D_r;
-
-        int rows_l = fSettings["LEFT.height"];
-        int cols_l = fSettings["LEFT.width"];
-        int rows_r = fSettings["RIGHT.height"];
-        int cols_r = fSettings["RIGHT.width"];
-
-        if(K_l.empty() || K_r.empty() || P_l.empty() || P_r.empty() || R_l.empty() || R_r.empty() || D_l.empty() || D_r.empty()
-                || rows_l==0 || cols_l==0 || rows_r==0 || cols_r==0)
-        {
-            mbNeedRectify = false;
-        }
-        else
-        {
-            mbNeedRectify = true;
-            // M1r y M2r son los outputs (igual para l)
-            // M1r y M2r son las matrices relativas al mapeo correspondiente a la rectificación de mapa en el eje X e Y respectivamente
-            //cv::initUndistortRectifyMap(K_l,D_l,R_l,P_l.rowRange(0,3).colRange(0,3),cv::Size(cols_l,rows_l),CV_32F,M1l,M2l);
-            //cv::initUndistortRectifyMap(K_r,D_r,R_r,P_r.rowRange(0,3).colRange(0,3),cv::Size(cols_r,rows_r),CV_32F,M1r,M2r);
-        }
-
-
-    }
-    else
-    {
-        int cols = 752;
-        int rows = 480;
-        cv::Mat R_l = cv::Mat::eye(3, 3, CV_32F);
-    }*/
-
 	mnNumDataset = 0;
 
 	if (!b_parse_cam || !b_parse_orb || !b_parse_imu) {
@@ -199,16 +154,6 @@ Tracking::Tracking(System *pSys,
 		}
 	}
 
-	//f_track_stats.open("tracking_stats"+ _nameSeq + ".txt");
-	/*f_track_stats.open("tracking_stats.txt");
-    f_track_stats << "# timestamp, Num KF local, Num MP local, time" << endl;
-    f_track_stats << fixed ;*/
-
-#ifdef SAVE_TIMES
-																															f_track_times.open("tracking_times.txt");
-    f_track_times << "# ORB_Ext(ms), Stereo matching(ms), Preintegrate_IMU(ms), Pose pred(ms), LocalMap_track(ms), NewKF_dec(ms)" << endl;
-    f_track_times << fixed ;
-#endif
 
 	mCurT_e0_ej = Eigen::Isometry3d::Identity();
 	mCurTimeEKF = 0;
@@ -851,6 +796,40 @@ bool Tracking::ParseIMUParamFile(cv::FileStorage &fSettings)
 
 	cout << endl;
 
+	cv::Mat alpha;
+	node = fSettings["alpha"];
+	if (!node.empty()) {
+		alpha = node.mat();
+		if (T_dvl_c.rows != 4 || T_dvl_c.cols != 4) {
+			std::cerr << "*T_dvl_c matrix have to be a 4x4 transformation matrix*" << std::endl;
+			b_miss_params = true;
+		}
+	}
+	else {
+		std::cerr << "*T_dvl_c matrix doesn't exist*" << std::endl;
+		b_miss_params = true;
+	}
+	cv::Mat beta;
+	node = fSettings["beta"];
+	if (!node.empty()) {
+		beta = node.mat();
+		if (T_dvl_c.rows != 4 || T_dvl_c.cols != 4) {
+			std::cerr << "*T_dvl_c matrix have to be a 4x4 transformation matrix*" << std::endl;
+			b_miss_params = true;
+		}
+	}
+	else {
+		std::cerr << "*T_dvl_c matrix doesn't exist*" << std::endl;
+		b_miss_params = true;
+	}
+
+	cout<<"DVL beam orientation Alpha: "<<alpha<<endl;
+	cout<<"DVL beam orientation Beta: "<<beta<<endl;
+	Eigen::Vector4d alpha_e,beta_e;
+	cv::cv2eigen(alpha,alpha_e);
+	cv::cv2eigen(beta,beta_e);
+	SetBeamOrientation(alpha_e,beta_e);
+
 	cout << "Left camera to Imu Transform (Tbc): " << endl << Tbc << endl;
 
 	float freq, Ng, Na, Ngw, Naw;
@@ -1476,38 +1455,38 @@ void Tracking::PreintegrateDvlGro2()
 
 	// cout << "start loop. Total meas:" << mlQueueImuData.size() << endl;
 
-	mvImuFromLastFrame.clear();
-	mvImuFromLastFrame.reserve(mlQueueImuData.size());
-	if (mlQueueImuData.size() == 0) {
-		Verbose::PrintMess("Not IMU data in mlQueueImuData!!", Verbose::VERBOSITY_NORMAL);
-		ROS_WARN_STREAM("Not IMU data in mlQueueImuData!!");
+	mvGyroDVLFromLastFrame.clear();
+	mvGyroDVLFromLastFrame.reserve(mlQueueDVLGyroData.size());
+	if (mlQueueDVLGyroData.size() == 0) {
+		Verbose::PrintMess("Not IMU data in mlQueueDVLGyroData!!", Verbose::VERBOSITY_NORMAL);
+		ROS_WARN_STREAM("Not IMU data in mlQueueDVLGyroData!!");
 		mCurrentFrame.setIntegrated();
 		return;
 	}
 
-	// put IMU Meas from mlQueueImuData to mvImuFromLastFrame
+	// put Gyros DVL Meas from mlQueueDVLGyroData to mvGyroDVLFromLastFrame
 	while (true) {
 		bool bSleep = false;
 		{
 			unique_lock<mutex> lock(mMutexImuQueue);
-			if (!mlQueueImuData.empty()) {
-				IMU::ImuPoint *m = &mlQueueImuData.front();
+			if (!mlQueueDVLGyroData.empty()) {
+				IMU::GyroDvlPoint *m = &mlQueueDVLGyroData.front();
 //				cout<<"IMU Meas acc: "<<m->a<<" timestamp: "<< m->t <<endl;
 				cout.precision(17);
 				// IMU measurement is before Frame_i
 				if (m->t < mCurrentFrame.mpPrevFrame->mTimeStamp - 0.001l) {
-					mlQueueImuData.pop_front();
+					mlQueueDVLGyroData.pop_front();
 				}
 					// IMU measurement is between Frame_i and Frame_j
 				else if (m->t <= mCurrentFrame.mTimeStamp + 0.001l) {
 //					cout<<"push_back IMU Meas acc: "<<m->a<<" timestamp: "<< m->t <<endl;
-					mvImuFromLastFrame.push_back(*m);
-					mlQueueImuData.pop_front();
+					mvGyroDVLFromLastFrame.push_back(*m);
+					mlQueueDVLGyroData.pop_front();
 				}
 					// IMU measurement is after Frame_j
 				else {
 //					cout << "Error! IMU measurement is after Frame_j!!!" << endl;
-					mvImuFromLastFrame.push_back(*m);
+					mvGyroDVLFromLastFrame.push_back(*m);
 					break;
 				}
 			}
@@ -1522,8 +1501,8 @@ void Tracking::PreintegrateDvlGro2()
 	}
 
 
-//	const int n = mvImuFromLastFrame.size()-1;
-	const int n = mvImuFromLastFrame.size();
+//	const int n = mvGyroDVLFromLastFrame.size()-1;
+	const int n = mvGyroDVLFromLastFrame.size();
 	// first mImuBias is set to 0
 	// first mImuCalib comes from settings file
 //	IMU::Preintegrated
@@ -1552,52 +1531,63 @@ void Tracking::PreintegrateDvlGro2()
 			new DVLGroPreIntegration(mLastFrame.mImuBias, mCurrentFrame.GetExtrinsicParamters(), mCurrentFrame.mbDVL);
 	}
 
+	Eigen::Vector4d alpha,beta;
+	GetBeamOrientation(alpha,beta);
+	pDvlGroPreIntegratedFromLastFrame->SetBeamOrientation(alpha,beta);
+	mpDvlPreintegratedFromLastKF->SetBeamOrientation(alpha,beta);
 
 	for (int i = 0; i < n; i++) {
 		float tstep;
-		cv::Point3f acc, angVel;
+		cv::Point3f v_d, angVel, acc;
+		Eigen::Vector4d v_beam;
 		// first IMU meas after Frame_i
 		// and this IMU meas is not the last two
 		if ((i == 0) && (i < (n - 1))) {
 			// delta_t between IMU meas
-			float tab = mvImuFromLastFrame[i + 1].t - mvImuFromLastFrame[i].t;
+			float tab = mvGyroDVLFromLastFrame[i + 1].t - mvGyroDVLFromLastFrame[i].t;
 			if (tab == 0) {
 				tab = 0.001;
 			}
 			// time gap between first IMU meas and Frame_i
-			float tini = mvImuFromLastFrame[i].t - mCurrentFrame.mpPrevFrame->mTimeStamp;
+			float tini = mvGyroDVLFromLastFrame[i].t - mCurrentFrame.mpPrevFrame->mTimeStamp;
 			// when acc != 0
 			// velocity saved in acc
-			acc = mvImuFromLastFrame[i].a;
+			v_d = mvGyroDVLFromLastFrame[i].v;
 			// estimate the angVel from Frame_i to second IMU meas
-			angVel = mvImuFromLastFrame[i].w;
-			tstep = mvImuFromLastFrame[i + 1].t - mCurrentFrame.mpPrevFrame->mTimeStamp;
+			angVel = mvGyroDVLFromLastFrame[i].angular_v;
+			v_beam = mvGyroDVLFromLastFrame[i].vb;
+			tstep = mvGyroDVLFromLastFrame[i + 1].t - mCurrentFrame.mpPrevFrame->mTimeStamp;
 		}
 			// not first and not last, the middle IMU meas
 		else if (i < (n - 1)) {
-			acc = mvImuFromLastFrame[i].a;
-			angVel = mvImuFromLastFrame[i].w;
-			tstep = mvImuFromLastFrame[i + 1].t - mvImuFromLastFrame[i].t;
+			v_d = mvGyroDVLFromLastFrame[i].v;
+			// estimate the angVel from Frame_i to second IMU meas
+			angVel = mvGyroDVLFromLastFrame[i].angular_v;
+			v_beam = mvGyroDVLFromLastFrame[i].vb;
+			tstep = mvGyroDVLFromLastFrame[i + 1].t - mvGyroDVLFromLastFrame[i].t;
 		}
 			// last two IMU meas before Frame_j
 			// and this IMU meas is not the first IMU meas after Frame_i
 		else if ((i > 0) && (i == (n - 1))) {
-			float tab = mvImuFromLastFrame[i + 1].t - mvImuFromLastFrame[i].t;
+			float tab = mvGyroDVLFromLastFrame[i + 1].t - mvGyroDVLFromLastFrame[i].t;
 			if (tab == 0) {
 				tab = 0.001;
 			}
-			float tend = mvImuFromLastFrame[i + 1].t - mCurrentFrame.mTimeStamp;
+			float tend = mvGyroDVLFromLastFrame[i + 1].t - mCurrentFrame.mTimeStamp;
 			// estimate the acc from the last second IMU meas to Frame_j
-			acc = mvImuFromLastFrame[i].a;
-			// estimate the angVel from the last second IMU meas to Frame_j
-			angVel = mvImuFromLastFrame[i].w;
-			tstep = mCurrentFrame.mTimeStamp - mvImuFromLastFrame[i].t;
+			v_d = mvGyroDVLFromLastFrame[i].v;
+			// estimate the angVel from Frame_i to second IMU meas
+			angVel = mvGyroDVLFromLastFrame[i].angular_v;
+			v_beam = mvGyroDVLFromLastFrame[i].vb;
+			tstep = mCurrentFrame.mTimeStamp - mvGyroDVLFromLastFrame[i].t;
 		}
 			// last two IMU meas before Frame_j
 			// and this IMU meas is also the first IMU meas after Frame_i
 		else if ((i == 0) && (i == (n - 1))) {
-			acc = mvImuFromLastFrame[i].a;
-			angVel = mvImuFromLastFrame[i].w;
+			v_d = mvGyroDVLFromLastFrame[i].v;
+			// estimate the angVel from Frame_i to second IMU meas
+			angVel = mvGyroDVLFromLastFrame[i].angular_v;
+			v_beam = mvGyroDVLFromLastFrame[i].vb;
 			tstep = mCurrentFrame.mTimeStamp - mCurrentFrame.mpPrevFrame->mTimeStamp;
 		}
 
@@ -1610,6 +1600,7 @@ void Tracking::PreintegrateDvlGro2()
 		{
 			DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = getLossIntegrationRef();
 			std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
+			pDvlPreintegratedFromLastKFBeforeLost->SetBeamOrientation(alpha,beta);
 			if (mDoLossIntegration) {
 				pDvlPreintegratedFromLastKFBeforeLost->IntegrateGroMeasurement(angVel, tstep);
 			}
@@ -1617,21 +1608,23 @@ void Tracking::PreintegrateDvlGro2()
 //				ROS_INFO_STREAM("pDvlPreintegratedFromLastKFBeforeLost do not exits");
 //			}
 		}
-
-		// frame integration
-
-//		cout<<"angVel: "<<angVel<<endl;
 		pDvlGroPreIntegratedFromLastFrame->IntegrateGroMeasurement(angVel, tstep);
-		if (acc.x != 0 && acc.y != 0 && acc.z != 0) {
+
+
+		if (v_d.x != 0 && v_d.y != 0 && v_d.z != 0) {
 //			cout<<"velocity measurement: "<<acc<<endl;
-			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement(acc);
+			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement2(v_beam);
+			mpDvlPreintegratedFromLastKF->v_debug = v_d;
 //			ROS_INFO_STREAM("add kf velocity measurement:"<<acc);
-			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement(acc);
+			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement2(v_beam);
+			pDvlGroPreIntegratedFromLastFrame->v_debug = v_d;
 			{
 				DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = getLossIntegrationRef();
 				std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
+				pDvlPreintegratedFromLastKFBeforeLost->SetBeamOrientation(alpha,beta);
 				if (mDoLossIntegration) {
-					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement(acc);
+					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement2(v_beam);
+					pDvlPreintegratedFromLastKFBeforeLost->v_debug = v_d;
 //					ROS_INFO_STREAM("add loss ref velocity measurement:"<<acc);
 				}
 //				else{
@@ -2720,7 +2713,7 @@ void Tracking::TrackDVLGyro()
 
 
 	if (mSensor == System::DVL_STEREO && !mbCreatedMap) {
-		PreintegrateDvlGro();
+		PreintegrateDvlGro2();
 		{
 			std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
 			if (mpDvlPreintegratedFromLastKFBeforeLost) {
@@ -7020,6 +7013,17 @@ cv::Mat Tracking::GrabImageStereoDvlKLT(const Mat &imRectLeft,
 
 	return mCurrentFrame.mTcw.clone();
 }
-
+void Tracking::SetBeamOrientation(const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta)
+{
+	std::lock_guard<std::mutex> lock(mBeamOriMutex);
+	mAlpha = alpha;
+	mBeta = beta;
+}
+void Tracking::GetBeamOrientation(Eigen::Vector4d &alpha, Eigen::Vector4d &beta)
+{
+	std::lock_guard<std::mutex> lock(mBeamOriMutex);
+	alpha = mAlpha;
+	beta = mBeta;
+}
 
 } //namespace ORB_SLAM

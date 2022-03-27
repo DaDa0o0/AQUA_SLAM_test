@@ -17,14 +17,14 @@ DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, b
 	NgaWalk = calib.CovWalk.clone();
 	mVelocityThreshold = 0.6f;
 	Initialize(b_);
-	calib.mT_gyro_dvl.rowRange(0,3).colRange(0,3).copyTo(mR_g_d);
+	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
 }
 
 DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, const cv::Point3f &v_di, bool bDVL)
 	:
 	bDVL(bDVL)
 {
-	calib.mT_gyro_dvl.rowRange(0,3).colRange(0,3).copyTo(mR_g_d);
+	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
 	Nga = calib.Cov.clone();
 	NgaWalk = calib.CovWalk.clone();
 	Initialize(b_);
@@ -32,12 +32,37 @@ DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, c
 	mVelocityThreshold = 0.6f;
 }
 
-
-DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, const cv::Point3f &v_di, float velocity_threshold, bool bDVL )
-:
-bDVL(bDVL),mVelocityThreshold(velocity_threshold)
+DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_,
+                                           const Calib &calib,
+                                           const cv::Point3f &v_di,
+                                           const Eigen::Vector4d &alpha,
+                                           const Eigen::Vector4d &beta,
+                                           bool bDVL)
+	:
+	bDVL(bDVL), mAlpha(alpha), mBeta(beta)
 {
-	calib.mT_gyro_dvl.rowRange(0,3).colRange(0,3).copyTo(mR_g_d);
+	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
+	Nga = calib.Cov.clone();
+	NgaWalk = calib.CovWalk.clone();
+	Initialize(b_);
+	SetVelocity(v_di);
+	mVelocityThreshold = 0.6f;
+	mE << -cos(beta(0)) * cos(alpha(0)), sin(beta(0)) * cos(alpha(0)), sin(alpha(0)),
+		-cos(beta(1)) * cos(alpha(1)), -sin(beta(1)) * cos(alpha(1)), sin(alpha(1)),
+		cos(beta(2)) * cos(alpha(2)), -sin(beta(2)) * cos(alpha(2)), sin(alpha(2)),
+		cos(beta(3)) * cos(alpha(3)), sin(beta(3)) * cos(alpha(3)), sin(alpha(3));
+	mETEInv = (mE.transpose() * mE).inverse();
+}
+
+DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_,
+                                           const Calib &calib,
+                                           const cv::Point3f &v_di,
+                                           float velocity_threshold,
+                                           bool bDVL)
+	:
+	bDVL(bDVL), mVelocityThreshold(velocity_threshold)
+{
+	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
 	Nga = calib.Cov.clone();
 	NgaWalk = calib.CovWalk.clone();
 	Initialize(b_);
@@ -53,39 +78,10 @@ DVLGroPreIntegration::DVLGroPreIntegration(DVLGroPreIntegration *pDVLPre)
 	  dP(pDVLPre->dP.clone()), JRg(pDVLPre->JRg.clone()), JVg(pDVLPre->JVg.clone()), JVa(pDVLPre->JVa.clone()),
 	  JPg(pDVLPre->JPg.clone()),
 	  JPa(pDVLPre->JPa.clone()), avgA(pDVLPre->avgA.clone()), avgW(pDVLPre->avgW.clone()), bu(pDVLPre->bu),
-	  db(pDVLPre->db.clone()), mvMeasurements(pDVLPre->mvMeasurements),
+	  db(pDVLPre->db.clone()), mvMeasurements(pDVLPre->mvMeasurements), mvMeasurements2(pDVLPre->mvMeasurements2),
 	  bDVL(pDVLPre->bDVL)
 {
 
-}
-
-void DVLGroPreIntegration::CopyFrom(DVLGroPreIntegration *pDVLPre)
-{
-	std::cout << "Preintegrated: start clone" << std::endl;
-	bDVL = pDVLPre->bDVL;
-	dT = pDVLPre->dT;
-	C = pDVLPre->C.clone();
-	Info = pDVLPre->Info.clone();
-	Nga = pDVLPre->Nga.clone();
-	NgaWalk = pDVLPre->NgaWalk.clone();
-	std::cout << "Preintegrated: first clone" << std::endl;
-	mb.CopyFrom(pDVLPre->mb);
-	dR = pDVLPre->dR.clone();
-	dV = pDVLPre->dV.clone();
-	dP = pDVLPre->dP.clone();
-	JRg = pDVLPre->JRg.clone();
-	JVg = pDVLPre->JVg.clone();
-	JVa = pDVLPre->JVa.clone();
-	JPg = pDVLPre->JPg.clone();
-	JPa = pDVLPre->JPa.clone();
-	avgA = pDVLPre->avgA.clone();
-	avgW = pDVLPre->avgW.clone();
-	std::cout << "Preintegrated: second clone" << std::endl;
-	bu.CopyFrom(pDVLPre->bu);
-	db = pDVLPre->db.clone();
-	std::cout << "Preintegrated: third clone" << std::endl;
-	mvMeasurements = pDVLPre->mvMeasurements;
-	std::cout << "Preintegrated: end clone" << std::endl;
 }
 
 void DVLGroPreIntegration::Initialize(const Bias &b_)
@@ -109,6 +105,7 @@ void DVLGroPreIntegration::Initialize(const Bias &b_)
 	avgW = cv::Mat::zeros(3, 1, CV_32F);
 	dT = 0.0f;
 	mvMeasurements.clear();
+	mvMeasurements2.clear();
 }
 
 void DVLGroPreIntegration::ReintegrateWithVelocity()
@@ -143,39 +140,30 @@ void DVLGroPreIntegration::ReintegrateWithBiasAndRotation(const Bias &b, const c
 {
 	std::lock_guard<std::mutex> lock(mMutex);
 	const std::vector<integrable> aux = mvMeasurements;
-	cv::Mat v=dV.clone();
+	cv::Mat v = dV.clone();
 	Initialize(bu);
 //	dV=v.clone();
 	SetVelocity(cv::Point3f(v.at<float>(0), v.at<float>(1), v.at<float>(2)));
 	mb = b;
 	mR_g_d = R_g_d.clone();
-	for (size_t i = 0; i < aux.size(); i++)
-	{
-		if (aux[i].a.x == 0 && aux[i].a.y == 0 && aux[i].a.z == 0)
-			IntegrateGroMeasurement(aux[i].w,aux[i].t);
-		else if (aux[i].w.x == 0 && aux[i].w.y == 0 && aux[i].w.z == 0)
+	for (size_t i = 0; i < aux.size(); i++) {
+		if (aux[i].a.x == 0 && aux[i].a.y == 0 && aux[i].a.z == 0) {
+			IntegrateGroMeasurement(aux[i].w, aux[i].t);
+		}
+		else if (aux[i].w.x == 0 && aux[i].w.y == 0 && aux[i].w.z == 0) {
 			IntegrateDVLMeasurement(aux[i].a);
-		else
-			cout<<"found error in measurement"<<endl;
+		}
+		else {
+			cout << "found error in measurement" << endl;
+		}
 	}
 
 }
 
-void DVLGroPreIntegration::Reintegrate()
-{
-	std::unique_lock<std::mutex> lock(mMutex);
-	const std::vector<integrable> aux = mvMeasurements;
-//	cv::Mat v=dV.clone();
-	Initialize(bu);
-//	dV=v.clone();
-	for (size_t i = 0; i < aux.size(); i++)
-		IntegrateNewMeasurement(aux[i].a, aux[i].w, aux[i].t);
-//		IntegrateGroMeasurement(aux[i].w,aux[i].t);
-}
 
 void DVLGroPreIntegration::IntegrateNewMeasurement(const cv::Point3f &acceleration,
-												   const cv::Point3f &angVel,
-												   const float &dt)
+                                                   const cv::Point3f &angVel,
+                                                   const float &dt)
 {
 	mvMeasurements.push_back(integrable(acceleration, angVel, dt));
 
@@ -214,10 +202,10 @@ void DVLGroPreIntegration::IntegrateNewMeasurement(const cv::Point3f &accelerati
 }
 
 void DVLGroPreIntegration::IntegrateNewMeasurementWithBiasAndRotation(const cv::Point3f &acceleration,
-																	  const cv::Point3f &angVel,
-																	  const float &dt,
-																	  const Bias &b,
-																	  const cv::Mat &R_g_d)
+                                                                      const cv::Point3f &angVel,
+                                                                      const float &dt,
+                                                                      const Bias &b,
+                                                                      const cv::Mat &R_g_d)
 {
 //	mb=b;
 //	mR_g_d=R_g_d.clone();
@@ -233,9 +221,15 @@ void DVLGroPreIntegration::IntegrateNewMeasurementWithBiasAndRotation(const cv::
 }
 
 void DVLGroPreIntegration::IntegrateGroMeasurement(const cv::Point3f &angVel,
-												   const float &dt)
+                                                   const float &dt)
 {
 	mvMeasurements.push_back(integrable(cv::Point3f(0, 0, 0), angVel, dt));
+	mvMeasurements2
+		.push_back(integrable(cv::Point3f(0, 0, 0),
+		                      angVel,
+		                      cv::Point3f(0, 0, 0),
+		                      Eigen::Vector4d::Zero(),
+		                      0));
 
 	cv::Mat accW = (cv::Mat_<float>(3, 1) << angVel.x - mb.bwx, angVel.y - mb.bwy, angVel.z - mb.bwz);
 
@@ -305,6 +299,40 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3f &velocity)
 	mvMeasurements.push_back(integrable(velocity, cv::Point3f(0, 0, 0), 0));
 }
 
+void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &velocity_beam)
+{
+
+	// V_dk
+	Eigen::Vector3d V_d = mETEInv * mE.transpose() * velocity_beam;
+
+	cv::Mat_<float> v(3, 1);
+	v << V_d.x(), V_d.y(), V_d.z();
+//	if (cv::norm(v)>(double)mVelocityThreshold)
+//		return;
+	mVelocity = v;
+	bDVL = true;
+//	ReintegrateWithVelocity();
+	if (dV.at<float>(0) == 0 && dV.at<float>(1) == 0 && dV.at<float>(2) == 0) {
+//		dV = dR * mR_g_d* v;
+//		dV = dR * v;
+		dV = mR_g_d.t() * dR * mR_g_d * v;
+//		cout<<"dR:"<<dR<<endl;
+//		cout<<"dV:"<<dV<<endl;
+		ReintegrateWithVelocity();
+	}
+	else {
+//		dV = dR * v;
+		dV = mR_g_d.t() * dR * mR_g_d * v;
+	}
+
+	mvMeasurements2
+		.push_back(integrable(cv::Point3f(0, 0, 0),
+		                      cv::Point3f(0, 0, 0),
+		                      cv::Point3f(V_d.x(), V_d.y(), V_d.z()),
+		                      velocity_beam,
+		                      0));
+}
+
 void DVLGroPreIntegration::SetVelocity(const cv::Point3f &v_di)
 {
 	// V_di
@@ -316,12 +344,11 @@ void DVLGroPreIntegration::SetVelocity(const cv::Point3f &v_di)
 //		dV = dR * v;
 	dV = v;
 	// R_d_g * R_gj_gi * R_g_d = R_dj_di
-	mVelocity = mR_g_d.t() * dR.t() * mR_g_d *v;
-	cv::Point3f v_dj(mVelocity.at<float>(0),mVelocity.at<float>(1),mVelocity.at<float>(2));
+	mVelocity = mR_g_d.t() * dR.t() * mR_g_d * v;
+	cv::Point3f v_dj(mVelocity.at<float>(0), mVelocity.at<float>(1), mVelocity.at<float>(2));
 
 	mvMeasurements.push_back(integrable(v_dj, cv::Point3f(0, 0, 0), 0));
 }
-
 
 void DVLGroPreIntegration::MergePrevious(DVLGroPreIntegration *pPrev)
 {
@@ -343,25 +370,74 @@ void DVLGroPreIntegration::MergePrevious(DVLGroPreIntegration *pPrev)
 	const std::vector<integrable> aux2 = mvMeasurements;
 
 	Initialize(bav);
-	for (size_t i = 0; i < aux1.size(); i++)
-	{
-		if (aux1[i].a.x == 0 && aux1[i].a.y == 0 && aux1[i].a.z == 0)
-			IntegrateGroMeasurement(aux1[i].w,aux1[i].t);
-		else if (aux1[i].w.x == 0 && aux1[i].w.y == 0 && aux1[i].w.z == 0)
+	for (size_t i = 0; i < aux1.size(); i++) {
+		if (aux1[i].a.x == 0 && aux1[i].a.y == 0 && aux1[i].a.z == 0) {
+			IntegrateGroMeasurement(aux1[i].w, aux1[i].t);
+		}
+		else if (aux1[i].w.x == 0 && aux1[i].w.y == 0 && aux1[i].w.z == 0) {
 			IntegrateDVLMeasurement(aux1[i].a);
-		else
-			cout<<"found error in measurement"<<endl;
+		}
+		else {
+			cout << "found error in measurement" << endl;
+		}
 	}
-	for (size_t i = 0; i < aux2.size(); i++)
-	{
-		if (aux2[i].a.x == 0 && aux2[i].a.y == 0 && aux2[i].a.z == 0)
-			IntegrateGroMeasurement(aux2[i].w,aux2[i].t);
-		else if (aux2[i].w.x == 0 && aux2[i].w.y == 0 && aux2[i].w.z == 0)
+	for (size_t i = 0; i < aux2.size(); i++) {
+		if (aux2[i].a.x == 0 && aux2[i].a.y == 0 && aux2[i].a.z == 0) {
+			IntegrateGroMeasurement(aux2[i].w, aux2[i].t);
+		}
+		else if (aux2[i].w.x == 0 && aux2[i].w.y == 0 && aux2[i].w.z == 0) {
 			IntegrateDVLMeasurement(aux2[i].a);
-		else
-			cout<<"found error in measurement"<<endl;
+		}
+		else {
+			cout << "found error in measurement" << endl;
+		}
 	}
 
+}
+
+void DVLGroPreIntegration::MergePrevious2(DVLGroPreIntegration *pPrev)
+{
+	if (pPrev == this) {
+		return;
+	}
+
+	std::unique_lock<std::mutex> lock1(mMutex);
+	std::unique_lock<std::mutex> lock2(pPrev->mMutex);
+	Bias bav;
+	bav.bwx = bu.bwx;
+	bav.bwy = bu.bwy;
+	bav.bwz = bu.bwz;
+	bav.bax = bu.bax;
+	bav.bay = bu.bay;
+	bav.baz = bu.baz;
+
+	const std::vector<integrable> aux1 = pPrev->mvMeasurements2;
+	const std::vector<integrable> aux2 = mvMeasurements2;
+
+	Initialize(bav);
+	for (size_t i = 0; i < aux1.size(); i++) {
+		// velocity = 0
+		if (aux1[i].v.x == 0 && aux1[i].v.y == 0 && aux1[i].v.z == 0) {
+			IntegrateGroMeasurement(aux1[i].w, aux1[i].t);
+		}
+		else if (aux1[i].w.x == 0 && aux1[i].w.y == 0 && aux1[i].w.z == 0) {
+			IntegrateDVLMeasurement2(aux1[i].v_beam);
+		}
+		else {
+			cout << "found error in measurement" << endl;
+		}
+	}
+	for (size_t i = 0; i < aux2.size(); i++) {
+		if (aux2[i].v.x == 0 && aux2[i].v.y == 0 && aux2[i].v.z == 0) {
+			IntegrateGroMeasurement(aux2[i].w, aux2[i].t);
+		}
+		else if (aux2[i].w.x == 0 && aux2[i].w.y == 0 && aux2[i].w.z == 0) {
+			IntegrateDVLMeasurement2(aux2[i].v_beam);
+		}
+		else {
+			cout << "found error in measurement" << endl;
+		}
+	}
 }
 
 void DVLGroPreIntegration::SetNewBias(const Bias &bu_)
@@ -381,11 +457,11 @@ IMU::Bias DVLGroPreIntegration::GetDeltaBias(const Bias &b_)
 {
 	std::unique_lock<std::mutex> lock(mMutex);
 	return IMU::Bias(b_.bax - mb.bax,
-					 b_.bay - mb.bay,
-					 b_.baz - mb.baz,
-					 b_.bwx - mb.bwx,
-					 b_.bwy - mb.bwy,
-					 b_.bwz - mb.bwz);
+	                 b_.bay - mb.bay,
+	                 b_.baz - mb.baz,
+	                 b_.bwx - mb.bwx,
+	                 b_.bwy - mb.bwy,
+	                 b_.bwz - mb.bwz);
 }
 
 cv::Mat DVLGroPreIntegration::GetDeltaRotation(const Bias &b_)
@@ -500,7 +576,7 @@ Eigen::Matrix<double, 15, 15> DVLGroPreIntegration::GetInformationMatrix()
 void DVLGroPreIntegration::output()
 {
 	Eigen::Matrix3d R_gi_gj;
-	cv::cv2eigen(dR,R_gi_gj);
+	cv::cv2eigen(dR, R_gi_gj);
 	Eigen::Quaterniond q(R_gi_gj);
 //	ROS_INFO_STREAM("integrated oritentation: x:"<<q.x()<<" y:"<<q.y()<<" z:"<<q.z()<<" w:"<<q.w());
 }
@@ -513,11 +589,22 @@ Eigen::Isometry3d DVLGroPreIntegration::getDVLPose()
 	R_di_dj = mR_g_d.t() * R_gi_gj * mR_g_d;
 	Eigen::Matrix3d R;
 	Eigen::Vector3d t;
-	cv::cv2eigen(R_di_dj,R);
-	cv::cv2eigen(t_di_didj,t);
+	cv::cv2eigen(R_di_dj, R);
+	cv::cv2eigen(t_di_didj, t);
 
 	Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
 	T_di_dj.pretranslate(t);
 	T_di_dj.rotate(R);
 	return T_di_dj;
+}
+void DVLGroPreIntegration::SetBeamOrientation(const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta)
+{
+	std::lock_guard lock(mMutex);
+	mAlpha = alpha;
+	mBeta = beta;
+	mE << -cos(beta(0)) * cos(alpha(0)), sin(beta(0)) * cos(alpha(0)), sin(alpha(0)),
+		-cos(beta(1)) * cos(alpha(1)), -sin(beta(1)) * cos(alpha(1)), sin(alpha(1)),
+		cos(beta(2)) * cos(alpha(2)), -sin(beta(2)) * cos(alpha(2)), sin(alpha(2)),
+		cos(beta(3)) * cos(alpha(3)), sin(beta(3)) * cos(alpha(3)), sin(alpha(3));
+	mETEInv = (mE.transpose() * mE).inverse();
 }

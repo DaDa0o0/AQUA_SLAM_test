@@ -598,7 +598,8 @@ void ImageGrabber::SyncWithImu2()
 				                        << vDVLMeas[i].v << "\n";
 			}
 
-			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vImuMeas, !vDVLMeas.empty());
+//			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vImuMeas, !vDVLMeas.empty());
+			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vGyroDVLMeas, !vDVLMeas.empty());
 //			mpSLAM->TrackStereo(imLeft,imRight,tImLeft);
 			std_msgs::Header header;
 			header.stamp = ros::Time::now();
@@ -626,12 +627,12 @@ void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 	sensor_msgs::ImuPtr p_new_msg(new sensor_msgs::Imu());
 	p_new_msg->header = imu_msg->header;
 	p_new_msg->angular_velocity = imu_msg->angular_velocity;
-//	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z * 2;
-//	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y * 2;
-//	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x * 2;
-	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
-	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
-	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
+	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z * 2;
+	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y * 2;
+	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x * 2;
+//	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
+//	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
+//	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
 
 
 	Eigen::Quaterniond q_r(1, 0, 0, 0);

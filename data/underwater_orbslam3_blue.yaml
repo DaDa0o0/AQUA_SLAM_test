@@ -83,6 +83,18 @@ Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
 
+
+alpha: !!opencv-matrix
+  rows: 4
+  cols: 1
+  dt: f
+  data: [ 1.1780, 1.1780, 1.1780, 1.1780]
+beta: !!opencv-matrix
+  rows: 4
+  cols: 1
+  dt: f
+  data: [ 0.7854, 0.7854, 0.7854, 0.7854]
+
 # IMU Parameters  -0.0539971  0.0286326
 Tbc: !!opencv-matrix
   rows: 4
@@ -125,9 +137,13 @@ T_dvl_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 0,  0,   1,   0.4, # real rov
-          -1,  0,   0,    0,
-          0,  -1,  0,    0.1,
+#  data: [ 0,  0,   1,   0.4, # real rov
+#          -1,  0,   0,    0,
+#          0,  -1,  0,    0.1,
+#          0,  0,   0,    1 ]
+  data: [ 0,  0,   1,   0.4, # real rov 4-beam
+          1,  0,   0,    0,
+          0,  1,  0,    0.1,
           0,  0,   0,    1 ]
 
 DenseMapper:

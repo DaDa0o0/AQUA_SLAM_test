@@ -391,7 +391,7 @@ cv::Mat System::TrackStereoGroDVL(const Mat &imLeft,
 		mpTracker->GrabDVLGyroData(vDVLGyroMeas[i_imu]);
 
 	// std::cout << "start GrabImageStereo" << std::endl;
-	cv::Mat Tcw = mpTracker->GrabImageStereoDvl(imLeft, imRight, timestamp, bDVL, filename);
+	cv::Mat Tcw = mpTracker->GrabImageStereoDvlgyro(imLeft, imRight, timestamp, bDVL, filename);
 //	cv::Mat Tcw;
 
 	// std::cout << "out grabber" << std::endl;
