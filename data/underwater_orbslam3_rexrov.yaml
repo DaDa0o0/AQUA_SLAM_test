@@ -32,9 +32,6 @@ Camera.RGB: 0
 
 # Close/Far threshold. Baseline times.
 ThDepth: 35.0
-# far threshold 10.0m
-ThFarDepth: 20.0
-ThCloaseDepth: 0.2
 
 # scale image by a factor
 ImageScale: 1.0
@@ -80,10 +77,23 @@ Optimizer.DVL_lamda: 1
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
-Optimizer.KF_num_for_init: 20
-Optimizer.calibrated: 1 # 0 or 1
+Optimizer.KF_num_for_init: 30
+Optimizer.calibrated: 0 # 0 or 1
+Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
-EnableLoopDetection: 0
+Tracker.ReLocalTime: 0.5
+
+
+alpha: !!opencv-matrix
+  rows: 4
+  cols: 1
+  dt: f
+  data: [ 1.1780, 1.1780, 1.1780, 1.1780]
+beta: !!opencv-matrix
+  rows: 4
+  cols: 1
+  dt: f
+  data: [ 0.7854, 0.7854, 0.7854, 0.7854]
 
 # IMU Parameters  -0.0539971  0.0286326
 Tbc: !!opencv-matrix
@@ -102,6 +112,7 @@ IMU.AccWalk: 0.01
 
 VisualIntegration: 0
 
+EnableLoopDetection: 1
 # IMU to orb
 # only use rotation
 T_gyro_c: !!opencv-matrix
@@ -134,10 +145,10 @@ T_dvl_c: !!opencv-matrix
 #          0, 0, 0, 1 ] # simulator_rexrov
 
 #rovco
-LeftImgTopic: "/img_l"
-RightImgTopic: "/img_r"
-#LeftImgTopic: "/rexrov2/rexrov2/cameraleft/camera_image"
-#RightImgTopic: "/rexrov2/rexrov2/cameraright/camera_image"
+#LeftImgTopic: "/img_l"
+#RightImgTopic: "/img_r"
+LeftImgTopic: "/rexrov2/rexrov2/cameraleft/camera_image"
+RightImgTopic: "/rexrov2/rexrov2/cameraright/camera_image"
 ImuTopic: "/rexrov2/imu"
 DvlTopic: "/rexrov2/DVL"
 #ImuTopic: "/kvh_1750_imu/imu"
@@ -158,3 +169,6 @@ DenseMapper:
   stereo_algorithm: 0
   texture_threshold: 5
   uniqueness_ratio: 15.0
+  leaf_size: 0.001
+  mean_k: 50
+  std_thred: 0.05

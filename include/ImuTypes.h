@@ -87,22 +87,22 @@ public:
 class GyroDvlPoint
 {
 public:
-	GyroDvlPoint(const float &a_x,
-	             const float &a_y,
-	             const float &a_z,
-	             const float &v_x,
-	             const float &v_y,
-	             const float &v_z,
-	             const float &vb_0,
-	             const float &vb_1,
-	             const float &vb_2,
-	             const float &vb_3,
+	GyroDvlPoint(const double &a_x,
+	             const double &a_y,
+	             const double &a_z,
+	             const double &v_x,
+	             const double &v_y,
+	             const double &v_z,
+	             const double &vb_0,
+	             const double &vb_1,
+	             const double &vb_2,
+	             const double &vb_3,
 	             const double &timestamp)
 		:angular_v(a_x,a_y,a_z), v(v_x, v_y, v_z), vb(vb_0, vb_1, vb_2, vb_3), t(timestamp)
 	{}
 public:
-	cv::Point3f angular_v;
-	cv::Point3f v;
+	cv::Point3d angular_v;
+	cv::Point3d v;
 	Eigen::Vector4d vb;
 	double t;
 };
@@ -241,7 +241,7 @@ class IntegratedRotation
 public:
 	IntegratedRotation()
 	{}
-	IntegratedRotation(const cv::Point3f &angVel, const Bias &imuBias, const float &time);
+	IntegratedRotation(const cv::Point3d &angVel, const Bias &imuBias, const double &time);
 
 public:
 	float deltaT; //integration time

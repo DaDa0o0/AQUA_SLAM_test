@@ -307,6 +307,7 @@ public:
 		Eigen::Vector3d uv;
 		uv << update_[0], update_[1], update_[2];
 		setEstimate(estimate() + uv);
+		updateCache();
 	}
 };
 
@@ -331,8 +332,10 @@ public:
 	virtual void oplusImpl(const double *update_)
 	{
 		Eigen::Vector3d ubg;
-		ubg << update_[0], update_[1], update_[2];
-		setEstimate(estimate() + ubg);
+		_estimate(0) += update_[0];
+		_estimate(1) += update_[1];
+		_estimate(2) += update_[2];
+		updateCache();
 	}
 };
 
@@ -359,6 +362,40 @@ public:
 		Eigen::Vector3d uba;
 		uba << update_[0], update_[1], update_[2];
 		setEstimate(estimate() + uba);
+	}
+};
+
+class VertexDVLBeamOritenstion: public g2o::BaseVertex<8, Eigen::Matrix<double, 8, 1>>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	VertexDVLBeamOritenstion()
+	{}
+	VertexDVLBeamOritenstion(const Eigen::Matrix<double, 8, 1> &r)
+	{
+		setEstimate(Eigen::Matrix<double, 8, 1>(r));
+	}
+
+	virtual bool read(std::istream &is)
+	{}
+	virtual bool write(std::ostream &os) const
+	{}
+
+	virtual void setToOriginImpl()
+	{
+	}
+
+	virtual void oplusImpl(const double *update_)
+	{
+		_estimate(0) += update_[0];
+		_estimate(1) += update_[1];
+		_estimate(2) += update_[2];
+		_estimate(3) += update_[3];
+		_estimate(4) += update_[4];
+		_estimate(5) += update_[5];
+		_estimate(6) += update_[6];
+		_estimate(7) += update_[7];
+		updateCache();
 	}
 };
 
@@ -1488,8 +1525,9 @@ protected:
 /***
  * vertex0: pose_i
  * vertex1: pose_j
- * vertex2: T_dvl_c
- * vertex3: bias_gyro
+ * vertex2: bias_gyro
+ * vertex3: T_d_c
+ * vertex4: T_g_d
  */
 class EdgeDvlGyroInit: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
 {
@@ -1497,6 +1535,66 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	EdgeDvlGyroInit(DVLGroPreIntegration *pInt);
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError();
+//	virtual void linearizeOplus();
+
+//	const Eigen::Matrix3d JRg, JVg, JPg;
+//	const Eigen::Matrix3d JVa, JPa;
+	DVLGroPreIntegration *mpInt;
+	const double dt;
+
+};
+
+/***
+ * vertex0: pose_i
+ * vertex1: pose_j
+ * vertex2: bias_gyro
+ * vertex3: T_d_c
+ * vertex4: T_g_d
+ * vertex5: beam_orientation
+ */
+class EdgeDvlGyroInit2: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDvlGyroInit2(DVLGroPreIntegration *pInt);
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError();
+//	virtual void linearizeOplus();
+
+//	const Eigen::Matrix3d JRg, JVg, JPg;
+//	const Eigen::Matrix3d JVa, JPa;
+	DVLGroPreIntegration *mpInt;
+	const double dt;
+
+};
+
+/***
+ * vertex0: pose_i
+ * vertex1: pose_j
+ * vertex2: bias_gyro
+ * vertex3: velocity
+ * vertex4: T_d_c
+ * vertex5: T_g_d
+ */
+class EdgeDvlGyroInit3: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDvlGyroInit3(DVLGroPreIntegration *pInt);
 
 	virtual bool read(std::istream &is)
 	{ return false; }

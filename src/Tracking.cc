@@ -1415,14 +1415,14 @@ void Tracking::PreintegrateDvlGro()
 		pDvlGroPreIntegratedFromLastFrame->IntegrateGroMeasurement(angVel, tstep);
 		if (acc.x != 0 && acc.y != 0 && acc.z != 0) {
 //			cout<<"velocity measurement: "<<acc<<endl;
-			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement(acc);
+			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement(acc, tstep);
 //			ROS_INFO_STREAM("add kf velocity measurement:"<<acc);
-			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement(acc);
+			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement(acc, tstep);
 			{
 				DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = getLossIntegrationRef();
 				std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
 				if (mDoLossIntegration) {
-					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement(acc);
+					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement(acc, tstep);
 //					ROS_INFO_STREAM("add loss ref velocity measurement:"<<acc);
 				}
 //				else{
@@ -1538,7 +1538,7 @@ void Tracking::PreintegrateDvlGro2()
 
 	for (int i = 0; i < n; i++) {
 		float tstep;
-		cv::Point3f v_d, angVel, acc;
+		cv::Point3d v_d, angVel, acc;
 		Eigen::Vector4d v_beam;
 		// first IMU meas after Frame_i
 		// and this IMU meas is not the last two
@@ -1613,18 +1613,21 @@ void Tracking::PreintegrateDvlGro2()
 
 		if (v_d.x != 0 && v_d.y != 0 && v_d.z != 0) {
 //			cout<<"velocity measurement: "<<acc<<endl;
-			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement2(v_beam);
+			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement2(v_beam, tstep);
 			mpDvlPreintegratedFromLastKF->v_debug = v_d;
+			mpDvlPreintegratedFromLastKF->SetDVLDebugVelocity(v_d);
 //			ROS_INFO_STREAM("add kf velocity measurement:"<<acc);
-			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement2(v_beam);
+			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement2(v_beam, tstep);
 			pDvlGroPreIntegratedFromLastFrame->v_debug = v_d;
+			pDvlGroPreIntegratedFromLastFrame->SetDVLDebugVelocity(v_d);
 			{
 				DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = getLossIntegrationRef();
 				std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
 				pDvlPreintegratedFromLastKFBeforeLost->SetBeamOrientation(alpha,beta);
 				if (mDoLossIntegration) {
-					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement2(v_beam);
+					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement2(v_beam, tstep);
 					pDvlPreintegratedFromLastKFBeforeLost->v_debug = v_d;
+					pDvlPreintegratedFromLastKFBeforeLost->SetDVLDebugVelocity(v_d);
 //					ROS_INFO_STREAM("add loss ref velocity measurement:"<<acc);
 				}
 //				else{

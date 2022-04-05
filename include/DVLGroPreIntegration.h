@@ -14,17 +14,17 @@ class DVLGroPreIntegration
 {
 public:
 	DVLGroPreIntegration(const Bias &b_, const Calib &calib, bool bDVL = false);
-	DVLGroPreIntegration(const Bias &b_, const Calib &calib, const cv::Point3f &v_di, bool bDVL = false);
+	DVLGroPreIntegration(const Bias &b_, const Calib &calib, const cv::Point3d &v_di, bool bDVL = false);
 	DVLGroPreIntegration(const Bias &b_,
 	                     const Calib &calib,
-	                     const cv::Point3f &v_di,
+	                     const cv::Point3d &v_di,
 	                     const Eigen::Vector4d &alpha,
 	                     const Eigen::Vector4d &beta,
 	                     bool bDVL = false);
 	DVLGroPreIntegration(const Bias &b_,
 	                     const Calib &calib,
-	                     const cv::Point3f &v_di,
-	                     float velocity_threshold,
+	                     const cv::Point3d &v_di,
+	                     double velocity_threshold,
 	                     bool bDVL = false);
 	DVLGroPreIntegration(DVLGroPreIntegration *pDVLPre);
 	DVLGroPreIntegration()
@@ -32,37 +32,41 @@ public:
 	~DVLGroPreIntegration()
 	{}
 	void Initialize(const Bias &b_);
-	void IntegrateNewMeasurement(const cv::Point3f &acceleration, const cv::Point3f &angVel, const float &dt);
-	void IntegrateNewMeasurementWithBiasAndRotation(const cv::Point3f &acceleration,
-	                                                const cv::Point3f &angVel,
-	                                                const float &dt,
-	                                                const Bias &b,
-	                                                const cv::Mat &R_g_d);
+
+
 
 	//  first Integrate Gro, then DVL
-	void IntegrateGroMeasurement(const cv::Point3f &angVel, const float &dt);
+	void IntegrateGroMeasurement(const cv::Point3d &angVel, const double &dt);
 
-//	void IntegrateGroMeasurement2(const cv::Point3f &angVel, const float &dt);
+//	void IntegrateGroMeasurement2(const cv::Point3d &angVel, const double &dt);
 
 	/*!
 	 *
-	 * @param velocity: V_dk
+	 * @param v_dk: V_dk
 	 */
-	void IntegrateDVLMeasurement(const cv::Point3f &velocity);
+	void IntegrateDVLMeasurement(const cv::Point3d &v_dk, const double &dt);
+
+	/***
+	 * @param v_di
+	 * @param dt
+	 */
+	void IntegrateVelocity(const cv::Point3d &v_di, const double &dt);
 
 	/***
 	 *
 	 * @param velocity: velocity of 4 beam
 	 */
-	void IntegrateDVLMeasurement2(const Eigen::Vector4d &velocity_beam);
+	void IntegrateDVLMeasurement2(const Eigen::Vector4d &velocity_beam, const double &dt);
 	/*!
 	 *
 	 * @param v_di: V_di
 	 */
-	void SetVelocity(const cv::Point3f &v_di);
+	void SetVelocity(const cv::Point3d &v_di);
 	void SetBeamOrientation(const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta);
 	void ReintegrateWithVelocity();
+	void ReintegrateWithVelocity(const Eigen::Vector3d &velocity);
 	void ReintegrateWithBiasAndRotation(const Bias &b, const cv::Mat &R_g_d);
+	void ReintegrateWithBiasRotationBeamOri(const Bias &b, const cv::Mat &R_g_d, const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta);
 	void MergePrevious(DVLGroPreIntegration *pPrev);
 	void MergePrevious2(DVLGroPreIntegration *pPrev);
 	void SetNewBias(const Bias &bu_);
@@ -89,7 +93,7 @@ public:
 	Eigen::Isometry3d getDVLPose();
 
 public:
-	float dT;
+	double dT;
 	cv::Mat C;
 	cv::Mat Info;
 	cv::Mat Nga, NgaWalk;
@@ -103,7 +107,9 @@ public:
 	 */
 	cv::Mat dR, dV, dP;
 	// mVelocity: V_dk velocity reading in DVL frame at time k
+	// mAngV: angular_v last angular v, this is used for DVL inegration
 	cv::Mat mVelocity, mR_g_d;
+	cv::Point3d mAngV;
 
 	// DVL beam orientation
 	Eigen::Vector4d mAlpha;
@@ -125,8 +131,11 @@ public:
 	// whether we have DVL reading
 	bool bDVL;
 	// if velocity reading is more then threshold, filter it out
-	float mVelocityThreshold;
-	cv::Point3f v_debug;
+	double mVelocityThreshold;
+	cv::Point3d v_debug;
+
+	void SetDVLDebugVelocity(const cv::Point3d &v_dk);
+	Eigen::Vector3d v_di_dvl, v_di_visual;
 
 
 private:
@@ -138,21 +147,21 @@ private:
 
 	struct integrable
 	{
-		integrable(const cv::Point3f &a_, const cv::Point3f &w_, const float &t_)
+		integrable(const cv::Point3d &a_, const cv::Point3d &w_, const double &t_)
 			: a(a_), w(w_), t(t_)
 		{}
-		integrable(const cv::Point3f &a_,
-		           const cv::Point3f &w_,
-		           const cv::Point3f &v_,
+		integrable(const cv::Point3d &a_,
+		           const cv::Point3d &w_,
+		           const cv::Point3d &v_,
 		           const Eigen::Vector4d &v_beam,
-		           const float &t_)
+		           const double &t_)
 			: a(a_), w(w_), v(v_), v_beam(v_beam), t(t_)
 		{}
-		cv::Point3f a;
-		cv::Point3f w;
-		cv::Point3f v;
+		cv::Point3d a;
+		cv::Point3d w;
+		cv::Point3d v;
 		Eigen::Vector4d v_beam;
-		float t;
+		double t;
 	};
 
 	std::vector<integrable> mvMeasurements;

@@ -59,6 +59,20 @@ cv::Mat ExpSO3(const float &x, const float &y, const float &z)
         return (I + W*sin(d)/d + W*W*(1.0f-cos(d))/d2);
 }
 
+cv::Mat ExpSO3_double(const double &x, const double &y, const double &z)
+{
+	cv::Mat I = cv::Mat::eye(3,3,CV_64F);
+	const double d2 = x*x+y*y+z*z;
+	const double d = sqrt(d2);
+	cv::Mat W = (cv::Mat_<double>(3,3) << 0, -z, y,
+		z, 0, -x,
+		-y,  x, 0);
+	if(d<eps)
+		return (I + W + 0.5f*W*W);
+	else
+		return (I + W*sin(d)/d + W*W*(1.0f-cos(d))/d2);
+}
+
 Eigen::Matrix<double,3,3> ExpSO3(const double &x, const double &y, const double &z)
 {
     Eigen::Matrix<double,3,3> I = Eigen::MatrixXd::Identity(3,3);
@@ -83,7 +97,10 @@ Eigen::Matrix<double,3,3> ExpSO3(const double &x, const double &y, const double 
 
 cv::Mat ExpSO3(const cv::Mat &v)
 {
-    return ExpSO3(v.at<float>(0),v.at<float>(1),v.at<float>(2));
+	if(v.type()==CV_32F)
+        return ExpSO3(v.at<float>(0),v.at<float>(1),v.at<float>(2));
+	else if(v.type()==CV_64F)
+		return ExpSO3_double(v.at<double>(0),v.at<double>(1),v.at<double>(2));
 }
 
 cv::Mat LogSO3(const cv::Mat &R)
@@ -150,26 +167,26 @@ cv::Mat InverseRightJacobianSO3(const cv::Mat &v)
 }
 
 
-IntegratedRotation::IntegratedRotation(const cv::Point3f &angVel, const Bias &imuBias, const float &time):
+IntegratedRotation::IntegratedRotation(const cv::Point3d &angVel, const Bias &imuBias, const double &time):
     deltaT(time)
 {
-    const float x = (angVel.x-imuBias.bwx)*time;
-    const float y = (angVel.y-imuBias.bwy)*time;
-    const float z = (angVel.z-imuBias.bwz)*time;
+    const double x = (angVel.x-imuBias.bwx)*time;
+    const double y = (angVel.y-imuBias.bwy)*time;
+    const double z = (angVel.z-imuBias.bwz)*time;
 
-    cv::Mat I = cv::Mat::eye(3,3,CV_32F);
+    cv::Mat I = cv::Mat::eye(3,3,CV_64F);
 
-    const float d2 = x*x+y*y+z*z;
-    const float d = sqrt(d2);
+    const double d2 = x*x+y*y+z*z;
+    const double d = sqrt(d2);
 
-    cv::Mat W = (cv::Mat_<float>(3,3) << 0, -z, y,
+    cv::Mat W = (cv::Mat_<double>(3,3) << 0, -z, y,
                  z, 0, -x,
                  -y,  x, 0);
     if(d<eps)
     {
     	// equation(4)
         deltaR = I + W;
-        rightJ = cv::Mat::eye(3,3,CV_32F);
+        rightJ = cv::Mat::eye(3,3,CV_64F);
     }
     else
     {

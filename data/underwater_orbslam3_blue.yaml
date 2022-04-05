@@ -76,9 +76,9 @@ Optimizer.visual_lamda: 1
 Optimizer.DVL_lamda: 10000
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
-Optimizer.KF_init_step: 0.5
+Optimizer.KF_init_step: 0.1
 Optimizer.KF_num_for_init: 30
-Optimizer.calibrated: 1 # 0 or 1
+Optimizer.calibrated: 0 # 0 or 1
 Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
@@ -124,9 +124,9 @@ T_gyro_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 0,  -1,   0,   0, # real rov
-          0,  0,   -1,    0,
-          1,  0,  0,    0,
+  data: [ 0.0043,  -0.9990,   0.0444,   0, # real rov
+          -0.0054,  -0.0444,   -0.9989,    0,
+          0.9999, 0.0040,  -0.0056,    0,
           0,  0,   0,    1 ]
 #  data: [ 1,  0,   0,   0, # I
 #          0,  1,   0,    0,
@@ -141,9 +141,9 @@ T_dvl_c: !!opencv-matrix
 #          -1,  0,   0,    0,
 #          0,  -1,  0,    0.1,
 #          0,  0,   0,    1 ]
-  data: [ 0,  0,   1,   0.4, # real rov 4-beam
-          1,  0,   0,    0,
-          0,  1,  0,    0.1,
+  data: [ 0.0061,  -0.0341,   0.9993,   0.16, # real rov 4-beam
+          0.9994,  0.0338,   -0.0049,    0.06,
+          -0.0336,  0.9988,  0.0343,    -0.25,
           0,  0,   0,    1 ]
 
 DenseMapper:

@@ -129,8 +129,14 @@ public:
 	void static DvlGyroInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 	//optimize gyros bias
 	void static DvlGyroInitOptimization2(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+	// fix bias, opt extrinsic para
 	void static DvlGyroInitOptimization3(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+	// opt bias, opt extrinsic para
 	void static DvlGyroInitOptimization4(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+	// fix bias, opt beam orientation
+	void static DvlGyroInitOptimization5(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+	// fix bias extrinsic, opt velocity
+	void static DvlGyroInitOptimization6(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 };
 
 } //namespace ORB_SLAM3

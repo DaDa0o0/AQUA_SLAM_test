@@ -293,6 +293,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(stereo_dvl2 ${PROJECT_SOURCE_DIR}/src/ros_stereo_DVL_tighly.cc)
 target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME})
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
+add_dependencies(stereo_dvl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
 #target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})
