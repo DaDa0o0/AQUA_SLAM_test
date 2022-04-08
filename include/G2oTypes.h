@@ -86,10 +86,10 @@ public:
 	ImuCamPose(Eigen::Matrix3d &_Rwc, Eigen::Vector3d &_twc, KeyFrame *pKF);
 
 	void SetParam(const std::vector<Eigen::Matrix3d> &_Rcw,
-				  const std::vector<Eigen::Vector3d> &_tcw,
-				  const std::vector<Eigen::Matrix3d> &_Rbc,
-				  const std::vector<Eigen::Vector3d> &_tbc,
-				  const double &_bf);
+	              const std::vector<Eigen::Vector3d> &_tcw,
+	              const std::vector<Eigen::Matrix3d> &_Rbc,
+	              const std::vector<Eigen::Vector3d> &_tbc,
+	              const double &_bf);
 
 	void Update(const double *pu);                                                   // update in the imu reference
 	void UpdateW(const double *pu);                                                  // update in the world reference
@@ -618,7 +618,7 @@ public:
 	{
 		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
 		Eigen::Matrix<double, 2, 1> obs(_measurement);
-		debug_pose =static_cast<const GyroDvlCamPose*>(&(VPose->estimate())) ;
+		debug_pose = static_cast<const GyroDvlCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().Project(Xw, cam_idx);
 	}
 
@@ -639,7 +639,7 @@ public:
 public:
 	const Eigen::Vector3d Xw;
 	const int cam_idx;
-	const GyroDvlCamPose* debug_pose;
+	const GyroDvlCamPose *debug_pose;
 };
 
 class EdgeMonoBA_DvlGyros: public g2o::BaseBinaryEdge<2, Eigen::Vector2d, VertexPoseDvlGro, g2o::VertexSBAPointXYZ>
@@ -648,7 +648,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	EdgeMonoBA_DvlGyros(int cam_idx_ = 0)
-		:cam_idx(cam_idx_)
+		: cam_idx(cam_idx_)
 	{}
 
 	virtual bool read(std::istream &is)
@@ -661,7 +661,7 @@ public:
 		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
 		const g2o::VertexSBAPointXYZ *Vmp = static_cast<const g2o::VertexSBAPointXYZ *>(_vertices[1]);
 		Eigen::Matrix<double, 2, 1> obs(_measurement);
-		debug_pose =static_cast<const GyroDvlCamPose*>(&(VPose->estimate())) ;
+		debug_pose = static_cast<const GyroDvlCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().Project(Vmp->estimate(), cam_idx);
 	}
 
@@ -681,7 +681,7 @@ public:
 
 public:
 	const int cam_idx;
-	const GyroDvlCamPose* debug_pose;
+	const GyroDvlCamPose *debug_pose;
 };
 
 class EdgeStereoBA_DvlGyros: public g2o::BaseBinaryEdge<3, Eigen::Vector3d, VertexPoseDvlGro, g2o::VertexSBAPointXYZ>
@@ -690,7 +690,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	EdgeStereoBA_DvlGyros(int cam_idx_ = 0)
-		:cam_idx(cam_idx_)
+		: cam_idx(cam_idx_)
 	{}
 
 	virtual bool read(std::istream &is)
@@ -703,7 +703,7 @@ public:
 		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
 		const g2o::VertexSBAPointXYZ *Vmp = static_cast<const g2o::VertexSBAPointXYZ *>(_vertices[1]);
 		Eigen::Matrix<double, 3, 1> obs(_measurement);
-		debug_pose =static_cast<const GyroDvlCamPose*>(&(VPose->estimate())) ;
+		debug_pose = static_cast<const GyroDvlCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().ProjectStereo(Vmp->estimate(), cam_idx);
 	}
 //	virtual void linearizeOplus();
@@ -722,7 +722,7 @@ public:
 
 public:
 	const int cam_idx;
-	const GyroDvlCamPose* debug_pose;
+	const GyroDvlCamPose *debug_pose;
 };
 
 class EdgeStereo: public g2o::BaseBinaryEdge<3, Eigen::Vector3d, g2o::VertexSBAPointXYZ, VertexPose>
@@ -1078,7 +1078,7 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 	ConstraintPoseImu(const Eigen::Matrix3d &Rwb_, const Eigen::Vector3d &twb_, const Eigen::Vector3d &vwb_,
-					  const Eigen::Vector3d &bg_, const Eigen::Vector3d &ba_, const Matrix15d &H_)
+	                  const Eigen::Vector3d &bg_, const Eigen::Vector3d &ba_, const Matrix15d &H_)
 		: Rwb(Rwb_), twb(twb_), vwb(vwb_), bg(bg_), ba(ba_), H(H_)
 	{
 		H = (H + H) / 2;
@@ -1091,7 +1091,7 @@ public:
 		H = es.eigenvectors() * eigs.asDiagonal() * es.eigenvectors().transpose();
 	}
 	ConstraintPoseImu(const cv::Mat &Rwb_, const cv::Mat &twb_, const cv::Mat &vwb_,
-					  const IMU::Bias &b, const cv::Mat &H_)
+	                  const IMU::Bias &b, const cv::Mat &H_)
 	{
 		Rwb = Converter::toMatrix3d(Rwb_);
 		twb = Converter::toVector3d(twb_);
@@ -1262,10 +1262,10 @@ public:
 		mT_ej_e0 = Eigen::Isometry3d::Identity();
 	}
 	EdgeSE3DVLPoseOnly(Eigen::Isometry3d T_ej_e0,
-					   Eigen::Isometry3d T_ei_e0,
-					   Eigen::Isometry3d T_ci_c0,
-					   Eigen::Isometry3d T_e_c,
-					   Eigen::Vector3d p_c0)
+	                   Eigen::Isometry3d T_ei_e0,
+	                   Eigen::Isometry3d T_ci_c0,
+	                   Eigen::Isometry3d T_e_c,
+	                   Eigen::Vector3d p_c0)
 		: mT_ej_e0(T_ej_e0), mT_ei_e0(T_ei_e0), mT_ci_c0(T_ci_c0), mT_e_c(T_e_c), mP_c0(p_c0)
 	{}
 
@@ -1324,9 +1324,9 @@ public:
 		mT_ej_e0 = Eigen::Isometry3d::Identity();
 	}
 	EdgeSE3DVLPoseOnly2(Eigen::Isometry3d T_ej_e0,
-						Eigen::Isometry3d T_ei_e0,
-						Eigen::Isometry3d T_ci_c0,
-						Eigen::Isometry3d T_e_c)
+	                    Eigen::Isometry3d T_ei_e0,
+	                    Eigen::Isometry3d T_ci_c0,
+	                    Eigen::Isometry3d T_e_c)
 		: mT_ej_e0(T_ej_e0), mT_ei_e0(T_ei_e0), mT_ci_c0(T_ci_c0), mT_e_c(T_e_c)
 	{}
 
@@ -1378,9 +1378,9 @@ protected:
 // datatype of two vertex: g2o::VertexSE3Expmap(0: camera pose), g2o::VertexSE3Expmap(1: tf from EKF to camera)
 
 class EdgeSE3DVLBA: public g2o::BaseBinaryEdge<6,
-											   Eigen::Matrix<double, 3, 1>,
-											   g2o::VertexSE3Expmap,
-											   g2o::VertexSE3Expmap>
+                                               Eigen::Matrix<double, 3, 1>,
+                                               g2o::VertexSE3Expmap,
+                                               g2o::VertexSE3Expmap>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -1608,6 +1608,156 @@ public:
 //	const Eigen::Matrix3d JVa, JPa;
 	DVLGroPreIntegration *mpInt;
 	const double dt;
+
+};
+
+class EdgeDVLBeamCalibration1: public g2o::BaseUnaryEdge<4, DVLGroPreIntegration *, VertexDVLBeamOritenstion>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDVLBeamCalibration1()
+	{}
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError()
+	{
+		const VertexDVLBeamOritenstion
+			*V = static_cast<const VertexDVLBeamOritenstion *>(_vertices[0]);
+//		const Eigen::Vector3d velocity_est(_measurement->v_debug.x,_measurement->v_debug.y,_measurement->v_debug.z);
+		const Eigen::Vector3d
+			velocity_est(_measurement->v_dk_visual.x(), _measurement->v_dk_visual.y(), _measurement->v_dk_visual.z());
+
+		//r[0] alpha in paper, rotation from horizental plane
+		//r[1] beta in paper, rotation arround z-axis
+		Eigen::Matrix<double, 8, 1> r = V->estimate();
+		std::vector<double> v_beam_est;
+
+		Eigen::Vector4d err(0, 0, 0, 0);
+//		r(1) = 45.0 / 180 * M_PI;
+
+		for (int id = 0; id < 4; id++) {
+			if (id == 0) {
+				double v_beam = -velocity_est.x() * cos(r(1)) * cos(r(0)) + velocity_est.y() * sin(r(1)) * cos(r(0))
+					+ sin(r(0)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.x() = e;
+			}
+			else if (id == 1) {
+				double v_beam = -velocity_est.x() * cos(r(3)) * cos(r(2)) - velocity_est.y() * sin(r(3)) * cos(r(2))
+					+ sin(r(2)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.y() = e;
+
+			}
+			else if (id == 2) {
+				double v_beam = velocity_est.x() * cos(r(5)) * cos(r(4)) - velocity_est.y() * sin(r(5)) * cos(r(4))
+					+ sin(r(4)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.z() = e;
+
+			}
+			else if (id == 3) {
+				double v_beam = velocity_est.x() * cos(r(7)) * cos(r(6)) + velocity_est.y() * sin(r(7)) * cos(r(6))
+					+ sin(r(6)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.w() = e;
+			}
+		}
+
+
+		_error << err;
+//		_error << Eigen::Matrix<double,12,1>::Identity();
+	}
+
+//	virtual void linearizeOplus();
+
+//	Eigen::Matrix<double, 12, 12> GetHessian()
+//	{
+//		linearizeOplus();
+//		return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
+//	}
+
+public:
+
+};
+
+class EdgeDVLBeamCalibration2: public g2o::BaseUnaryEdge<4, DVLGroPreIntegration *, VertexDVLBeamOritenstion>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDVLBeamCalibration2()
+	{}
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError()
+	{
+		const VertexDVLBeamOritenstion
+			*V = static_cast<const VertexDVLBeamOritenstion *>(_vertices[0]);
+//		const Eigen::Vector3d velocity_est(_measurement->v_debug.x,_measurement->v_debug.y,_measurement->v_debug.z);
+		const Eigen::Vector3d
+			velocity_est(_measurement->v_dk_dvl.x, _measurement->v_dk_dvl.y, _measurement->v_dk_dvl.z);
+
+		//r[0] alpha in paper, rotation from horizental plane
+		//r[1] beta in paper, rotation arround z-axis
+		Eigen::Matrix<double, 8, 1> r = V->estimate();
+		std::vector<double> v_beam_est;
+
+		Eigen::Vector4d err(0, 0, 0, 0);
+//		r(1) = 45.0 / 180 * M_PI;
+
+		for (int id = 0; id < 4; id++) {
+			if (id == 0) {
+				double v_beam = -velocity_est.x() * cos(r(1)) * cos(r(0)) + velocity_est.y() * sin(r(1)) * cos(r(0))
+					+ sin(r(0)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.x() = e;
+			}
+			else if (id == 1) {
+				double v_beam = -velocity_est.x() * cos(r(3)) * cos(r(2)) - velocity_est.y() * sin(r(3)) * cos(r(2))
+					+ sin(r(2)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.y() = e;
+
+			}
+			else if (id == 2) {
+				double v_beam = velocity_est.x() * cos(r(5)) * cos(r(4)) - velocity_est.y() * sin(r(5)) * cos(r(4))
+					+ sin(r(4)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.z() = e;
+
+			}
+			else if (id == 3) {
+				double v_beam = velocity_est.x() * cos(r(7)) * cos(r(6)) + velocity_est.y() * sin(r(7)) * cos(r(6))
+					+ sin(r(6)) * velocity_est.z();
+				double e = _measurement->mBeams[id] - v_beam;
+				err.w() = e;
+			}
+		}
+
+
+		_error << err;
+//		_error << Eigen::Matrix<double,12,1>::Identity();
+	}
+
+//	virtual void linearizeOplus();
+
+//	Eigen::Matrix<double, 12, 12> GetHessian()
+//	{
+//		linearizeOplus();
+//		return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
+//	}
+
+public:
 
 };
 

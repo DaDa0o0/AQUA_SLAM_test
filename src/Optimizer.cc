@@ -11993,7 +11993,7 @@ void Optimizer::DvlGyroInitOptimization6(Map *pMap, Eigen::Vector3d &bg, bool bM
 			VertexPoseDvlGro *VP2 = dynamic_cast<VertexPoseDvlGro *>(optimizer.vertex(pKFi->mnId));
 			//				g2o::HyperGraph::Vertex *VV2 = optimizer.vertex(maxKFid + (pKFi->mnId) + 1);
 			g2o::HyperGraph::Vertex *VG = optimizer.vertex(maxKFid + 1 + pKFi->mPrevKF->mnId);
-			g2o::HyperGraph::Vertex *VV = optimizer.vertex(maxKFid + 1 + maxKFid + 1 + pKFi->mPrevKF->mnId);
+			g2o::HyperGraph::Vertex *VV = optimizer.vertex(maxKFid + 1 + maxKFid + 1 + pKFi->mnId);
 			g2o::HyperGraph::Vertex *VT_d_c = optimizer.vertex(maxKFid + 1 + maxKFid + 1 + maxKFid + 1);
 			g2o::HyperGraph::Vertex *VT_g_d = optimizer.vertex(maxKFid + 1 + maxKFid + 1 + maxKFid + 2);
 //			g2o::HyperGraph::Vertex *Valpha_beta = optimizer.vertex(maxKFid + 1 + maxKFid + 1 + maxKFid + 3);
@@ -12072,110 +12072,21 @@ void Optimizer::DvlGyroInitOptimization6(Map *pMap, Eigen::Vector3d &bg, bool bM
 		IMU::Bias b(0, 0, 0, bg[0], bg[1], bg[2]);
 
 		VertexVelocity *v_v = dynamic_cast<VertexVelocity *>(optimizer.vertex(velocity_vertex_id));
-		Eigen::Vector3d v_di = v_v->estimate();
-		pkf->mpDvlPreintegrationKeyFrame->v_di_visual = v_di;
+		Eigen::Vector3d v_dk = v_v->estimate();
+		pkf->mpDvlPreintegrationKeyFrame->v_dk_visual = v_dk;
 
 //		cout << "kf id: " << pkf->mnId << " gyros bias: " << bg.transpose() << endl;
 		ROS_INFO_STREAM("beam calibration: KeyFrame id:<<" << pkf->mnId << " dvl velocity: "
-		                                                   << pkf->mpDvlPreintegrationKeyFrame->v_di_dvl.transpose()
+		                                                   << pkf->mpDvlPreintegrationKeyFrame->v_dk_dvl
 		                                                   << " visual velocity: "
-		                                                   << pkf->mpDvlPreintegrationKeyFrame->v_di_visual.transpose());
-
-
-		cv::Mat cvbg;
-		cv::eigen2cv(bg, cvbg);
-		cvbg.convertTo(cvbg, CV_32F);
-//		if (cv::norm(pkf->GetGyroBias() - cvbg) > 0.01) {
-//			pkf->SetNewBias(b);
-//			if (pkf->mpDvlPreintegrationKeyFrame) {
-//				pkf->mpDvlPreintegrationKeyFrame->ReintegrateWithVelocity();
-//			}
-//		}
-//		else {
-//			pkf->SetNewBias(b);
-//		}
-		pkf->SetNewBias(b);
-
+		                                                   << pkf->mpDvlPreintegrationKeyFrame->v_dk_visual.transpose());
 	}
 
-
-	Eigen::Isometry3d T_dvl_c = vT_d_c->estimate();
-	Eigen::Quaterniond q_dvl_c(T_dvl_c.rotation());
-	Eigen::Isometry3d T_gyros_dvl = vT_g_d->estimate();
-	Eigen::Isometry3d T_gyros_c = T_gyros_dvl * T_dvl_c;
-	Eigen::Quaterniond q_gyros_c(T_gyros_c.rotation());
-
-	Eigen::Isometry3d T_dvl_c_gt = Eigen::Isometry3d::Identity();
-	Eigen::Matrix3d R_dvl_c_gt;
-	R_dvl_c_gt << 0, 1, 0, -1, 0, 0, 0, 0, 1;
-	Eigen::Vector3d t_dvl_c_gt(-0.88, -0.348, 1.056);
-	T_dvl_c_gt.rotate(R_dvl_c_gt);
-	T_dvl_c_gt.pretranslate(t_dvl_c_gt);
-
-	Eigen::Isometry3d T_gyros_c_gt = Eigen::Isometry3d::Identity();
-	Eigen::Matrix3d R_gyros_c_gt;
-	R_gyros_c_gt << 0, 0, 1, -1, 0, 0, 0, -1, 0;
-	Eigen::Vector3d t_gyros_c_gt(0, 0, 0);
-	T_gyros_c_gt.rotate(R_gyros_c_gt);
-	T_gyros_c_gt.pretranslate(t_gyros_c_gt);
-
-	Eigen::Vector3d err_R_dvl_c = LogSO3(T_dvl_c.rotation().inverse() * T_dvl_c_gt.rotation());
-	Eigen::Vector3d err_R_gyros_c = LogSO3(T_gyros_c.rotation().inverse() * T_gyros_c_gt.rotation());
-	Eigen::Vector3d err_t_dvl_c = T_dvl_c.translation() - T_dvl_c_gt.translation();
-	Eigen::Vector3d err_t_gyros_c = T_gyros_c.translation() - T_gyros_c_gt.translation();
-
-	stringstream ss;
-	ss << "result_" << ros::Time::now().toNSec() << ".txt";
-	ofstream f("/home/da/project/ros/orb_dvl2_ws/src/dvl2/calibration_results/" + ss.str());
-
-	if (f.is_open()) {
-		f << fixed;
-		f
-			<< "#T_dvl_camera: tranlation(x y z) quaternion(x y z w) tranlation_error(x y z) rotation_error(LogSO3 x y z)\n";
-		f << setprecision(9) << T_dvl_c.translation().x() << " " << T_dvl_c.translation().y() << " "
-		  << T_dvl_c.translation().z() << " " << q_dvl_c.x() << " " << q_dvl_c.y() << " " << q_dvl_c.z() << " "
-		  << q_dvl_c.w() << "\n" << err_t_dvl_c.x() << " " << err_t_dvl_c.y() << " " << err_t_dvl_c.z() << "\n"
-		  << err_R_dvl_c.x() << " " << err_R_dvl_c.y() << " " << err_R_dvl_c.z() << " " << endl;
-		f << "#T_gyroscope_camera: quaternion(x y z w) rotation_error(LogSO3 x y z)\n";
-		f << setprecision(9) << q_gyros_c.x() << " " << q_gyros_c.y() << " " << q_gyros_c.z() << " " << q_gyros_c.w()
-		  << "\n" << err_R_gyros_c.x() << " " << err_R_gyros_c.y() << " " << err_R_gyros_c.z() << " " << endl;
-	}
-
-//	alpha_beta = v_beam_ori->estimate();
-
-	cout << "init optimization result: \n"
-	     << "bias_gyro:\n" << bg << "\n"
-	     << "R_dvl_c:\n" << T_dvl_c.rotation() << "\n"
-	     << "t_dvl_c:" << T_dvl_c.translation().transpose() << "\n"
-	     << "R_gyros_c:\n" << T_gyros_c.rotation() << "\n"
-	     //	     << "alpha_beta:\n" << alpha_beta.transpose() << "\n"
-	     << endl;
+	DvlBeamOptimization(pMap);
+	DvlBeamOptimization_dvl(pMap);
 
 
-	cv::Mat cvbg = Converter::toCvMat(bg);
 
-	//Keyframes velocities and biases
-	std::cout << "update Keyframes biases and extrinsic paramters" << std::endl;
-
-	cv::Mat T_dvl_c_cv, T_gyros_dvl_cv, T_gyros_c_cv;
-	cv::eigen2cv(T_dvl_c.matrix(), T_dvl_c_cv);
-	T_dvl_c_cv.convertTo(T_dvl_c_cv, CV_32FC1);
-	cv::eigen2cv(T_gyros_dvl.matrix(), T_gyros_dvl_cv);
-	T_gyros_dvl_cv.convertTo(T_gyros_dvl_cv, CV_32FC1);
-	T_gyros_c = T_gyros_dvl * T_dvl_c;
-	cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
-	T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
-
-	IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
-
-	const int N = vpKFs.size();
-	for (size_t i = 0; i < N; i++) {
-		KeyFrame *pKFi = vpKFs[i];
-		if (pKFi->mnId > maxKFid) {
-			continue;
-		}
-		pKFi->mImuCalib = extrinsic_para;
-	}
 
 }
 
@@ -12423,6 +12334,195 @@ void Optimizer::DvlGyroInitOptimization4(Map *pMap,
 		}
 		pKFi->mImuCalib = extrinsic_para;
 	}
+
+}
+void Optimizer::DvlBeamOptimization(Map *pMap)
+{
+	Verbose::PrintMess("inertial optimization", Verbose::VERBOSITY_NORMAL);
+	int its = 200; // Check number of iterations
+	long unsigned int maxKFid = pMap->GetMaxKFid();
+	const vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
+
+	// Setup optimizer
+	g2o::SparseOptimizer optimizer;
+	g2o::BlockSolverX::LinearSolverType *linearSolver;
+
+	linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>();
+
+	g2o::BlockSolverX *solver_ptr = new g2o::BlockSolverX(linearSolver);
+
+	g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+
+
+	optimizer.setAlgorithm(solver);
+
+
+
+	VertexDVLBeamOritenstion *v_beam_ori = new VertexDVLBeamOritenstion();
+	Eigen::Matrix<double,8,1> alpha_beta;
+	alpha_beta << 1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI,
+		1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI,
+		1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI,
+		1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI;
+//	alpha_beta << 67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI,
+//		67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI,
+//		67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI,
+//		67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI;
+	v_beam_ori->setFixed(false);
+	v_beam_ori->setId(0);
+	v_beam_ori->setEstimate(alpha_beta);
+	optimizer.addVertex(v_beam_ori);
+
+	// Graph edges
+	vector<EdgeDvlGyroInit3 *> vpei;
+	vpei.reserve(vpKFs.size());
+	vector<pair<KeyFrame *, KeyFrame *>> vppUsedKF;
+	vppUsedKF.reserve(vpKFs.size());
+	std::cout << "build optimization graph" << std::endl;
+
+	for (size_t i = 0; i < vpKFs.size(); i++) {
+		KeyFrame *pKFi = vpKFs[i];
+
+		if (pKFi->mPrevKF && pKFi->mnId <= maxKFid) {
+			if (pKFi->isBad() || pKFi->mPrevKF->mnId > maxKFid) {
+				continue;
+			}
+			if (!pKFi->mpDvlPreintegrationKeyFrame) {
+				std::cout << "Not preintegrated measurement" << std::endl;
+			}
+
+
+			EdgeDVLBeamCalibration1* ei = new EdgeDVLBeamCalibration1();
+			ei->setVertex(0,v_beam_ori);
+			ei->setInformation(Eigen::Matrix<double, 4, 4>::Identity() * 180.0 / M_PI);
+			ei->setMeasurement(pKFi->mpDvlPreintegrationKeyFrame);
+
+
+			vppUsedKF.push_back(make_pair(pKFi->mPrevKF, pKFi));
+			optimizer.addEdge(ei);
+		}
+	}
+
+
+	optimizer.setVerbose(true);
+	optimizer.initializeOptimization();
+	optimizer.optimize(10);
+
+	Eigen::Matrix<double, 8, 1> r_opt = v_beam_ori->estimate();
+
+	ROS_INFO_STREAM(
+		"DVL Calibration(visual data):\nbeam1_theta=" << r_opt(0) / M_PI * 180.0 << " beam1_phi=" << r_opt(1) / M_PI * 180.0
+		                                 << "\nbeam2_theta=" << r_opt(2) / M_PI * 180.0 << " beam2_phi="
+		                                 << r_opt(3) / M_PI * 180.0
+		                                 << "\nbeam3_theta=" << r_opt(4) / M_PI * 180.0 << " beam3_phi="
+		                                 << r_opt(5) / M_PI * 180.0
+		                                 << "\nbeam4_theta=" << r_opt(6) / M_PI * 180.0 << " beam4_phi="
+		                                 << r_opt(7) / M_PI * 180.0);
+
+
+
+}
+
+void Optimizer::DvlBeamOptimization_dvl(Map *pMap)
+{
+	Verbose::PrintMess("inertial optimization", Verbose::VERBOSITY_NORMAL);
+	int its = 200; // Check number of iterations
+	long unsigned int maxKFid = pMap->GetMaxKFid();
+	const vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
+
+	// Setup optimizer
+	g2o::SparseOptimizer optimizer;
+	g2o::BlockSolverX::LinearSolverType *linearSolver;
+
+	linearSolver = new g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>();
+
+	g2o::BlockSolverX *solver_ptr = new g2o::BlockSolverX(linearSolver);
+
+	g2o::OptimizationAlgorithmLevenberg *solver = new g2o::OptimizationAlgorithmLevenberg(solver_ptr);
+
+
+	optimizer.setAlgorithm(solver);
+
+
+
+	VertexDVLBeamOritenstion *v_beam_ori = new VertexDVLBeamOritenstion();
+	Eigen::Matrix<double,8,1> alpha_beta;
+	alpha_beta << 1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI,
+		1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI,
+		1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI,
+		1.5 / 180.0 * M_PI,
+		1.0 / 180.0 * M_PI;
+//	alpha_beta << 67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI,
+//		67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI,
+//		67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI,
+//		67.5 / 180.0 * M_PI,
+//		45 / 180.0 * M_PI;
+	v_beam_ori->setFixed(false);
+	v_beam_ori->setId(0);
+	v_beam_ori->setEstimate(alpha_beta);
+	optimizer.addVertex(v_beam_ori);
+
+	// Graph edges
+	vector<EdgeDvlGyroInit3 *> vpei;
+	vpei.reserve(vpKFs.size());
+	vector<pair<KeyFrame *, KeyFrame *>> vppUsedKF;
+	vppUsedKF.reserve(vpKFs.size());
+	std::cout << "build optimization graph" << std::endl;
+
+	for (size_t i = 0; i < vpKFs.size(); i++) {
+		KeyFrame *pKFi = vpKFs[i];
+
+		if (pKFi->mPrevKF && pKFi->mnId <= maxKFid) {
+			if (pKFi->isBad() || pKFi->mPrevKF->mnId > maxKFid) {
+				continue;
+			}
+			if (!pKFi->mpDvlPreintegrationKeyFrame) {
+				std::cout << "Not preintegrated measurement" << std::endl;
+			}
+
+
+			EdgeDVLBeamCalibration2* ei = new EdgeDVLBeamCalibration2();
+			ei->setVertex(0,v_beam_ori);
+			ei->setInformation(Eigen::Matrix<double, 4, 4>::Identity() * 180.0 / M_PI);
+			ei->setMeasurement(pKFi->mpDvlPreintegrationKeyFrame);
+
+
+			vppUsedKF.push_back(make_pair(pKFi->mPrevKF, pKFi));
+			optimizer.addEdge(ei);
+		}
+	}
+
+
+	optimizer.setVerbose(true);
+	optimizer.initializeOptimization();
+	optimizer.optimize(10);
+
+	Eigen::Matrix<double, 8, 1> r_opt = v_beam_ori->estimate();
+
+	ROS_INFO_STREAM(
+		"DVL Calibration(DVL data):\nbeam1_theta=" << r_opt(0) / M_PI * 180.0 << " beam1_phi=" << r_opt(1) / M_PI * 180.0
+		                                 << "\nbeam2_theta=" << r_opt(2) / M_PI * 180.0 << " beam2_phi="
+		                                 << r_opt(3) / M_PI * 180.0
+		                                 << "\nbeam3_theta=" << r_opt(4) / M_PI * 180.0 << " beam3_phi="
+		                                 << r_opt(5) / M_PI * 180.0
+		                                 << "\nbeam4_theta=" << r_opt(6) / M_PI * 180.0 << " beam4_phi="
+		                                 << r_opt(7) / M_PI * 180.0);
+
+
 
 }
 

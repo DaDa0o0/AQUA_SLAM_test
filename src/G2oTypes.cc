@@ -1372,7 +1372,7 @@ void EdgeDvlGyroInit3::computeError()
 
 	Eigen::Vector3d v_d = V_v->estimate();
 	Eigen::Vector3d v_test(0.1,0.1,0.1);
-	Eigen::Vector3d v_gt(mpInt->v_debug.x,mpInt->v_debug.y,mpInt->v_debug.z);
+	Eigen::Vector3d v_gt(mpInt->v_dk_dvl.x, mpInt->v_dk_dvl.y, mpInt->v_dk_dvl.z);
 
 	mpInt->ReintegrateWithVelocity(v_d);
 

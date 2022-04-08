@@ -528,7 +528,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 	cv::cv2eigen(T_g_d_cv, T_g_d.matrix());
 	cv::cv2eigen(T_d_c_cv, T_d_c.matrix());
 	cv::Mat R_g_d = T_g_d_cv.rowRange(0, 3).colRange(0, 3);
-	R_g_d.convertTo(R_g_d,CV_64F);
+//	R_g_d.convertTo(R_g_d,CV_64F);
 
 	Eigen::Isometry3d T_d0_d1 = T_d_c * T_c0_c1 * T_d_c.inverse();
 	T_d0_dj = T_d0_dj * T_d0_d1;

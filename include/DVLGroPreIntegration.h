@@ -132,10 +132,11 @@ public:
 	bool bDVL;
 	// if velocity reading is more then threshold, filter it out
 	double mVelocityThreshold;
-	cv::Point3d v_debug;
+	cv::Point3d v_dk_dvl;
 
 	void SetDVLDebugVelocity(const cv::Point3d &v_dk);
-	Eigen::Vector3d v_di_dvl, v_di_visual;
+	Eigen::Vector3d v_di_dvl, v_dk_visual;
+	std::vector<double> mBeams;
 
 
 private:

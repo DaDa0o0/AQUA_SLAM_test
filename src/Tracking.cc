@@ -120,7 +120,7 @@ Tracking::Tracking(System *pSys,
 		mlamda_DVL = fSettings["Optimizer.DVL_lamda"];
 		mlamda_DVL_debug = fSettings["Optimizer.DVL_lamda_debug"];
 		mDVL_func_debug = fSettings["Optimizer.DVL_func"];
-		mKF_init_step = fSettings["Optimizer.KF_init_step"];
+		mKF_init_step = (double )fSettings["Optimizer.KF_init_step"];
 		mKF_num_for_init = fSettings["Optimizer.KF_num_for_init"];
 		double dCalibrated;
 		dCalibrated = fSettings["Optimizer.calibrated"];
@@ -1614,11 +1614,11 @@ void Tracking::PreintegrateDvlGro2()
 		if (v_d.x != 0 && v_d.y != 0 && v_d.z != 0) {
 //			cout<<"velocity measurement: "<<acc<<endl;
 			mpDvlPreintegratedFromLastKF->IntegrateDVLMeasurement2(v_beam, tstep);
-			mpDvlPreintegratedFromLastKF->v_debug = v_d;
+			mpDvlPreintegratedFromLastKF->v_dk_dvl = v_d;
 			mpDvlPreintegratedFromLastKF->SetDVLDebugVelocity(v_d);
 //			ROS_INFO_STREAM("add kf velocity measurement:"<<acc);
 			pDvlGroPreIntegratedFromLastFrame->IntegrateDVLMeasurement2(v_beam, tstep);
-			pDvlGroPreIntegratedFromLastFrame->v_debug = v_d;
+			pDvlGroPreIntegratedFromLastFrame->v_dk_dvl = v_d;
 			pDvlGroPreIntegratedFromLastFrame->SetDVLDebugVelocity(v_d);
 			{
 				DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = getLossIntegrationRef();
@@ -1626,7 +1626,7 @@ void Tracking::PreintegrateDvlGro2()
 				pDvlPreintegratedFromLastKFBeforeLost->SetBeamOrientation(alpha,beta);
 				if (mDoLossIntegration) {
 					pDvlPreintegratedFromLastKFBeforeLost->IntegrateDVLMeasurement2(v_beam, tstep);
-					pDvlPreintegratedFromLastKFBeforeLost->v_debug = v_d;
+					pDvlPreintegratedFromLastKFBeforeLost->v_dk_dvl = v_d;
 					pDvlPreintegratedFromLastKFBeforeLost->SetDVLDebugVelocity(v_d);
 //					ROS_INFO_STREAM("add loss ref velocity measurement:"<<acc);
 				}

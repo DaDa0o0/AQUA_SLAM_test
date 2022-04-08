@@ -137,6 +137,9 @@ public:
 	void static DvlGyroInitOptimization5(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 	// fix bias extrinsic, opt velocity
 	void static DvlGyroInitOptimization6(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+
+	void static DvlBeamOptimization(Map *pMap);
+	void static DvlBeamOptimization_dvl(Map *pMap);
 };
 
 } //namespace ORB_SLAM3
