@@ -1629,8 +1629,8 @@ void LocalMapping::InitializeDvlGyro(float priorG, bool bFirst)
 	std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
 	// new bias has been set to all keyframes after optimization
 //	Optimizer::DvlGyroInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
-//	Optimizer::DvlGyroInitOptimization3(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
-	Optimizer::DvlGyroInitOptimization6(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
+	Optimizer::DvlGyroInitOptimization3(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
+//	Optimizer::DvlGyroInitOptimization6(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 //	Optimizer::DvlGyroInitOptimization5(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 

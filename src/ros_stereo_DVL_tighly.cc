@@ -627,9 +627,9 @@ void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 	sensor_msgs::ImuPtr p_new_msg(new sensor_msgs::Imu());
 	p_new_msg->header = imu_msg->header;
 	p_new_msg->angular_velocity = imu_msg->angular_velocity;
-	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z * 2;
-	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y * 2;
-	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x * 2;
+	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z ;
+	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y ;
+	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x ;
 //	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
 //	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
 //	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
