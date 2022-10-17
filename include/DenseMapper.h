@@ -87,6 +87,9 @@ class DenseMapper
 public:
 	DenseMapper(string settingFile);
 	std::mutex mDenseMapMutex;
+	/***
+	 * blobal point cloud in first DVL frame(d0 frame)
+	 */
 	pcl::PointCloud<pcl::PointXYZRGB> mGlobalMap;
 
 	// point cloud is in local camera frame

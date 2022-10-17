@@ -88,8 +88,9 @@ void Atlas::CreateNewMap()
 void Atlas::ChangeMap(Map *pMapFrom, Map *pMapTo)
 {
     unique_lock<mutex> lock(mMutexAtlas);
-    cout << "Chage map from "<<pMapFrom->GetId()<<" to : " << pMapTo->GetId() << endl;
+
     if(pMapFrom){
+	    cout << "Chage map from "<<pMapFrom->GetId()<<" to : " << pMapTo->GetId() << endl;
 		pMapFrom->SetStoredMap();
     }
 
@@ -334,24 +335,33 @@ void Atlas::PreSave()
 
 void Atlas::PostLoad()
 {
-    mvpCameras.clear();
+//    mvpCameras.clear();
     map<unsigned int,GeometricCamera*> mpCams;
-    for(Pinhole* pCam : mvpBackupCamPin)
-    {
-        //mvpCameras.push_back((GeometricCamera*)pCam);
-        mvpCameras.push_back(pCam);
-        mpCams[pCam->GetId()] = pCam;
-    }
-    for(KannalaBrandt8* pCam : mvpBackupCamKan)
-    {
-        //mvpCameras.push_back((GeometricCamera*)pCam);
-        mvpCameras.push_back(pCam);
-        mpCams[pCam->GetId()] = pCam;
-    }
+	for(auto pCamera:mvpCameras){
+		mpCams[pCamera->GetId()] = pCamera;
+	}
+//    for(Pinhole* pCam : mvpBackupCamPin)
+//    {
+//        //mvpCameras.push_back((GeometricCamera*)pCam);
+//        mvpCameras.push_back(pCam);
+//        mpCams[pCam->GetId()] = pCam;
+//    }
+//    for(KannalaBrandt8* pCam : mvpBackupCamKan)
+//    {
+//        //mvpCameras.push_back((GeometricCamera*)pCam);
+//        mvpCameras.push_back(pCam);
+//        mpCams[pCam->GetId()] = pCam;
+//    }
 
     mspMaps.clear();
     unsigned long int numKF = 0, numMP = 0;
     map<long unsigned int, KeyFrame*> mpAllKeyFrameId;
+	//recover KeyFrameDB
+	for(Map* pMi : mvpBackupMaps){
+		pMi->PostLoadKFID(mpAllKeyFrameId);
+	}
+	mpKeyFrameDB->SetORBVocabulary(mpORBVocabulary);
+	mpKeyFrameDB->PostLoad(mpAllKeyFrameId);
     for(Map* pMi : mvpBackupMaps)
     {
         cout << "Map id:" << pMi->GetId() << endl;
@@ -360,10 +370,17 @@ void Atlas::PostLoad()
         pMi->PostLoad(mpKeyFrameDB, mpORBVocabulary, mpKeyFrameId, mpCams);
         mpAllKeyFrameId.insert(mpKeyFrameId.begin(), mpKeyFrameId.end());
         numKF += pMi->GetAllKeyFrames().size();
+	    for(auto pKF:(pMi->GetAllKeyFrames())){
+			cout<<"KF camera1 pointer: "<<pKF->mpCamera<<"KF camera2 pointer: "<<pKF->mpCamera2<<endl;
+		}
         numMP += pMi->GetAllMapPoints().size();
     }
 
-    cout << "Number KF:" << numKF << "; number MP:" << numMP << endl;
+    cout << "Number Map: " << mspMaps.size() << "Number KF:" << numKF << "; number MP:" << numMP << endl;
+
+	for(auto pMap:mspMaps){
+		cout << "Map ID:" << pMap->GetId() << endl;
+	}
     mvpBackupMaps.clear();
 }
 

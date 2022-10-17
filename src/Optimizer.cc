@@ -7977,6 +7977,7 @@ void Optimizer::LocalBundleAdjustment(KeyFrame *pMainKF,
 		}
 	}
 
+	optimizer.save("/home/da/project/ros/orb_dvl2_ws/src/dvl2/orb3_result/merge_BA.g2o");
 	optimizer.initializeOptimization();
 	optimizer.optimize(5);
 

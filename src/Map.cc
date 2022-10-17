@@ -581,10 +581,14 @@ void Map::PreSave(std::set<GeometricCamera*> &spCams)
     for(MapPoint* pMPi : mspMapPoints)
     {
         //cout << "Pre-save of mappoint " << pMPi->mnId << endl;
+		if(pMPi->isBad()){
+			cout<<"skip save map point id: "<<pMPi->mnId<<endl;
+			continue;
+		}
         mvpBackupMapPoints.push_back(pMPi);
         pMPi->PreSave(mspKeyFrames,mspMapPoints);
     }
-    cout << "  MapPoints back up done!!" << endl;
+    cout << "  MapPoints back up done!! "<<mvpBackupMapPoints.size()<<" map points are saved" << endl;
 
     mvpBackupKeyFrames.clear();
     //std::copy(mspKeyFrames.begin(), mspKeyFrames.end(), std::back_inserter(mvpBackupKeyFrames));
@@ -646,10 +650,21 @@ void Map::PostLoad(KeyFrameDatabase* pKFDB, ORBVocabulary* pORBVoc, map<long uns
         pKFDB->add(pKFi);
     }
 
+	//recover follower ID
+	if(mpKeyFrameId.find(mnBackupKFlowerID)!=mpKeyFrameId.end()){
+		mpKFlowerID = mpKeyFrameId[mnBackupKFlowerID];
+	}
+
     cout << "End to rebuild KeyFrame references" << endl;
 
     mvpBackupMapPoints.clear();
 }
-
+void Map::PostLoadKFID(map<unsigned long, KeyFrame *> &mpKeyFrameId)
+{
+	for(KeyFrame* pKFi : mspKeyFrames)
+	{
+		mpKeyFrameId[pKFi->mnId] = pKFi;
+	}
+}
 
 } //namespace ORB_SLAM3

@@ -251,7 +251,7 @@ void DenseMapper::GetSubMap(const Mat &img_l, const Mat &img_r, pcl::PointCloud<
 			unsigned char r = static_cast<int>(img_l_rgb.at<Vec3b>(y, x)[2]);
 //				cout << "disp confidence: " << d_f << endl;
 
-			if (d_f <= 125 || (bf / d) > 10) {
+			if (d_f <= 200 || (bf / d) > 10) {
 				continue;
 			}
 			Eigen::Vector3d p_3d(0, 0, 0);
@@ -375,6 +375,9 @@ void DenseMapper::PublishMap()
 }
 void DenseMapper::Save(string path)
 {
+	if(!mEnable){
+		return;
+	}
 	std::lock_guard<std::mutex> lock(mDenseMapMutex);
 	string file_name = path+"KF_map.pcd";
 	pcl::io::savePCDFileBinary(file_name,mGlobalMap);

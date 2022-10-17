@@ -6,12 +6,13 @@
 #include "Atlas.h"
 #include "Map.h"
 #include "System.h"
+#include "LocalMapping.h"
 #include <fstream>
 using namespace ORB_SLAM3;
 using namespace std;
 
-RosHandling::RosHandling(System *pSys)
-	: mp_system(pSys)
+RosHandling::RosHandling(System *pSys, LocalMapping *pLocal)
+	: mp_system(pSys),mp_LocalMapping(pLocal)
 {
 	ros::NodeHandle nh_;
 	image_transport::ImageTransport it(nh_);
@@ -89,7 +90,14 @@ RosHandling::RosHandling(System *pSys)
 	ros::ServiceServer save_srv = nh_.advertiseService("/ORBSLAM3_tightly/save", &RosHandling::SavePose, this);
 	mp_save_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(save_srv));
 
+	ros::ServiceServer load_srv = nh_.advertiseService("/ORBSLAM3_tightly/load_map", &RosHandling::LoadMap, this);
+	m_load_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(load_srv));
+
+	ros::ServiceServer calib_srv = nh_.advertiseService("/ORBSLAM3_tightly/calibrate", &RosHandling::CalibrateDVLGyro, this);
+	m_calib_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(calib_srv));
+
 }
+
 
 void RosHandling::PublishLeftImg(const sensor_msgs::ImageConstPtr &img)
 {
@@ -561,7 +569,8 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 		T_d0_dj = T_d0_dj * T_di_dj;
 		// todo_tightly
 		// save inverse
-		Eigen::Isometry3d T_c0_cj_integration = T_c_enu.inverse() * T_d_c.inverse() * T_d0_dj * T_d_c * T_c_enu;
+//		Eigen::Isometry3d T_c0_cj_integration = T_c_enu.inverse() * T_d_c.inverse() * T_d0_dj * T_d_c * T_c_enu;
+		Eigen::Isometry3d T_c0_cj_integration = T_d0_dj ;
 		poses_integration.push_back(T_c0_cj_integration);
 
 		geometry_msgs::PoseStamped pose_to_pub;
@@ -588,7 +597,8 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 		cv::Mat T_c0_cj_orb_cv = pKF->GetPoseInverse();
 		Eigen::Isometry3d T_c0_cj_orb = Eigen::Isometry3d::Identity();
 		cv::cv2eigen(T_c0_cj_orb_cv, T_c0_cj_orb.matrix());
-		T_c0_cj_orb = T_c_enu.inverse() * T_c0_cj_orb * T_c_enu;
+//		T_c0_cj_orb = T_c_enu.inverse() * T_c0_cj_orb * T_c_enu;
+		T_c0_cj_orb = T_d_c * T_c0_cj_orb * T_d_c.inverse();
 
 		pose_to_pub.header.frame_id = "orb_slam";
 		//pose_to_pub.header.stamp=ros::Time::now();
@@ -700,10 +710,22 @@ bool RosHandling::SavePose(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse 
 	ros::param::get("/ORBSLAM3_tightly/out_path", out_path);
 	mp_system->SaveKeyFrameTrajectoryTUM(out_path + "KeyFrameTrajectory_TUM_Format");
 	mp_system->mpDenseMapper->Save(out_path);
+	mp_system->SaveAtlas(out_path, System::TEXT_FILE);
 	return true;
 }
+bool RosHandling::LoadMap(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+	string map_file;
+	ros::param::get("/ORBSLAM3_tightly/map_file", map_file);
+	mp_system->LoadAtlas(map_file,System::TEXT_FILE);
+	return true;
+}
+
 void RosHandling::PublishImgMergeCandidate(const cv::Mat &img)
 {
+	if(img.empty()){
+		return;
+	}
 	cv::Mat img_to_pub;
 	img.copyTo(img_to_pub);
 	std_msgs::Header header; // empty header
@@ -716,4 +738,9 @@ void RosHandling::PublishImgMergeCandidate(const cv::Mat &img)
 	cv_bridge::CvImage img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, img_to_pub);
 
 	mp_img_merge_cond_pub->publish(img_bridge.toImageMsg());
+}
+bool RosHandling::CalibrateDVLGyro(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+	mp_LocalMapping->InitializeDvlGyro();
+	return true;
 }

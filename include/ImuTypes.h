@@ -181,6 +181,11 @@ class Calib
 		serializeMatrix(ar, Tbc, version);
 		serializeMatrix(ar, Cov, version);
 		serializeMatrix(ar, CovWalk, version);
+		serializeMatrix(ar, mT_gyro_c, version);
+		serializeMatrix(ar, mT_c_gyro, version);
+		serializeMatrix(ar, mT_dvl_c, version);
+		serializeMatrix(ar, mT_c_dvl, version);
+		serializeMatrix(ar, mT_gyro_dvl, version);
 	}
 
 public:
@@ -374,6 +379,37 @@ private:
 
 	struct integrable
 	{
+		template<class Archive>
+		void serializePoint3f(Archive &ar, cv::Point3f &p, const unsigned int version)
+		{
+			float x, y, z;
+			if (Archive::is_saving::value) {
+				x = p.x;
+				y = p.y;
+				z = p.z;
+				ar & x;
+				ar & y;
+				ar & z;
+			}
+			else if (Archive::is_loading::value) {
+				ar & x;
+				ar & y;
+				ar & z;
+				p = cv::Point3f(x, y, z);
+			}
+		}
+
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive &ar, const unsigned int version)
+		{
+			serializePoint3f(ar,a,version);
+			serializePoint3f(ar,w,version);
+			ar & t;
+		}
+
+		integrable()
+		{}
 		integrable(const cv::Point3f &a_, const cv::Point3f &w_, const float &t_)
 			: a(a_), w(w_), t(t_)
 		{}

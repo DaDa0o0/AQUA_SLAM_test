@@ -1601,10 +1601,10 @@ void LocalMapping::InitializeDvlGyro(float priorG, bool bFirst)
 		return;
 	}
 
-	mFirstTs = vpKF.front()->mTimeStamp;
-	if (mpCurrentKeyFrame->mTimeStamp - mFirstTs < minTime) {
-		return;
-	}
+//	mFirstTs = vpKF.front()->mTimeStamp;
+//	if (mpCurrentKeyFrame->mTimeStamp - mFirstTs < minTime) {
+//		return;
+//	}
 
 	bInitializing = true;
 

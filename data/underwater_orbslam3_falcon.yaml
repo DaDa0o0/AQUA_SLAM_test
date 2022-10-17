@@ -83,6 +83,18 @@ Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
 Tracker.ReLocalTime: 0.5
 
+
+alpha: !!opencv-matrix
+  rows: 4
+  cols: 1
+  dt: f
+  data: [ 1.1780, 1.1780, 1.1780, 1.1780]
+beta: !!opencv-matrix
+  rows: 4
+  cols: 1
+  dt: f
+  data: [ 0.7854, 0.7854, 0.7854, 0.7854]
+
 # IMU Parameters  -0.0539971  0.0286326
 Tbc: !!opencv-matrix
   rows: 4
@@ -92,7 +104,7 @@ Tbc: !!opencv-matrix
          0.09538717271, 0.9937878685, -0.05733201293, -0.064676986768,
          -0.03613443986, 0.06101347458, 0.9974826606, 0.00981073058949,
          0.0, 0.0, 0.0, 1.0]
-IMU.Frequency: 40
+IMU.Frequency: 300
 IMU.NoiseGyro: 0.1
 IMU.NoiseAcc: 0.1
 IMU.GyroWalk: 0.01
@@ -193,6 +205,6 @@ DenseMapper:
   stereo_algorithm: 0
   texture_threshold: 15
   uniqueness_ratio: 45.0
-  leaf_size: 0.05
+  leaf_size: 0.02
   mean_k: 50
-  std_thred: 0.2
+  std_thred: 0.02

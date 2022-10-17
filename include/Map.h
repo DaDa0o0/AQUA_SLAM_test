@@ -30,6 +30,7 @@
 #include <Eigen/Geometry>
 #include "ORBVocabulary.h"
 #include <boost/serialization/base_object.hpp>
+#include <boost/serialization/set.hpp>
 
 
 namespace ORB_SLAM3
@@ -43,6 +44,22 @@ class GeometricCamera;
 
 class Map
 {
+	template<class Archive>
+	void serializeEigenV3d(Archive &ar, Eigen::Matrix<double,3,1> &m, const unsigned int version)
+	{
+//		double x, y, z, w;
+		int cols, rows;
+		cols = m.cols();
+		rows = m.rows();
+		ar & cols;
+		ar & rows;
+		for(int i = 0;i<rows;i++){
+			for(int j=0;j<cols;j++){
+				ar & m(i,j);
+			}
+		}
+	}
+
     friend class boost::serialization::access;
 
     template<class Archive>
@@ -72,6 +89,7 @@ class Map
         ar & mnInitKFid;
         ar & mnMaxKFid;
         ar & mnLastLoopKFid;
+	    serializeEigenV3d(ar,mColor,version);
     }
 
 public:
@@ -140,6 +158,7 @@ public:
 
     void PreSave(std::set<GeometricCamera*> &spCams);
     void PostLoad(KeyFrameDatabase* pKFDB, ORBVocabulary* pORBVoc, map<long unsigned int, KeyFrame*>& mpKeyFrameId, map<unsigned int, GeometricCamera*> &mpCams);
+	void PostLoadKFID(map<long unsigned int, KeyFrame*>& mpKeyFrameId);
 
     void printReprojectionError(list<KeyFrame*> &lpLocalWindowKFs, KeyFrame* mpCurrentKF, string &name, string &name_folder);
 

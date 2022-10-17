@@ -57,7 +57,6 @@ namespace logging = boost::log;
 namespace src = boost::log::sources;
 namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
-
 //	ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
 boost::shared_ptr<ros::Publisher> pimg_test_pub;
 
@@ -199,7 +198,8 @@ int main(int argc, char **argv)
 //	ros::Subscriber sub_img_left = n.subscribe("/suv3d/left/rgb_rect", 100, &ImageGrabber::GrabImageLeft, &igb);
 //	ros::Subscriber sub_img_right = n.subscribe("/suv3d/right/rgb_rect", 100, &ImageGrabber::GrabImageRight, &igb);
 
-	std::thread sync_thread(&ImageGrabber::SyncWithImu2, &igb);
+	std::thread sync_thread(&ImageGrabber::SyncWithImu, &igb);
+//	std::thread sync_thread(&ImageGrabber::SyncWithImu2, &igb);
 
 	ros::spin();
 

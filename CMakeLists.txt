@@ -4,8 +4,8 @@ project(ORB_DVL2)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -w")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-SET(ROS_BUILD_TYPE RelWithDebInfo)
-SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+#SET(ROS_BUILD_TYPE RelWithDebInfo)
+#SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 add_definitions(-DCOMPILEDWITHC11)
@@ -271,15 +271,17 @@ target_link_libraries(${PROJECT_NAME}
         ${PCL_LIBRARIES}
         fmt::fmt-header-only
         ${Sophus_LIBRARIES}
-#        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-#        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-#        ${PROJECT_SOURCE_DIR}/Thirdparty/octomap/lib/liboctomap.so
+        #        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+        #        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
+        #        ${PROJECT_SOURCE_DIR}/Thirdparty/octomap/lib/liboctomap.so
         DBoW2
         g2o
         octomap
         ${catkin_LIBRARIES}
         -lboost_serialization
         -lboost_system
+        -lboost_filesystem
+        -lboost_iostreams
         -lcrypto
         )
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
@@ -294,6 +296,10 @@ add_executable(stereo_dvl2 ${PROJECT_SOURCE_DIR}/src/ros_stereo_DVL_tighly.cc)
 target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME})
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
 add_dependencies(stereo_dvl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(boost_test ${PROJECT_SOURCE_DIR}/src/test/boost_test.cpp)
+target_link_libraries(boost_test -lboost_serialization
+        -lboost_system)
 
 #add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
 ##target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})

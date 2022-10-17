@@ -2720,7 +2720,7 @@ void Tracking::TrackDVLGyro()
 		{
 			std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
 			if (mpDvlPreintegratedFromLastKFBeforeLost) {
-				cout<<"ref integration DV:"<<mpDvlPreintegratedFromLastKFBeforeLost->dV.t()<<" dt: "<<mpDvlPreintegratedFromLastKFBeforeLost->dT<<endl;
+//				cout<<"ref integration DV:"<<mpDvlPreintegratedFromLastKFBeforeLost->dV.t()<<" dt: "<<mpDvlPreintegratedFromLastKFBeforeLost->dT<<endl;
 				mpDvlPreintegratedFromLastKFBeforeLost->output();
 			}
 			if (mpDvlPreintegratedFromLastKF) {

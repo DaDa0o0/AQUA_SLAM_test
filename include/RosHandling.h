@@ -59,11 +59,12 @@ namespace ORB_SLAM3
 {
 class Atlas;
 class System;
+class LocalMapping;
 
 class RosHandling
 {
 public:
-	RosHandling(System *pSys);
+	RosHandling(System *pSys, LocalMapping *pLocal);
 	void PublishLeftImg(const sensor_msgs::ImageConstPtr &img);
 	void PublishRightImg(const sensor_msgs::ImageConstPtr &img);
 	void PublishImgWithInfo(const sensor_msgs::ImageConstPtr &img);
@@ -88,9 +89,12 @@ public:
 	double LinearInterpolation(double start_x, double end_x, double start_y, double end_y, double x);
 	void PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec);
 	bool SavePose(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
+	bool LoadMap(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
+	bool CalibrateDVLGyro(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res);
 
 protected:
 	System *mp_system;
+	LocalMapping *mp_LocalMapping;
 
 	boost::shared_ptr<image_transport::ImageTransport> mp_it;
 	boost::shared_ptr<image_transport::Publisher> mp_img_l_pub;
@@ -133,9 +137,14 @@ protected:
 	boost::shared_ptr<ros::Publisher> mp_pose_integration_ref_pub;
 	boost::shared_ptr<ros::Publisher> mp_pose_integration_cur_pub;
 
-	boost::shared_ptr<ros::ServiceServer> mp_save_srv;
+	boost::shared_ptr<ros::ServiceServer> mp_save_srv, m_load_srv, m_calib_srv;
 
-
+public:
+	void setLocalMapping(LocalMapping *mpLocalMapping)
+	{
+		mp_LocalMapping = mpLocalMapping;
+	}
+protected:
 
 
 	//	todo unfinished

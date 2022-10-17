@@ -231,12 +231,31 @@ class KeyFrame
         ar & const_cast<int&>(mnMaxX);
         ar & const_cast<int&>(mnMaxY);
         serializeMatrix(ar,mK,version);
+		ar & mPrevKF;
+		ar & mNextKF;
+		ar & mpImuPreintegrated;
+		ar & mImuCalib;
+		ar & mnOriginMapId;
+		ar & mNameFile;
+		ar & mnDataset;
+		ar & mvpLoopCandKFs;
+		ar & mvpMergeCandKFs;
+		ar & mbHasHessian;
+	    serializeMatrix(ar,mHessianPose,version);
+		ar & mGrid;
+	    ar & mGridRight;
         // Pose
         serializeMatrix(ar,Tcw,version);
+	    serializeMatrix(ar,Twc,version);
+	    serializeMatrix(ar,Ow,version);
+	    serializeMatrix(ar,Cw,version);
+	    serializeMatrix(ar,Owb,version);
+	    serializeMatrix(ar,Vw,version);
+
         // MapPointsId associated to keypoints
         ar & mvBackupMapPointsId;
         // Grid
-        ar & mGrid;
+//        ar & mGrid;
         // Connected KeyFrameWeight
         ar & mBackupConnectedKeyFrameIdWeights;
         // Spanning Tree and Loop Edges
@@ -257,14 +276,13 @@ class KeyFrame
         ar & mnBackupIdCamera2;
 
         // Fisheye variables
-        /*ar & mvLeftToRightMatch;
+        ar & mvLeftToRightMatch;
         ar & mvRightToLeftMatch;
-        ar & NLeft;
-        ar & NRight;
+        ar & const_cast<int&>(NLeft);
+        ar & const_cast<int&>(NRight);
         serializeMatrix(ar, mTlr, version);
-        //serializeMatrix(ar, mTrl, version);
+	    serializeMatrix(ar, mTrl, version);
         serializeVectorKeyPoints(ar, mvKeysRight, version);
-        ar & mGridRight;
 
         // Inertial variables
         ar & mImuBias;
@@ -274,7 +292,9 @@ class KeyFrame
         ar & mBackupNextKFId;
         ar & bImu;
         serializeMatrix(ar, Vw, version);
-        serializeMatrix(ar, Owb, version);*/
+
+	    ar & mpDvlPreintegrationKeyFrame;
+		ar & mImuCalib;
 
     }
 

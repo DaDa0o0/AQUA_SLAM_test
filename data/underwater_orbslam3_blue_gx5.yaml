@@ -147,7 +147,7 @@ T_dvl_c: !!opencv-matrix
           0,  0,   0,    1 ]
 
 DenseMapper:
-  enable: 0
+  enable: 1
   P1: 200.0
   P2: 400.0
   correlation_window_size: 21
@@ -163,5 +163,5 @@ DenseMapper:
   texture_threshold: 5
   uniqueness_ratio: 15.0
   leaf_size: 0.001
-  mean_k: 50
-  std_thred: 0.05
+  mean_k: 500
+  std_thred: 0.5

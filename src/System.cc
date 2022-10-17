@@ -34,13 +34,16 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
-#include <boost/archive/xml_oarchive.hpp>
+//#include <boost/archive/xml_iarchive.hpp>
+//#include <boost/archive/xml_oarchive.hpp>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+//BOOST_CLASS_EXPORT_GUID(ORB_SLAM3::Pinhole, "Pinhole")
+//BOOST_CLASS_EXPORT_GUID(ORB_SLAM3::KannalaBrandt8, "KannalaBrandt8")
 
 namespace ORB_SLAM3
 {
@@ -48,20 +51,20 @@ namespace ORB_SLAM3
 Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-			   const bool bUseViewer, const int initFr, const string &strSequence, const string &strLoadingFile)
+               const bool bUseViewer, const int initFr, const string &strSequence, const string &strLoadingFile)
 	: mSensor(sensor), mpViewer(static_cast<Viewer *>(NULL)), mbReset(false), mbResetActiveMap(false),
-	  mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false)
+	  mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mStrVocabularyFilePath(strVocFile)
 {
 	// Output welcome message
 	cout << endl
-		 << "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
-		 << endl
-		 << "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
-		 << endl
-		 << "This program comes with ABSOLUTELY NO WARRANTY;" << endl
-		 << "This is free software, and you are welcome to redistribute it" << endl
-		 << "under certain conditions. See LICENSE.txt." << endl
-		 << endl;
+	     << "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
+	     << endl
+	     << "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
+	     << endl
+	     << "This program comes with ABSOLUTELY NO WARRANTY;" << endl
+	     << "This is free software, and you are welcome to redistribute it" << endl
+	     << "under certain conditions. See LICENSE.txt." << endl
+	     << endl;
 
 	cout << "Input sensor was set to: ";
 
@@ -97,7 +100,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 	//----
 	//Load ORB Vocabulary
 	cout << endl
-		 << "Loading ORB Vocabulary. This could take a while..." << endl;
+	     << "Loading ORB Vocabulary. This could take a while..." << endl;
 
 	mpVocabulary = new ORBVocabulary();
 	bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
@@ -107,7 +110,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 		exit(-1);
 	}
 	cout << "Vocabulary loaded!" << endl
-		 << endl;
+	     << endl;
 
 	//Create KeyFrame Database
 	mpKeyFrameDatabase = new KeyFrameDatabase(*mpVocabulary);
@@ -115,6 +118,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 	//Create the Atlas
 	//mpMap = new Map();
 	mpAtlas = new Atlas(0);
+	bool bLoadMap = false;
+	ros::param::get("/ORBSLAM3_tightly/is_load_map", bLoadMap);
+	string out_path;
+	ros::param::get("/ORBSLAM3_tightly/out_path", out_path);
+	out_path = out_path + "/Altlas.osa";
+	if(bLoadMap){
+		LoadAtlas(out_path,System::TEXT_FILE);
+		mpAtlas->CreateNewMap();
+	}
+
 	//----
 
 	/*if(strLoadingFile.empty())
@@ -191,26 +204,35 @@ else
 	mpFrameDrawer = new FrameDrawer(mpAtlas);
 	mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile);
 
-	mRosHandler = new RosHandling(this);
 
 	//set DenseMapper
 	mpDenseMapper = new DenseMapper(strSettingsFile);
 	auto dense_mapping = new thread(&ORB_SLAM3::DenseMapper::Run, mpDenseMapper);
 
+	mRosHandler = new RosHandling(this,mpLocalMapper);
 	//Initialize the Tracking thread
 	//(it will live in the main thread of execution, the one that called this constructor)
 	cout << "Seq. Name: " << strSequence << endl;
-	mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-							 mpAtlas, mpKeyFrameDatabase, mRosHandler, mpDenseMapper, strSettingsFile, mSensor, strSequence);
+	mpTracker = new Tracking(this,
+	                         mpVocabulary,
+	                         mpFrameDrawer,
+	                         mpMapDrawer,
+	                         mpAtlas,
+	                         mpKeyFrameDatabase,
+	                         mRosHandler,
+	                         mpDenseMapper,
+	                         strSettingsFile,
+	                         mSensor,
+	                         strSequence);
 
 	//Initialize the Local Mapping thread and launch
 	mpLocalMapper = new LocalMapping(this,
-									 mpAtlas,
-									 mpDenseMapper,
-									 mSensor == MONOCULAR || mSensor == IMU_MONOCULAR,
-									 mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO,
-									 mSensor == DVL_STEREO,
-									 strSettingsFile);
+	                                 mpAtlas,
+	                                 mpDenseMapper,
+	                                 mSensor == MONOCULAR || mSensor == IMU_MONOCULAR,
+	                                 mSensor == IMU_MONOCULAR || mSensor == IMU_STEREO,
+	                                 mSensor == DVL_STEREO,
+	                                 strSettingsFile);
 	mptLocalMapping = new thread(&ORB_SLAM3::LocalMapping::Run, mpLocalMapper);
 	mpLocalMapper->mInitFr = initFr;
 	mpLocalMapper->mThFarPoints = fsSettings["thFarPoints"];
@@ -221,12 +243,17 @@ else
 	else {
 		mpLocalMapper->mbFarPoints = false;
 	}
-
+	mRosHandler->setLocalMapping(mpLocalMapper);
 	//Initialize the Loop Closing thread and launch
 	// mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR
 	int mergingThreshold = fsSettings["Optimizer.mergingThreshold"];
 	mpLoopCloser =
-		new LoopClosing(mpAtlas, mpKeyFrameDatabase, mpVocabulary,mRosHandler, mSensor != MONOCULAR,mergingThreshold); // mSensor!=MONOCULAR);
+		new LoopClosing(mpAtlas,
+		                mpKeyFrameDatabase,
+		                mpVocabulary,
+		                mRosHandler,
+		                mSensor != MONOCULAR,
+		                mergingThreshold); // mSensor!=MONOCULAR);
 	mptLoopClosing = new thread(&ORB_SLAM3::LoopClosing::Run, mpLoopCloser);
 
 	//Initialize the Viewer thread and launch
@@ -262,21 +289,18 @@ else
 //	mT_e_c.pretranslate(t);
 }
 
-
 void System::dvlCallBack(const nav_msgs::OdometryConstPtr &dvl)
 {
 	std::lock_guard<std::mutex> guard(mDVL_state_lock);
 	mDVL_updated = true;
 }
 
-
-
 cv::Mat System::TrackStereoGroDVL(const cv::Mat &imLeft,
-								  const cv::Mat &imRight,
-								  const double &timestamp,
-								  const vector<IMU::ImuPoint> &vImuMeas,
-								  bool bDVL,
-								  string filename)
+                                  const cv::Mat &imRight,
+                                  const double &timestamp,
+                                  const vector<IMU::ImuPoint> &vImuMeas,
+                                  bool bDVL,
+                                  string filename)
 {
 	if (mSensor != DVL_STEREO) {
 		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
@@ -343,7 +367,6 @@ cv::Mat System::TrackStereoGroDVL(const Mat &imLeft,
                                   const vector<IMU::GyroDvlPoint> &vDVLGyroMeas,
                                   bool bDVL,
                                   string filename)
-
 {
 	if (mSensor != DVL_STEREO) {
 		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
@@ -403,7 +426,6 @@ cv::Mat System::TrackStereoGroDVL(const Mat &imLeft,
 
 	return Tcw;
 }
-
 
 void System::ActivateLocalizationMode()
 {
@@ -478,7 +500,7 @@ void System::Shutdown()
 void System::SaveTrajectoryTUM(const string &filename)
 {
 	cout << endl
-		 << "Saving camera trajectory to " << filename << " ..." << endl;
+	     << "Saving camera trajectory to " << filename << " ..." << endl;
 	if (mSensor == MONOCULAR) {
 		cerr << "ERROR: SaveTrajectoryTUM cannot be used for monocular." << endl;
 		return;
@@ -505,8 +527,8 @@ void System::SaveTrajectoryTUM(const string &filename)
 	list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
 	list<bool>::iterator lbL = mpTracker->mlbLost.begin();
 	for (list<cv::Mat>::iterator lit = mpTracker->mlRelativeFramePoses.begin(),
-			 lend = mpTracker->mlRelativeFramePoses.end();
-		 lit != lend; lit++, lRit++, lT++, lbL++) {
+		     lend = mpTracker->mlRelativeFramePoses.end();
+	     lit != lend; lit++, lRit++, lT++, lbL++) {
 		if (*lbL) {
 			continue;
 		}
@@ -574,8 +596,8 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 			vector<float> q = Converter::toQuaternion(R);
 			f_views << fixed;
 			f_views << frameIDs[pKF->mnFrameId] << " " << setprecision(6) << pKF->mTimeStamp
-					<< setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " "
-					<< t.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
+			        << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " "
+			        << t.at<float>(2) << " " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << endl;
 		}
 
 
@@ -586,20 +608,19 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 		for (size_t i = 0; i < mPts.size(); i++) {
 			MapPoint *mPt = mPts[i];
 			std::map<KeyFrame *, std::tuple<int, int>> ptObs = mPt->GetObservations();
-			if(mPt->isBad()){
+			if (mPt->isBad()) {
 				continue;
 			}
 			bool bAllbad = true;
-			for(auto it:ptObs){
-				if(!it.first->isBad()){
+			for (auto it: ptObs) {
+				if (!it.first->isBad()) {
 					bAllbad = false;
 					break;
 				}
 			}
-			if(bAllbad){
+			if (bAllbad) {
 				continue;
 			}
-
 
 
 			cv::Mat coord = mPt->GetWorldPos();
@@ -607,10 +628,9 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 			f_mappoints << coord.at<float>(0) << " " << coord.at<float>(1) << " " << coord.at<float>(2) << " ";
 
 
-
 			for (auto it = ptObs.begin(); it != ptObs.end(); ++it) {
 				KeyFrame *pKF = it->first;
-				if(pKF->isBad()){
+				if (pKF->isBad()) {
 					continue;
 				}
 				f_mappoints << frameIDs[pKF->mnFrameId] << " ";
@@ -630,7 +650,7 @@ void System::SaveTrajectoryEuRoC(const string &filename)
 {
 
 	cout << endl
-		 << "Saving trajectory to " << filename << " ..." << endl;
+	     << "Saving trajectory to " << filename << " ..." << endl;
 	/*if(mSensor==MONOCULAR)
 {
 	cerr << "ERROR: SaveTrajectoryEuRoC cannot be used for monocular." << endl;
@@ -640,7 +660,7 @@ void System::SaveTrajectoryEuRoC(const string &filename)
 	vector<Map *> vpMaps = mpAtlas->GetAllMaps();
 	Map *pBiggerMap;
 	int numMaxKFs = 0;
-	for (Map *pMap : vpMaps) {
+	for (Map *pMap: vpMaps) {
 		if (pMap->GetAllKeyFrames().size() > numMaxKFs) {
 			numMaxKFs = pMap->GetAllKeyFrames().size();
 			pBiggerMap = pMap;
@@ -681,8 +701,8 @@ void System::SaveTrajectoryEuRoC(const string &filename)
 	//cout << "size mpTracker->mlbLost: " << mpTracker->mlbLost.size() << endl;
 
 	for (list<cv::Mat>::iterator lit = mpTracker->mlRelativeFramePoses.begin(),
-			 lend = mpTracker->mlRelativeFramePoses.end();
-		 lit != lend; lit++, lRit++, lT++, lbL++) {
+		     lend = mpTracker->mlRelativeFramePoses.end();
+	     lit != lend; lit++, lRit++, lT++, lbL++) {
 		//cout << "1" << endl;
 		if (*lbL) {
 			continue;
@@ -745,18 +765,18 @@ void System::SaveTrajectoryEuRoC(const string &filename)
 	//cout << "end saving trajectory" << endl;
 	f.close();
 	cout << endl
-		 << "End of saving trajectory to " << filename << " ..." << endl;
+	     << "End of saving trajectory to " << filename << " ..." << endl;
 }
 
 void System::SaveKeyFrameTrajectoryEuRoC(const string &filename)
 {
 	cout << endl
-		 << "Saving keyframe trajectory to " << filename << " ..." << endl;
+	     << "Saving keyframe trajectory to " << filename << " ..." << endl;
 
 	vector<Map *> vpMaps = mpAtlas->GetAllMaps();
 	Map *pBiggerMap;
 	int numMaxKFs = 0;
-	for (Map *pMap : vpMaps) {
+	for (Map *pMap: vpMaps) {
 		if (pMap->GetAllKeyFrames().size() > numMaxKFs) {
 			numMaxKFs = pMap->GetAllKeyFrames().size();
 			pBiggerMap = pMap;
@@ -803,7 +823,7 @@ void System::SaveKeyFrameTrajectoryEuRoC(const string &filename)
 void System::SaveTrajectoryKITTI(const string &filename)
 {
 	cout << endl
-		 << "Saving camera trajectory to " << filename << " ..." << endl;
+	     << "Saving camera trajectory to " << filename << " ..." << endl;
 	if (mSensor == MONOCULAR) {
 		cerr << "ERROR: SaveTrajectoryKITTI cannot be used for monocular." << endl;
 		return;
@@ -829,7 +849,7 @@ void System::SaveTrajectoryKITTI(const string &filename)
 	list<ORB_SLAM3::KeyFrame *>::iterator lRit = mpTracker->mlpReferences.begin();
 	list<double>::iterator lT = mpTracker->mlFrameTimes.begin();
 	for (list<cv::Mat>::iterator lit = mpTracker->mlRelativeFramePoses.begin(),
-			 lend = mpTracker->mlRelativeFramePoses.end(); lit != lend; lit++, lRit++, lT++) {
+		     lend = mpTracker->mlRelativeFramePoses.end(); lit != lend; lit++, lRit++, lT++) {
 		ORB_SLAM3::KeyFrame *pKF = *lRit;
 
 		cv::Mat Trw = cv::Mat::eye(4, 4, CV_32F);
@@ -982,7 +1002,7 @@ void System::SaveKeyFrameDataToMat(const string &filename)
 		vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();
 		sort(vpKFs.begin(), vpKFs.end(), KeyFrame::lId);
 
-		for(auto pKF:vpKFs){
+		for (auto pKF: vpKFs) {
 
 		}
 
@@ -1022,20 +1042,19 @@ void System::SaveKeyFrameDataToMat(const string &filename)
 		for (size_t i = 0; i < mPts.size(); i++) {
 			MapPoint *mPt = mPts[i];
 			std::map<KeyFrame *, std::tuple<int, int>> ptObs = mPt->GetObservations();
-			if(mPt->isBad()){
+			if (mPt->isBad()) {
 				continue;
 			}
 			bool bAllbad = true;
-			for(auto it:ptObs){
-				if(!it.first->isBad()){
+			for (auto it: ptObs) {
+				if (!it.first->isBad()) {
 					bAllbad = false;
 					break;
 				}
 			}
-			if(bAllbad){
+			if (bAllbad) {
 				continue;
 			}
-
 
 
 			cv::Mat coord = mPt->GetWorldPos();
@@ -1043,10 +1062,9 @@ void System::SaveKeyFrameDataToMat(const string &filename)
 			f_mappoints << coord.at<float>(0) << " " << coord.at<float>(1) << " " << coord.at<float>(2) << " ";
 
 
-
 			for (auto it = ptObs.begin(); it != ptObs.end(); ++it) {
 				KeyFrame *pKF = it->first;
-				if(pKF->isBad()){
+				if (pKF->isBad()) {
 					continue;
 				}
 				f_mappoints << frameIDs[pKF->mnFrameId] << " ";
@@ -1065,7 +1083,6 @@ cv::Mat System::TrackStereoGroDVLKLT(const Mat &imLeft,
                                      const vector<IMU::ImuPoint> &vImuMeas,
                                      bool bDVL,
                                      string filename)
-
 {
 	if (mSensor != DVL_STEREO) {
 		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
@@ -1105,153 +1122,152 @@ cv::Mat System::TrackStereoGroDVLKLT(const Mat &imLeft,
 	return Tcw;
 }
 
-/*void System::SaveAtlas(int type){
-cout << endl << "Enter the name of the file if you want to save the current Atlas session. To exit press ENTER: ";
-string saveFileName;
-getline(cin,saveFileName);
-if(!saveFileName.empty())
+void System::SaveAtlas(const string &out_path, int type)
 {
-	//clock_t start = clock();
+	ROS_INFO_STREAM("start to save Altlas");
+//	cout << endl << "Enter the name of the file if you want to save the current Atlas session. To exit press ENTER: ";
+	string saveFileName("Altlas");
+//	getline(cin, saveFileName);
+	if (!saveFileName.empty()) {
+		//clock_t start = clock();
 
-	// Save the current session
-	mpAtlas->PreSave();
-	mpKeyFrameDatabase->PreSave();
+		// Save the current session
+		mpAtlas->PreSave();
+		mpKeyFrameDatabase->PreSave();
 
-	string pathSaveFileName = "./";
-	pathSaveFileName = pathSaveFileName.append(saveFileName);
-	pathSaveFileName = pathSaveFileName.append(".osa");
+		string pathSaveFileName = out_path;
+		pathSaveFileName = pathSaveFileName.append(saveFileName);
+		pathSaveFileName = pathSaveFileName.append(".osa");
 
-	string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
-	std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
-	string strVocabularyName = mStrVocabularyFilePath.substr(found+1);
+		string strVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath, TEXT_FILE);
+		std::size_t found = mStrVocabularyFilePath.find_last_of("/\\");
+		string strVocabularyName = mStrVocabularyFilePath.substr(found + 1);
 
-	if(type == TEXT_FILE) // File text
-	{
-		cout << "Starting to write the save text file " << endl;
-		std::remove(pathSaveFileName.c_str());
-		std::ofstream ofs(pathSaveFileName, std::ios::binary);
-		boost::archive::text_oarchive oa(ofs);
+		if (type == TEXT_FILE) // File text
+		{
+			cout << "Starting to write the save text file " << endl;
+			std::remove(pathSaveFileName.c_str());
+			std::ofstream ofs(pathSaveFileName);
+			boost::archive::text_oarchive oa(ofs);
 
-		oa << strVocabularyName;
-		oa << strVocabularyChecksum;
-		oa << mpAtlas;
-		oa << mpKeyFrameDatabase;
-		cout << "End to write the save text file" << endl;
+			oa << strVocabularyName;
+			oa << strVocabularyChecksum;
+			oa << mpAtlas;
+			oa << mpKeyFrameDatabase;
+			ofs.flush();
+			cout << "End to write the save text file." << endl;
+		}
+		else if (type == BINARY_FILE) // File binary
+		{
+			cout << "Starting to write the save binary file" << endl;
+			std::remove(pathSaveFileName.c_str());
+			std::ofstream ofs(pathSaveFileName, std::ios::binary);
+			boost::archive::binary_oarchive oa(ofs);
+			oa << strVocabularyName;
+			oa << strVocabularyChecksum;
+			oa << mpAtlas;
+			oa << mpKeyFrameDatabase;
+			ofs.flush();
+			cout << "End to write save binary file" << endl;
+		}
+
+		//clock_t timeElapsed = clock() - start;
+		//unsigned msElapsed = timeElapsed / (CLOCKS_PER_SEC / 1000);
+		//cout << "Binary file saved in " << msElapsed << " ms" << endl;
 	}
-	else if(type == BINARY_FILE) // File binary
-	{
-		cout << "Starting to write the save binary file" << endl;
-		std::remove(pathSaveFileName.c_str());
-		std::ofstream ofs(pathSaveFileName, std::ios::binary);
-		boost::archive::binary_oarchive oa(ofs);
-		oa << strVocabularyName;
-		oa << strVocabularyChecksum;
-		oa << mpAtlas;
-		oa << mpKeyFrameDatabase;
-		cout << "End to write save binary file" << endl;
-	}
-
-	//clock_t timeElapsed = clock() - start;
-	//unsigned msElapsed = timeElapsed / (CLOCKS_PER_SEC / 1000);
-	//cout << "Binary file saved in " << msElapsed << " ms" << endl;
-}
 }
 
 bool System::LoadAtlas(string filename, int type)
 {
-string strFileVoc, strVocChecksum;
-bool isRead = false;
+	string strFileVoc, strVocChecksum;
+	bool isRead = false;
 
-if(type == TEXT_FILE) // File text
-{
-	cout << "Starting to read the save text file " << endl;
-	std::ifstream ifs(filename, std::ios::binary);
-	if(!ifs.good())
+	if (type == TEXT_FILE) // File text
 	{
-		cout << "Load file not found" << endl;
-		return false;
+		cout << "Starting to read the save text file " << endl;
+		std::ifstream ifs(filename);
+		if (!ifs.good()) {
+			cout << "Load file not found" << endl;
+			return false;
+		}
+		boost::archive::text_iarchive ia(ifs);
+		ia >> strFileVoc;
+		ia >> strVocChecksum;
+		ia >> mpAtlas;
+		ia >> mpKeyFrameDatabase;
+		cout << "End to load the save text file " << endl;
+		isRead = true;
 	}
-	boost::archive::text_iarchive ia(ifs);
-	ia >> strFileVoc;
-	ia >> strVocChecksum;
-	ia >> mpAtlas;
-	//ia >> mpKeyFrameDatabase;
-	cout << "End to load the save text file " << endl;
-	isRead = true;
-}
-else if(type == BINARY_FILE) // File binary
-{
-	cout << "Starting to read the save binary file"  << endl;
-	std::ifstream ifs(filename, std::ios::binary);
-	if(!ifs.good())
+	else if (type == BINARY_FILE) // File binary
 	{
-		cout << "Load file not found" << endl;
-		return false;
-	}
-	boost::archive::binary_iarchive ia(ifs);
-	ia >> strFileVoc;
-	ia >> strVocChecksum;
-	ia >> mpAtlas;
-	//ia >> mpKeyFrameDatabase;
-	cout << "End to load the save binary file" << endl;
-	isRead = true;
-}
-
-if(isRead)
-{
-	//Check if the vocabulary is the same
-	string strInputVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath,TEXT_FILE);
-
-	if(strInputVocabularyChecksum.compare(strVocChecksum) != 0)
-	{
-		cout << "The vocabulary load isn't the same which the load session was created " << endl;
-		cout << "-Vocabulary name: " << strFileVoc << endl;
-		return false; // Both are differents
+		cout << "Starting to read the save binary file" << endl;
+		std::ifstream ifs(filename, std::ios::binary);
+		if (!ifs.good()) {
+			cout << "Load file not found" << endl;
+			return false;
+		}
+		boost::archive::binary_iarchive ia(ifs);
+		ia >> strFileVoc;
+		ia >> strVocChecksum;
+		ia >> mpAtlas;
+		ia >> mpKeyFrameDatabase;
+		cout << "End to load the save binary file" << endl;
+		isRead = true;
 	}
 
-	return true;
-}
-return false;
+	if (isRead) {
+		//Check if the vocabulary is the same
+		string strInputVocabularyChecksum = CalculateCheckSum(mStrVocabularyFilePath, TEXT_FILE);
+
+		if (strInputVocabularyChecksum.compare(strVocChecksum) != 0) {
+			cout << "The vocabulary load isn't the same which the load session was created " << endl;
+			cout << "-Vocabulary name: " << strFileVoc << endl;
+			return false; // Both are differents
+		}
+		mpAtlas->SetKeyFrameDababase(mpKeyFrameDatabase);
+		mpAtlas->SetORBVocabulary(mpVocabulary);
+		mpAtlas->PostLoad();
+		return true;
+	}
+	return false;
 }
 
 string System::CalculateCheckSum(string filename, int type)
 {
-string checksum = "";
+	string checksum = "";
 
-unsigned char c[MD5_DIGEST_LENGTH];
+	unsigned char c[MD5_DIGEST_LENGTH];
 
-std::ios_base::openmode flags = std::ios::in;
-if(type == BINARY_FILE) // Binary file
-	flags = std::ios::in | std::ios::binary;
+	std::ios_base::openmode flags = std::ios::in;
+	if (type == BINARY_FILE) { // Binary file
+		flags = std::ios::in | std::ios::binary;
+	}
 
-ifstream f(filename.c_str(), flags);
-if ( !f.is_open() )
-{
-	cout << "[E] Unable to open the in file " << filename << " for Md5 hash." << endl;
+	ifstream f(filename.c_str(), flags);
+	if (!f.is_open()) {
+		cout << "[E] Unable to open the in file " << filename << " for Md5 hash." << endl;
+		return checksum;
+	}
+
+	MD5_CTX md5Context;
+	char buffer[1024];
+
+	MD5_Init(&md5Context);
+	while (int count = f.readsome(buffer, sizeof(buffer))) {
+		MD5_Update(&md5Context, buffer, count);
+	}
+
+	f.close();
+
+	MD5_Final(c, &md5Context);
+
+	for (int i = 0; i < MD5_DIGEST_LENGTH; i++) {
+		char aux[10];
+		sprintf(aux, "%02x", c[i]);
+		checksum = checksum + aux;
+	}
+
 	return checksum;
 }
-
-MD5_CTX md5Context;
-char buffer[1024];
-
-MD5_Init (&md5Context);
-while ( int count = f.readsome(buffer, sizeof(buffer)))
-{
-	MD5_Update(&md5Context, buffer, count);
-}
-
-f.close();
-
-MD5_Final(c, &md5Context );
-
-for(int i = 0; i < MD5_DIGEST_LENGTH; i++)
-{
-	char aux[10];
-	sprintf(aux,"%02x", c[i]);
-	checksum = checksum + aux;
-}
-
-return checksum;
-}*/
 
 } // namespace ORB_SLAM3

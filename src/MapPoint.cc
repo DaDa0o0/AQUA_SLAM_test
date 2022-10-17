@@ -20,6 +20,7 @@
 #include "ORBmatcher.h"
 
 #include <mutex>
+#include <cmath>
 
 namespace ORB_SLAM3
 {
@@ -595,6 +596,39 @@ namespace ORB_SLAM3
 
     void MapPoint::PreSave(set<KeyFrame *> &spKF, set<MapPoint *> &spMP)
     {
+		//check nan value
+		if(std::isnan(mTrackProjX)){
+			mTrackProjX = 0;
+		}
+	    if(std::isnan(mTrackProjY)){
+		    mTrackProjY = 0;
+	    }
+	    if(std::isnan(mTrackDepth)){
+		    mTrackDepth = 0;
+	    }
+	    if(std::isnan(mTrackDepthR)){
+		    mTrackDepthR = 0;
+	    }
+	    if(std::isnan(mTrackProjXR)){
+		    mTrackProjXR = 0;
+	    }
+	    if(std::isnan(mTrackProjYR)){
+		    mTrackProjYR = 0;
+	    }
+	    if(std::isnan(mTrackViewCos)){
+		    mTrackViewCos = 0;
+	    }
+	    if(std::isnan(mTrackViewCosR)){
+		    mTrackViewCosR = 0;
+	    }
+	    if(std::isnan(mfMinDistance)){
+		    mfMinDistance = 0;
+	    }
+	    if(std::isnan(mfMaxDistance)){
+		    mfMaxDistance = 0;
+	    }
+
+
         mBackupReplacedId = -1;
         if (mpReplaced && spMP.find(mpReplaced) != spMP.end())
             mBackupReplacedId = mpReplaced->mnId;

@@ -181,14 +181,15 @@ public:
 
     void ChangeDataset();
 
-    //void SaveAtlas(int type);
+    void SaveAtlas(const string &out_path, int type);
+	bool LoadAtlas(string filename, int type);
 	DenseMapper* mpDenseMapper;
+	string mStrVocabularyFilePath;
 
 private:
 
-    //bool LoadAtlas(string filename, int type);
 
-    //string CalculateCheckSum(string filename, int type);
+    string CalculateCheckSum(string filename, int type);
 
     // Input sensor
     eSensor mSensor;

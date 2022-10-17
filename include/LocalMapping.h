@@ -22,6 +22,7 @@
 
 
 #include "Initializer.h"
+#include "RosHandling.h"
 
 #include <mutex>
 
@@ -185,6 +186,8 @@ protected:
 
     //DEBUG
     ofstream f_lm;
+
+	friend class RosHandling;
 };
 
 } //namespace ORB_SLAM
