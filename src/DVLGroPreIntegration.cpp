@@ -19,7 +19,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, b
 	mVelocityThreshold = 0.6f;
 	Initialize(b_);
 	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
-	mR_g_d.convertTo(mR_g_d,CV_64F);
+	mR_g_d.convertTo(mR_g_d, CV_64F);
 }
 
 DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, const cv::Point3d &v_di, bool bDVL)
@@ -27,7 +27,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_, const Calib &calib, c
 	bDVL(bDVL)
 {
 	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
-	mR_g_d.convertTo(mR_g_d,CV_64F);
+	mR_g_d.convertTo(mR_g_d, CV_64F);
 	Nga = calib.Cov.clone();
 	NgaWalk = calib.CovWalk.clone();
 	Initialize(b_);
@@ -45,7 +45,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_,
 	bDVL(bDVL), mAlpha(alpha), mBeta(beta)
 {
 	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
-	mR_g_d.convertTo(mR_g_d,CV_64F);
+	mR_g_d.convertTo(mR_g_d, CV_64F);
 	Nga = calib.Cov.clone();
 	NgaWalk = calib.CovWalk.clone();
 	Initialize(b_);
@@ -67,7 +67,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(const Bias &b_,
 	bDVL(bDVL), mVelocityThreshold(velocity_threshold)
 {
 	calib.mT_gyro_dvl.rowRange(0, 3).colRange(0, 3).copyTo(mR_g_d);
-	mR_g_d.convertTo(mR_g_d,CV_64F);
+	mR_g_d.convertTo(mR_g_d, CV_64F);
 	Nga = calib.Cov.clone();
 	NgaWalk = calib.CovWalk.clone();
 	Initialize(b_);
@@ -155,7 +155,7 @@ void DVLGroPreIntegration::ReintegrateWithBiasAndRotation(const Bias &b, const c
 //	SetVelocity(cv::Point3d(v.at<double>(0), v.at<double>(1), v.at<double>(2)));
 	mb = b;
 	mR_g_d = R_g_d.clone();
-	mR_g_d.convertTo(mR_g_d,CV_64F);
+	mR_g_d.convertTo(mR_g_d, CV_64F);
 	for (size_t i = 0; i < aux.size(); i++) {
 		if (aux[i].a.x == 0 && aux[i].a.y == 0 && aux[i].a.z == 0) {
 			IntegrateGroMeasurement(aux[i].w, aux[i].t);
@@ -181,7 +181,7 @@ void DVLGroPreIntegration::ReintegrateWithVelocity(const Eigen::Vector3d &veloci
 //	ROS_INFO_STREAM("velocity reintegration, v: "<<velocity.transpose());
 	cv::Mat v;
 	cv::eigen2cv(velocity, v);
-	v.convertTo(v,CV_64F);
+	v.convertTo(v, CV_64F);
 	Initialize(bu);
 //	dV=v.clone();
 //	SetVelocity(cv::Point3d(v.at<double>(0), v.at<double>(1), v.at<double>(2)));
@@ -216,7 +216,7 @@ void DVLGroPreIntegration::ReintegrateWithBiasRotationBeamOri(const Bias &b,
 //	SetVelocity(cv::Point3d(v.at<double>(0), v.at<double>(1), v.at<double>(2)));
 	mb = b;
 	mR_g_d = R_g_d.clone();
-	mR_g_d.convertTo(mR_g_d,CV_64F);
+	mR_g_d.convertTo(mR_g_d, CV_64F);
 	SetBeamOrientation(alpha, beta);
 	for (size_t i = 0; i < aux.size(); i++) {
 		if (aux[i].v_beam.x() == 0 && aux[i].v_beam.y() == 0 && aux[i].v_beam.z() == 0 && aux[i].v_beam.w() == 0) {
@@ -258,6 +258,63 @@ void DVLGroPreIntegration::IntegrateGroMeasurement(const cv::Point3d &angVel,
 	// assume V_dk constant
 	//R_d_g * R_gi_gk * R_g_d * V_dk
 	dV = mR_g_d.t() * dR * mR_g_d * mVelocity;
+//	dV =  dR * mVelocity;
+	dP = dP + dV * dt;
+//	if (dP.at<double>(0,0)!=0)
+//		cout<<"dP: "<<dP<<endl;
+
+	// Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
+	cv::Mat v_k_hat = (cv::Mat_<double>(3, 3) << 0, -dV.at<double>(2), dV.at<double>(1),
+		dV.at<double>(2), 0, -dV.at<double>(0),
+		-dV.at<double>(1), dV.at<double>(0), 0);
+
+	//todo_tightly
+	//	add velocity jacobians
+	//  Update position and velocity jacobians wrt bias correction
+	JPg = JPg - dR * dt * v_k_hat * JRg;
+
+
+
+	// Update delta rotation
+	IntegratedRotation dRi(angVel, mb, dt);
+	dR = NormalizeRotation(dR * dRi.deltaR);
+
+
+	// Update rotation jacobian wrt bias correction
+	JRg = dRi.deltaR.t() * JRg - dRi.rightJ * dt;
+
+}
+
+void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc,
+                                                      const cv::Point3d &angVel,
+                                                      const double &dt)
+{
+	mvMeasurements.push_back(integrable(cv::Point3d(0, 0, 0), angVel, dt));
+	mvMeasurements2
+		.push_back(integrable(cv::Point3d(0, 0, 0),
+		                      angVel,
+		                      cv::Point3d(0, 0, 0),
+		                      Eigen::Vector4d::Zero(),
+		                      dt));
+
+	// acc measurement without bias in body frame
+	cv::Mat acc_b = (cv::Mat_<double>(3, 1) << acc.x - mb.bwx, acc.y - mb.bwy, acc.z - mb.bwz);
+	mAngV = angVel;
+
+	//3*1
+//	avgW = (dT * avgW + accW * dt) / (dT + dt);
+
+	// Total integrated time
+	dT += dt;
+
+
+	// assume V_di constant
+//	dP = dP + dV*dt;
+
+	// assume V_dk constant
+	//R_d_g * R_gi_gk * R_g_d * V_dk
+	dV = mR_g_d.t() * dR * mR_g_d * mVelocity;
+	dDeltaV = dR * (acc_b * dt);
 //	dV =  dR * mVelocity;
 	dP = dP + dV * dt;
 //	if (dP.at<double>(0,0)!=0)
@@ -427,7 +484,7 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
 		dV = mR_g_d.t() * dR * mR_g_d * v;
 //		cout<<"dR:"<<dR<<endl;
 //		cout<<"dV:"<<dV<<endl;
-//		ROS_INFO_STREAM("reintegration with velocity");
+		ROS_INFO_STREAM("reintegration with velocity");
 		ReintegrateWithVelocity();
 	}
 	else {
@@ -455,7 +512,6 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
 	//	add velocity jacobians
 	//  Update position and velocity jacobians wrt bias correction
 	JPg = JPg - dR * dt * v_k_hat * JRg;
-
 
 
 	// Update delta rotation
@@ -614,7 +670,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaRotation(const Bias &b_)
 	std::unique_lock<std::mutex> lock(mMutex);
 	cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
 	cv::Mat R = NormalizeRotation(dR * ExpSO3(JRg * dbg));
-	R.convertTo(R,CV_32F);
+	R.convertTo(R, CV_32F);
 	return R;
 }
 
@@ -631,7 +687,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaVelocity(const Bias &b_)
 	cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
 	cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
 	cv::Mat V = dV + JVg * dbg + JVa * dba;
-	V.convertTo(V,CV_32F);
+	V.convertTo(V, CV_32F);
 	return V;
 }
 
@@ -641,7 +697,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
 	cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
 	cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
 	cv::Mat P = dP + JPg * dbg;
-	P.convertTo(P,CV_32F);
+	P.convertTo(P, CV_32F);
 	return P;
 }
 cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b, const cv::Mat &R_g_d)
@@ -654,8 +710,8 @@ cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b, const cv::Mat &R_g
 cv::Mat DVLGroPreIntegration::GetUpdatedDeltaRotation()
 {
 	std::unique_lock<std::mutex> lock(mMutex);
-	cv::Mat R =NormalizeRotation(dR * ExpSO3(JRg * db.rowRange(0, 3)));
-	R.convertTo(R,CV_32F);
+	cv::Mat R = NormalizeRotation(dR * ExpSO3(JRg * db.rowRange(0, 3)));
+	R.convertTo(R, CV_32F);
 	return R;
 }
 
@@ -666,15 +722,15 @@ cv::Mat DVLGroPreIntegration::GetUpdatedDeltaVelocity()
 	//  not used currently, maybe for further use
 	std::unique_lock<std::mutex> lock(mMutex);
 	cv::Mat V = dV + JVg * db.rowRange(0, 3) + JVa * db.rowRange(3, 6);
-	V.convertTo(V,CV_32F);
+	V.convertTo(V, CV_32F);
 	return V;
 }
 
 cv::Mat DVLGroPreIntegration::GetUpdatedDeltaPosition()
 {
 	std::unique_lock<std::mutex> lock(mMutex);
-	cv::Mat P =dP + JPg * db.rowRange(0, 3) + JPa * db.rowRange(3, 6);
-	P.convertTo(P,CV_32F);
+	cv::Mat P = dP + JPg * db.rowRange(0, 3) + JPa * db.rowRange(3, 6);
+	P.convertTo(P, CV_32F);
 	return P;
 }
 

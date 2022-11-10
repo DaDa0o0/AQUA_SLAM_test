@@ -594,6 +594,9 @@ void Map::PreSave(std::set<GeometricCamera*> &spCams)
     //std::copy(mspKeyFrames.begin(), mspKeyFrames.end(), std::back_inserter(mvpBackupKeyFrames));
     for(KeyFrame* pKFi : mspKeyFrames)
     {
+		if(pKFi->isBad()){
+			continue;
+		}
         mvpBackupKeyFrames.push_back(pKFi);
         pKFi->PreSave(mspKeyFrames,mspMapPoints, spCams);
     }

@@ -207,6 +207,7 @@ void LocalMapping::Run()
 				}
 				else if (!mpTracker->mCalibrated && mbDvlGyro) {
 					InitializeDvlGyro(1e2, true);
+//					InitializeDvlIMU();
 				}
 //				else if (!mbCalibrated && mbDvlGyro) {
 //					InitializeDvlGyro(1e2, true);
@@ -214,9 +215,9 @@ void LocalMapping::Run()
 
 
 				// Check redundant local Keyframes
-				if(mpTracker->mCalibrated){
-					KeyFrameCulling();
-				}
+//				if(mpTracker->mCalibrated){
+//					KeyFrameCulling();
+//				}
 
 
 				t6 = std::chrono::steady_clock::now();
@@ -1630,6 +1631,105 @@ void LocalMapping::InitializeDvlGyro(float priorG, bool bFirst)
 	// new bias has been set to all keyframes after optimization
 //	Optimizer::DvlGyroInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 	Optimizer::DvlGyroInitOptimization3(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
+//	Optimizer::DvlGyroInitOptimization6(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
+//	Optimizer::DvlGyroInitOptimization5(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
+	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+	// set new bias for tracking thread, update last frame and current frame pose
+//	mpTracker->mLastKfBeforeLoss=NULL;
+//	mpTracker->mpDvlPreintegratedFromLastKFBeforeLost=NULL;
+
+	if (!mpAtlas->isImuInitialized()) {
+		for (auto pKF:vpKF) {
+			pKF->bImu = true;
+		}
+		mpAtlas->SetImuInitialized();
+	}
+	mbCalibrated = true;
+
+	/**todo_tightly
+	 * 	execute a full DVL_Gyro BA after initilization
+	 */
+
+	DvlGyroOptimizer::FullDVLGyroBundleAdjustment(nullptr, mpAtlas->GetCurrentMap(), mpTracker->mlamda_DVL);
+	cout<<"full BA excuted after calibration!"<<endl;
+
+	//todo_tightly
+	//	not sure whether this is safe in different thread
+	mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
+	mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
+	mpTracker->mCalibrated = true;
+	bInitializing = false;
+	mpTracker->mpRosHandler->UpdateMap(mpAtlas,vpKF.front()->mImuCalib.mT_dvl_c);
+	mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+	return;
+}
+
+void LocalMapping::InitializeDvlIMU()
+{
+	if (mbResetRequested) {
+		return;
+	}
+
+	float minTime;
+	int nMinKF;
+	if (mbMonocular) {
+		minTime = 2.0;
+		nMinKF = 10;
+	}
+	else {
+		minTime = 1.0;
+		nMinKF = 10;
+	}
+	nMinKF = mpTracker->mKF_num_for_init;
+
+	if (mpAtlas->KeyFramesInMap() < nMinKF) {
+		return;
+	}
+
+	// Retrieve all keyframe in temporal order
+	list<KeyFrame *> lpKF;
+	KeyFrame *pKF = mpCurrentKeyFrame;
+	while (pKF->mPrevKF) {
+		lpKF.push_front(pKF);
+		pKF = pKF->mPrevKF;
+	}
+	lpKF.push_front(pKF);
+	vector<KeyFrame *> vpKF(lpKF.begin(), lpKF.end());
+
+	if (vpKF.size() < nMinKF) {
+		return;
+	}
+
+//	mFirstTs = vpKF.front()->mTimeStamp;
+//	if (mpCurrentKeyFrame->mTimeStamp - mFirstTs < minTime) {
+//		return;
+//	}
+
+	bInitializing = true;
+
+	while (CheckNewKeyFrames()) {
+		ProcessNewKeyFrame();
+		vpKF.push_back(mpCurrentKeyFrame);
+		lpKF.push_back(mpCurrentKeyFrame);
+	}
+
+	const int N = vpKF.size();
+	IMU::Bias b(0, 0, 0, 0, 0, 0);
+
+	// Compute and KF velocities mRwg estimation
+	mRwg = Eigen::Matrix3d::Identity();
+	mbg = Converter::toVector3d(mpCurrentKeyFrame->GetGyroBias());
+	mba = Converter::toVector3d(mpCurrentKeyFrame->GetAccBias());
+
+	mScale = 1.0;
+
+	mInitTime = mpTracker->mLastFrame.mTimeStamp - vpKF.front()->mTimeStamp;
+
+	std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+	// new bias has been set to all keyframes after optimization
+//	Optimizer::DvlGyroInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
+	Optimizer::DvlIMUInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, 0);
 //	Optimizer::DvlGyroInitOptimization6(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 //	Optimizer::DvlGyroInitOptimization5(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();

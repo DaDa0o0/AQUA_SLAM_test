@@ -60,7 +60,59 @@ public:
 
 class DvlPoint
 {
+	template<class Archive>
+	void serializePoint3f(Archive &ar, cv::Point3f &p, const unsigned int version)
+	{
+		float x, y, z;
+		if (Archive::is_saving::value) {
+			x = p.x;
+			y = p.y;
+			z = p.z;
+			ar & x;
+			ar & y;
+			ar & z;
+		}
+		else if (Archive::is_loading::value) {
+			ar & x;
+			ar & y;
+			ar & z;
+			p = cv::Point3f(x, y, z);
+		}
+	}
+
+	template<class Archive>
+	void serializeEigenV4d(Archive &ar, Eigen::Vector4d &v, const unsigned int version)
+	{
+		double x, y, z, w;
+		if (Archive::is_saving::value) {
+			x = v.x();
+			y = v.y();
+			z = v.z();
+			w = v.w();
+			ar & x;
+			ar & y;
+			ar & z;
+			ar & w;
+		}
+		else if (Archive::is_loading::value) {
+			ar & x;
+			ar & y;
+			ar & z;
+			ar & w;
+			v = Eigen::Vector4d(x, y, z, w);
+		}
+	}
+
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version)
+	{
+		serializePoint3f(ar,v,version);
+		serializeEigenV4d(ar,vb,version);
+		ar & t;
+	}
 public:
+	DvlPoint(){}
 	DvlPoint(const float &v_x, const float &v_y, const float &v_z, const double &timestamp)
 		: v(v_x, v_y, v_z), t(timestamp)
 	{}
@@ -80,13 +132,68 @@ public:
 	{}
 public:
 	cv::Point3f v;
-	Eigen::Vector4f vb;
+	Eigen::Vector4d vb;
 	double t;
 };
 
 class GyroDvlPoint
 {
+	template<class Archive>
+	void serializePoint3f(Archive &ar, cv::Point3f &p, const unsigned int version)
+	{
+		float x, y, z;
+		if (Archive::is_saving::value) {
+			x = p.x;
+			y = p.y;
+			z = p.z;
+			ar & x;
+			ar & y;
+			ar & z;
+		}
+		else if (Archive::is_loading::value) {
+			ar & x;
+			ar & y;
+			ar & z;
+			p = cv::Point3f(x, y, z);
+		}
+	}
+
+	template<class Archive>
+	void serializeEigenV4d(Archive &ar, Eigen::Vector4d &v, const unsigned int version)
+	{
+		double x, y, z, w;
+		if (Archive::is_saving::value) {
+			x = v.x();
+			y = v.y();
+			z = v.z();
+			w = v.w();
+			ar & x;
+			ar & y;
+			ar & z;
+			ar & w;
+		}
+		else if (Archive::is_loading::value) {
+			ar & x;
+			ar & y;
+			ar & z;
+			ar & w;
+			v = Eigen::Vector4d(x, y, z, w);
+		}
+	}
+
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive &ar, const unsigned int version)
+	{
+		serializePoint3f(ar, angular_v, version);
+		serializePoint3f(ar, acc, version);
+		serializePoint3f(ar, v, version);
+		serializeEigenV4d(ar, vb, version);
+		ar & t;
+	}
 public:
+	GyroDvlPoint()
+	{}
 	GyroDvlPoint(const double &a_x,
 	             const double &a_y,
 	             const double &a_z,
@@ -98,10 +205,28 @@ public:
 	             const double &vb_2,
 	             const double &vb_3,
 	             const double &timestamp)
-		:angular_v(a_x,a_y,a_z), v(v_x, v_y, v_z), vb(vb_0, vb_1, vb_2, vb_3), t(timestamp)
+		: angular_v(a_x, a_y, a_z), v(v_x, v_y, v_z), vb(vb_0, vb_1, vb_2, vb_3), t(timestamp)
+	{}
+	GyroDvlPoint(const double &acc_x,
+	             const double &acc_y,
+	             const double &acc_z,
+	             const double &av_x,
+	             const double &av_y,
+	             const double &av_z,
+	             const double &v_x,
+	             const double &v_y,
+	             const double &v_z,
+	             const double &vb_0,
+	             const double &vb_1,
+	             const double &vb_2,
+	             const double &vb_3,
+	             const double &timestamp)
+		: angular_v(av_x, av_y, av_z), acc(acc_x, acc_y, acc_z), v(v_x, v_y, v_z), vb(vb_0, vb_1, vb_2, vb_3),
+		  t(timestamp)
 	{}
 public:
 	cv::Point3d angular_v;
+	cv::Point3d acc;
 	cv::Point3d v;
 	Eigen::Vector4d vb;
 	double t;
@@ -403,8 +528,8 @@ private:
 		template<class Archive>
 		void serialize(Archive &ar, const unsigned int version)
 		{
-			serializePoint3f(ar,a,version);
-			serializePoint3f(ar,w,version);
+			serializePoint3f(ar, a, version);
+			serializePoint3f(ar, w, version);
 			ar & t;
 		}
 

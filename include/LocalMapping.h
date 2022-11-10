@@ -168,6 +168,7 @@ protected:
 
     void InitializeIMU(float priorG = 1e2, float priorA = 1e6, bool bFirst = false);
 	void InitializeDvlGyro(float priorG = 1e2, bool bFirst = false);
+	void InitializeDvlIMU();
     void ScaleRefinement();
 
     bool bInitializing;

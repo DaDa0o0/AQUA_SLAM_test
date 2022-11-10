@@ -316,7 +316,14 @@ protected:
 	void PreintegrateIMU();
 
 	void PreintegrateDvlGro();
+	/***
+	 * 4 beam DVL model and Gyro pre_integration
+	 */
 	void PreintegrateDvlGro2();
+	/***
+	 * 4 beam DVL model and Gyro + Acc pre_integration
+	 */
+	void PreintegrateDvlGro3();
 
 	// Reset IMU biases and compute frame velocity
 	void ResetFrameIMU();

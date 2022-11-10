@@ -73,11 +73,11 @@ Viewer.ViewpointF: 500
 
 # Optimization Parameters
 Optimizer.visual_lamda: 1
-Optimizer.DVL_lamda: 10000
+Optimizer.DVL_lamda: 10
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.5
-Optimizer.KF_num_for_init: 60
+Optimizer.KF_num_for_init: 50
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
@@ -124,10 +124,10 @@ T_gyro_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ -0.025627013068640403,  -0.027523668915143649,   -0.99929260171915124,   0, # real rov
-          0.0019232000194252391,    0.99961769576091752,  -0.027581943791494354,    0,
-          0.99966972421038436, -0.0026286823850409039,   -0.02556428223231702,    0,
-          0,  0,   0,    1 ]
+  data: [ 0.0745125, -0.995122, -0.064652, 0.13, #tf gx5 to camera, 2022/10/24 data collection
+          -0.0203243, 0.0633033, -0.997787, -0.25,
+          0.997013, 0.0756616, -0.0155082, -0.06,
+          0, 0, 0, 1 ]
 #  data: [ 1,  0,   0,   0, # I
 #          0,  1,   0,    0,
 #          0,  0,  1,    0,
@@ -147,7 +147,7 @@ T_dvl_c: !!opencv-matrix
           0,  0,   0,    1 ]
 
 DenseMapper:
-  enable: 1
+  enable: 0
   P1: 200.0
   P2: 400.0
   correlation_window_size: 21
@@ -162,6 +162,6 @@ DenseMapper:
   stereo_algorithm: 0
   texture_threshold: 5
   uniqueness_ratio: 15.0
-  leaf_size: 0.001
+  leaf_size: 0.05
   mean_k: 500
   std_thred: 0.5

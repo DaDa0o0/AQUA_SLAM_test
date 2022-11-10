@@ -36,7 +36,7 @@ class DVLGroPreIntegration
 	}
 
 	template<class Archive>
-	void serializeEigenV3d(Archive &ar, Eigen::Matrix<double,3,1> &m, const unsigned int version)
+	void serializeEigenV3d(Archive &ar, Eigen::Matrix<double, 3, 1> &m, const unsigned int version)
 	{
 //		double x, y, z, w;
 		int cols, rows;
@@ -44,15 +44,15 @@ class DVLGroPreIntegration
 		rows = m.rows();
 		ar & cols;
 		ar & rows;
-		for(int i = 0;i<rows;i++){
-			for(int j=0;j<cols;j++){
-				ar & m(i,j);
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				ar & m(i, j);
 			}
 		}
 	}
 
 	template<class Archive>
-	void serializeEigenM33d(Archive &ar, Eigen::Matrix<double,3,3> &m, const unsigned int version)
+	void serializeEigenM33d(Archive &ar, Eigen::Matrix<double, 3, 3> &m, const unsigned int version)
 	{
 //		double x, y, z, w;
 		int cols, rows;
@@ -60,15 +60,15 @@ class DVLGroPreIntegration
 		rows = m.rows();
 		ar & cols;
 		ar & rows;
-		for(int i = 0;i<rows;i++){
-			for(int j=0;j<cols;j++){
-				ar & m(i,j);
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				ar & m(i, j);
 			}
 		}
 	}
 
 	template<class Archive>
-	void serializeEigenM43d(Archive &ar, Eigen::Matrix<double,4,3> &m, const unsigned int version)
+	void serializeEigenM43d(Archive &ar, Eigen::Matrix<double, 4, 3> &m, const unsigned int version)
 	{
 //		double x, y, z, w;
 		int cols, rows;
@@ -76,9 +76,9 @@ class DVLGroPreIntegration
 		rows = m.rows();
 		ar & cols;
 		ar & rows;
-		for(int i = 0;i<rows;i++){
-			for(int j=0;j<cols;j++){
-				ar & m(i,j);
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < cols; j++) {
+				ar & m(i, j);
 			}
 		}
 	}
@@ -168,11 +168,11 @@ class DVLGroPreIntegration
 		serializeMatrix(ar, dP, version);
 		serializeMatrix(ar, mVelocity, version);
 		serializeMatrix(ar, mR_g_d, version);
-		serializePoint3d(ar,mAngV,version);
-		serializeEigenV4d(ar,mAlpha,version);
-		serializeEigenV4d(ar,mBeta,version);
-		serializeEigenM43d(ar,mE,version);
-		serializeEigenM33d(ar,mETEInv,version);
+		serializePoint3d(ar, mAngV, version);
+		serializeEigenV4d(ar, mAlpha, version);
+		serializeEigenV4d(ar, mBeta, version);
+		serializeEigenM43d(ar, mE, version);
+		serializeEigenM33d(ar, mETEInv, version);
 		serializeMatrix(ar, JRg, version);
 		serializeMatrix(ar, JVg, version);
 		serializeMatrix(ar, JVa, version);
@@ -184,8 +184,8 @@ class DVLGroPreIntegration
 		ar & bDVL;
 		ar & mVelocityThreshold;
 		serializePoint3d(ar, v_dk_dvl, version);
-		serializeEigenV3d(ar,v_di_dvl, version);
-		serializeEigenV3d(ar,v_dk_visual, version);
+		serializeEigenV3d(ar, v_di_dvl, version);
+//		serializeEigenV3d(ar, v_dk_visual, version);
 		ar & mBeams;
 
 
@@ -215,10 +215,16 @@ public:
 	{}
 	void Initialize(const Bias &b_);
 
-
-
 	//  first Integrate Gro, then DVL
 	void IntegrateGroMeasurement(const cv::Point3d &angVel, const double &dt);
+
+	/***
+	 * integrate gyro and acc
+	 * @param acc acceloration
+	 * @param angVel angular velocity
+	 * @param dt duration
+	 */
+	void IntegrateGroAccMeasurement(const cv::Point3d &acc, const cv::Point3d &angVel, const double &dt);
 
 //	void IntegrateGroMeasurement2(const cv::Point3d &angVel, const double &dt);
 
@@ -248,7 +254,10 @@ public:
 	void ReintegrateWithVelocity();
 	void ReintegrateWithVelocity(const Eigen::Vector3d &velocity);
 	void ReintegrateWithBiasAndRotation(const Bias &b, const cv::Mat &R_g_d);
-	void ReintegrateWithBiasRotationBeamOri(const Bias &b, const cv::Mat &R_g_d, const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta);
+	void ReintegrateWithBiasRotationBeamOri(const Bias &b,
+	                                        const cv::Mat &R_g_d,
+	                                        const Eigen::Vector4d &alpha,
+	                                        const Eigen::Vector4d &beta);
 	void MergePrevious(DVLGroPreIntegration *pPrev);
 	void MergePrevious2(DVLGroPreIntegration *pPrev);
 	void SetNewBias(const Bias &bu_);
@@ -286,8 +295,9 @@ public:
 	 * dR: R_gi_gj. during integrtion R_gi_gk
 	 * dV: V_di
 	 * dP: t_di_didj, during integration t_di_didk
+	 * dDeltaV: Delta_V_gi_gj = R_i_w * (V_w_j - V_w_i - g_w * delta_t_i_j)
 	 */
-	cv::Mat dR, dV, dP;
+	cv::Mat dR, dV, dP, dDeltaV;
 	// mVelocity: V_dk velocity reading in DVL frame at time k
 	// mAngV: angular_v last angular v, this is used for DVL inegration
 	cv::Mat mVelocity, mR_g_d;
@@ -377,13 +387,14 @@ private:
 		template<class Archive>
 		void serialize(Archive &ar, const unsigned int version)
 		{
-			serializePoint3d(ar,a,version);
-			serializePoint3d(ar,w,version);
-			serializePoint3d(ar,v,version);
-			serializeEigenV4d(ar,v_beam,version);
+			serializePoint3d(ar, a, version);
+			serializePoint3d(ar, w, version);
+			serializePoint3d(ar, v, version);
+			serializeEigenV4d(ar, v_beam, version);
 			ar & t;
 		}
-		integrable(){}
+		integrable()
+		{}
 		integrable(const cv::Point3d &a_, const cv::Point3d &w_, const double &t_)
 			: a(a_), w(w_), t(t_)
 		{}
@@ -400,7 +411,7 @@ private:
 		Eigen::Vector4d v_beam;
 		double t;
 	};
-
+public:
 	std::vector<integrable> mvMeasurements;
 	std::vector<integrable> mvMeasurements2;
 

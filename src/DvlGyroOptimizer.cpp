@@ -639,7 +639,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 													double lamda_DVL)
 {
 	Map *pCurrentMap = pKF->GetMap();
-	int Nd = std::min(10, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
+	int Nd = std::min(20, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
 	const unsigned long maxKFid = pKF->mnId;
 
 	vector<KeyFrame *> OptKFs;
@@ -926,7 +926,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 			ei->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
 			ei->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
 			ei->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-			ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_DVL);
+			ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
 			ei->setId(pKFi->mnId);
 
 
@@ -978,7 +978,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 			dvl_chi2 += chi2;
 //			cout << "dvl error: " << e_dvl->error().transpose() << endl;
 		}
-//		cout << "iteration: " << i << " visual chi2: " << visula_chi2 << " dvl_gyro chi2: " << dvl_chi2 << endl;
+		cout << "iteration: " << i << " visual chi2: " << visula_chi2 << " dvl_gyro chi2: " << dvl_chi2 << endl;
 	}
 
 

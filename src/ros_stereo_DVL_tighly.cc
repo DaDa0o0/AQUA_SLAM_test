@@ -57,6 +57,7 @@ namespace logging = boost::log;
 namespace src = boost::log::sources;
 namespace sinks = boost::log::sinks;
 namespace keywords = boost::log::keywords;
+
 //	ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
 boost::shared_ptr<ros::Publisher> pimg_test_pub;
 
@@ -160,7 +161,7 @@ int main(int argc, char **argv)
 	}
 
 	// Create SLAM system. It initializes all system threads and gets ready to process frames.
-	ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::DVL_STEREO, false);
+	ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::DVL_STEREO, true);
 //	ORB_SLAM3::System SLAM(argv[1], argv[2], ORB_SLAM3::System::STEREO, true);
 	ImuGrabber imugb;
 	DVLGrabber dvlgb;
@@ -198,8 +199,8 @@ int main(int argc, char **argv)
 //	ros::Subscriber sub_img_left = n.subscribe("/suv3d/left/rgb_rect", 100, &ImageGrabber::GrabImageLeft, &igb);
 //	ros::Subscriber sub_img_right = n.subscribe("/suv3d/right/rgb_rect", 100, &ImageGrabber::GrabImageRight, &igb);
 
-	std::thread sync_thread(&ImageGrabber::SyncWithImu, &igb);
-//	std::thread sync_thread(&ImageGrabber::SyncWithImu2, &igb);
+//	std::thread sync_thread(&ImageGrabber::SyncWithImu, &igb);
+	std::thread sync_thread(&ImageGrabber::SyncWithImu2, &igb);
 
 	ros::spin();
 
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
 
 void ImageGrabber::GrabImageLeft(const sensor_msgs::ImageConstPtr &img_msg)
 {
-	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "left recieved!, time: " << img_msg->header.stamp.toSec();
+//	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "left recieved!, time: " << img_msg->header.stamp.toSec();
 //	cout<<"left recieved!, time: "<<img_msg->header.stamp.toNSec()<<endl;
 	mBufMutexLeft.lock();
 //	if (!imgLeftBuf.empty())
@@ -221,7 +222,7 @@ void ImageGrabber::GrabImageLeft(const sensor_msgs::ImageConstPtr &img_msg)
 
 void ImageGrabber::GrabImageRight(const sensor_msgs::ImageConstPtr &img_msg)
 {
-	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "right recieved!, time: " << img_msg->header.stamp.toSec();
+//	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "right recieved!, time: " << img_msg->header.stamp.toSec();
 //	cout<<"right recieved!, time: "<<img_msg->header.stamp.toNSec()<<endl;
 	mBufMutexRight.lock();
 //	if (!imgRightBuf.empty())
@@ -491,12 +492,28 @@ void ImageGrabber::SyncWithImu2()
 				// save all IMU data between last Frame and current Frame to current Frame
 				while (!mpImuGb->imuBuf.empty() && mpImuGb->imuBuf.front()->header.stamp.toSec() <= tImLeft) {
 					double t = mpImuGb->imuBuf.front()->header.stamp.toSec();
-					cv::Point3f acc(0, 0, 0);
+					cv::Point3f acc(mpImuGb->imuBuf.front()->linear_acceleration.x,
+					                mpImuGb->imuBuf.front()->linear_acceleration.y,
+					                mpImuGb->imuBuf.front()->linear_acceleration.z);
 					cv::Point3f gyr(mpImuGb->imuBuf.front()->angular_velocity.x,
 					                mpImuGb->imuBuf.front()->angular_velocity.y,
 					                mpImuGb->imuBuf.front()->angular_velocity.z);
 					vImuMeas.push_back(ORB_SLAM3::IMU::ImuPoint(acc, gyr, t));
-					vGyroDVLMeas.push_back(ORB_SLAM3::IMU::GyroDvlPoint(gyr.x, gyr.y, gyr.z, 0, 0, 0, 0, 0, 0, 0, t));
+//					vGyroDVLMeas.push_back(ORB_SLAM3::IMU::GyroDvlPoint(gyr.x, gyr.y, gyr.z, 0, 0, 0, 0, 0, 0, 0, t));
+					vGyroDVLMeas.push_back(ORB_SLAM3::IMU::GyroDvlPoint(acc.x,
+					                                                    acc.y,
+					                                                    acc.z,
+					                                                    gyr.x,
+					                                                    gyr.y,
+					                                                    gyr.z,
+					                                                    0,
+					                                                    0,
+					                                                    0,
+					                                                    0,
+					                                                    0,
+					                                                    0,
+					                                                    0,
+					                                                    t));
 					mpImuGb->imuBuf.pop();
 				}
 			}
@@ -570,7 +587,7 @@ void ImageGrabber::SyncWithImu2()
 
 			//sort by timestamp
 			sort(vGyroDVLMeas.begin(), vGyroDVLMeas.end(),
-			     [](const ORB_SLAM3::IMU::GyroDvlPoint & a, const ORB_SLAM3::IMU::GyroDvlPoint & b) -> bool
+			     [](const ORB_SLAM3::IMU::GyroDvlPoint &a, const ORB_SLAM3::IMU::GyroDvlPoint &b) -> bool
 			     {
 				     return a.t < b.t;
 			     });
@@ -584,19 +601,27 @@ void ImageGrabber::SyncWithImu2()
 			BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
 			                        << "Track Stereo!\n"
 			                        << "left image time: " << tImLeft;
-			for (int i = 0; i < vImuMeas.size(); ++i) {
-				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
-				                        << "IMU[" << i << "] time: "
-				                        << vImuMeas[i].t << "\n"
-				                        << "a: " << vImuMeas[i].a << "\n"
-				                        << "w: " << vImuMeas[i].w << "\n";
+			for (int i = 0; i < vGyroDVLMeas.size(); ++i) {
+				if(vGyroDVLMeas[i].v.x!=0){
+					BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
+					                        << "IMU_DVL[" << i << "] time: "
+					                        << vGyroDVLMeas[i].t << "\n";
+				}
+				else{
+					BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
+					                        << "IMU[" << i << "] time: "
+					                        << vGyroDVLMeas[i].t << "\n";
+//				                        << "acc: " << vGyroDVLMeas[i].acc << "\n"
+//				                        << "angular_velocity: " << vGyroDVLMeas[i].angular_v << "\n"
+//										<< "DVL velocity: " << vGyroDVLMeas[i].v << "\n";
+				}
 			}
-			for (int i = 0; i < vDVLMeas.size(); ++i) {
-				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
-				                        << "DVL[" << i << "] time: "
-				                        << vDVLMeas[i].t << "\n"
-				                        << vDVLMeas[i].v << "\n";
-			}
+//			for (int i = 0; i < vDVLMeas.size(); ++i) {
+//				BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9)
+//				                        << "DVL[" << i << "] time: "
+//				                        << vDVLMeas[i].t << "\n";
+//				                        << vDVLMeas[i].v << "\n";
+//			}
 
 //			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vImuMeas, !vDVLMeas.empty());
 			mpSLAM->TrackStereoGroDVL(imLeft, imRight, tImLeft, vGyroDVLMeas, !vDVLMeas.empty());
@@ -616,7 +641,7 @@ void ImageGrabber::SyncWithImu2()
 
 void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 {
-	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "IMU recieved! time:" << imu_msg->header.stamp.toSec();
+//	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "IMU recieved! time:" << imu_msg->header.stamp.toSec();
 //	cout<<"IMU recieved! time:"<<imu_msg->header.stamp.toNSec()<<endl;
 	mBufMutex.lock();
 	Eigen::AngleAxisd r_x(1,
@@ -627,9 +652,7 @@ void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 	sensor_msgs::ImuPtr p_new_msg(new sensor_msgs::Imu());
 	p_new_msg->header = imu_msg->header;
 	p_new_msg->angular_velocity = imu_msg->angular_velocity;
-	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z ;
-	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y ;
-	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x ;
+	p_new_msg->linear_acceleration = imu_msg->linear_acceleration;
 //	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
 //	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
 //	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
@@ -692,7 +715,7 @@ void ImuGrabber::GrabImu2(const nav_msgs::OdometryConstPtr &odo_msg)
 }
 void DVLGrabber::GrabDVL(const nav_msgs::OdometryConstPtr &odo)
 {
-	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "DVL recieved! time:" << odo->header.stamp.toSec();
+//	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "DVL recieved! time:" << odo->header.stamp.toSec();
 //	cout<<"DVL recieved! time:"<<odo->header.stamp.toNSec()<<endl;
 	mBufMutex.lock();
 	dvlBuf.push(odo);
@@ -702,7 +725,7 @@ void DVLGrabber::GrabDVL(const nav_msgs::OdometryConstPtr &odo)
 
 void DVLGrabber::GrabDVL2(const waterlinked_a50_ros_driver::DVLConstPtr &msg)
 {
-	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "DVL recieved! time:" << msg->header.stamp.toSec();
+//	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "DVL recieved! time:" << msg->header.stamp.toSec();
 //	cout<<"DVL recieved! time:"<<odo->header.stamp.toNSec()<<endl;
 	mBufMutex.lock();
 	dvlBuf2.push(msg);

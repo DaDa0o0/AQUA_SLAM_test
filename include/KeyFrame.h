@@ -145,7 +145,43 @@ class KeyFrame
     template<class Archive>
     void serialize(Archive& ar, const unsigned int version)
     {
+	    if (Archive::is_saving::value) {
+//		    if(std::isnan(mfGridElementWidthInv)){
+//			    mfGridElementWidthInv = 0;
+//			}
+//		    if(std::isnan(mfGridElementHeightInv)){
+//			    mfGridElementHeightInv = 0;
+//		    }
+		    if(std::isnan(mLoopScore)){
+			    mLoopScore = 0;
+		    }
+		    if(std::isnan(mRelocScore)){
+			    mRelocScore = 0;
+		    }
+		    if(std::isnan(mMergeScore)){
+			    mMergeScore = 0;
+		    }
+		    if(std::isnan(mPlaceRecognitionScore)){
+			    mPlaceRecognitionScore = 0;
+		    }
+		    if(std::isnan(mfScaleMerge)){
+			    mfScaleMerge = 0;
+		    }
+		    if(std::isnan(mfScale)){
+			    mfScale = 0;
+		    }
+//		    if(std::isnan(mfScaleFactor)){
+//			    mfScaleFactor = 0;
+//		    }
+//		    if(std::isnan(mfLogScaleFactor)){
+//			    mfLogScaleFactor = 0;
+//		    }
+		    if(std::isnan(mHalfBaseline)){
+			    mHalfBaseline = 0;
+		    }
+	    }
         ar & mnId;
+//		cout<<"load KF id: "<<mnId<<endl;
         ar & const_cast<long unsigned int&>(mnFrameId);
         ar & const_cast<double&>(mTimeStamp);
         // Grid
@@ -231,15 +267,15 @@ class KeyFrame
         ar & const_cast<int&>(mnMaxX);
         ar & const_cast<int&>(mnMaxY);
         serializeMatrix(ar,mK,version);
-		ar & mPrevKF;
-		ar & mNextKF;
+//		ar & mPrevKF;
+//		ar & mNextKF;
 		ar & mpImuPreintegrated;
 		ar & mImuCalib;
 		ar & mnOriginMapId;
 		ar & mNameFile;
 		ar & mnDataset;
-		ar & mvpLoopCandKFs;
-		ar & mvpMergeCandKFs;
+//		ar & mvpLoopCandKFs;
+//		ar & mvpMergeCandKFs;
 		ar & mbHasHessian;
 	    serializeMatrix(ar,mHessianPose,version);
 		ar & mGrid;

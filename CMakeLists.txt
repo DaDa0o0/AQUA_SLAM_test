@@ -301,6 +301,8 @@ add_executable(boost_test ${PROJECT_SOURCE_DIR}/src/test/boost_test.cpp)
 target_link_libraries(boost_test -lboost_serialization
         -lboost_system)
 
+add_executable(tf_test ${PROJECT_SOURCE_DIR}/src/test/tf_test.cpp)
+
 #add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
 ##target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})
 #target_link_libraries(lk_tracker ${Boost_LIBRARIES} ${PROJECT_NAME})

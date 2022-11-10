@@ -603,8 +603,8 @@ bool LoopClosing::DetectAndReffineSim3FromLastKF(KeyFrame* pCurrentKF, KeyFrame*
 bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, KeyFrame* &pMatchedKF2, KeyFrame* &pLastCurrentKF, g2o::Sim3 &g2oScw,
                                              int &nNumCoincidences, std::vector<MapPoint*> &vpMPs, std::vector<MapPoint*> &vpMatchedMPs)
 {
-    int nBoWMatches = 10;
-    int nBoWInliers = 7;
+    int nBoWMatches = 20;
+    int nBoWInliers = 15;
     int nSim3Inliers = 5;
     int nProjMatches = 20;
     int nProjOptMatches = 30;

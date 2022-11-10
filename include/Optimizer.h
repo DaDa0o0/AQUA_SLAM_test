@@ -46,7 +46,6 @@ class LoopClosing;
 class Optimizer
 {
 public:
-
     void static BundleAdjustment(const std::vector<KeyFrame*> &vpKF, const std::vector<MapPoint*> &vpMP,
                                  int nIterations = 5, bool *pbStopFlag=NULL, const unsigned long nLoopKF=0,
                                  const bool bRobust = true);
@@ -137,6 +136,8 @@ public:
 	void static DvlGyroInitOptimization5(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 	// fix bias extrinsic, opt velocity
 	void static DvlGyroInitOptimization6(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+
+	void static DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 
 	void static DvlBeamOptimization(Map *pMap);
 	void static DvlBeamOptimization_dvl(Map *pMap);

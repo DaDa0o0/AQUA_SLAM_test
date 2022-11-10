@@ -1529,6 +1529,37 @@ protected:
  * vertex3: T_d_c
  * vertex4: T_g_d
  */
+class EdgeDvlGyroTrack: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDvlGyroTrack(DVLGroPreIntegration *pInt):mpInt(pInt)
+	{
+		resize(5);
+	}
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError();
+//	virtual void linearizeOplus();
+
+//	const Eigen::Matrix3d JRg, JVg, JPg;
+//	const Eigen::Matrix3d JVa, JPa;
+	DVLGroPreIntegration *mpInt;
+
+};
+
+/***
+ * vertex0: pose_i
+ * vertex1: pose_j
+ * vertex2: bias_gyro
+ * vertex3: T_d_c
+ * vertex4: T_g_d
+ */
 class EdgeDvlGyroInit: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
 {
 public:
