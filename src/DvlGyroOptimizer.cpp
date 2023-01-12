@@ -639,7 +639,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 													double lamda_DVL)
 {
 	Map *pCurrentMap = pKF->GetMap();
-	int Nd = std::min(20, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
+	int Nd = std::min(10, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
 	const unsigned long maxKFid = pKF->mnId;
 
 	vector<KeyFrame *> OptKFs;
@@ -944,42 +944,49 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 //	std::cout << "start optimization" << std::endl;
 	optimizer.setVerbose(false);
 
+	optimizer.initializeOptimization(0);
+	optimizer.optimize(5);
 
-	int mono_outlier;
-	int stereo_outlier;
-	float visula_chi2, dvl_chi2;
-	for (int i = 0; i < 4; i++) {
-		optimizer.initializeOptimization(0);
-		optimizer.optimize(10);
+	if(1){
+		int mono_outlier;
+		int stereo_outlier;
+		float visula_chi2, dvl_chi2;
+		for (int i = 0; i < 4; i++) {
+			optimizer.initializeOptimization(0);
+			optimizer.optimize(10);
 
-		mono_outlier = 0;
-		stereo_outlier = 0;
-		visula_chi2 = 0;
-		dvl_chi2 = 0;
-		for (auto e_mono: mono_edges) {
-			e_mono->computeError();
-			const float chi2 = e_mono->chi2();
-			if (chi2 > chi2Mono[i]) {
-				e_mono->setLevel(1);
+			mono_outlier = 0;
+			stereo_outlier = 0;
+			visula_chi2 = 0;
+			dvl_chi2 = 0;
+			for (auto e_mono: mono_edges) {
+				e_mono->computeError();
+				const float chi2 = e_mono->chi2();
+				if (chi2 > chi2Mono[i]) {
+					e_mono->setLevel(1);
+				}
+				visula_chi2 += chi2;
 			}
-			visula_chi2 += chi2;
-		}
-		for (auto e_stereo: stereo_edges) {
-			e_stereo->computeError();
-			const float chi2 = e_stereo->chi2();
-			if (chi2 > chi2Stereo[i]) {
-				e_stereo->setLevel(1);
+			for (auto e_stereo: stereo_edges) {
+				e_stereo->computeError();
+				const float chi2 = e_stereo->chi2();
+				if (chi2 > chi2Stereo[i]) {
+					e_stereo->setLevel(1);
+				}
+				visula_chi2 += chi2;
 			}
-			visula_chi2 += chi2;
-		}
-		for (auto e_dvl: dvl_edges) {
-			e_dvl->computeError();
-			const float chi2 = e_dvl->chi2();
-			dvl_chi2 += chi2;
+			for (auto e_dvl: dvl_edges) {
+				e_dvl->computeError();
+				const float chi2 = e_dvl->chi2();
+				dvl_chi2 += chi2;
 //			cout << "dvl error: " << e_dvl->error().transpose() << endl;
+			}
+			cout << "iteration: " << i << " visual chi2: " << visula_chi2 << " dvl_gyro chi2: " << dvl_chi2 << endl;
 		}
-		cout << "iteration: " << i << " visual chi2: " << visula_chi2 << " dvl_gyro chi2: " << dvl_chi2 << endl;
 	}
+
+
+
 
 
 	int visual_edge_num = mono_edges.size() + stereo_edges.size();

@@ -215,9 +215,9 @@ void LocalMapping::Run()
 
 
 				// Check redundant local Keyframes
-//				if(mpTracker->mCalibrated){
-//					KeyFrameCulling();
-//				}
+				if(mpTracker->mCalibrated){
+					KeyFrameCulling();
+				}
 
 
 				t6 = std::chrono::steady_clock::now();

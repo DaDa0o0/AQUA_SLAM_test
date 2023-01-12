@@ -3073,8 +3073,11 @@ void Tracking::TrackDVLGyro()
 			//todo_tightly
 			//	decide whether use DVL+ gyros to optimize in tracking thread or not
 			//	use them make visual tracking easy to lose
-			bOK = TrackLocalMapWithDvlGyro();
-//			bOK = TrackLocalMap();
+			if(mCalibrated)
+				bOK = TrackLocalMapWithDvlGyro();
+//				bOK = TrackLocalMap();
+			else//
+				bOK = TrackLocalMap();
 		}
 		if (!bOK) {
 			ROS_INFO_STREAM("Fail to track local map!");
@@ -5336,12 +5339,12 @@ bool Tracking::TrackLocalMapWithDvlGyro()
 
 	if (!mbMapUpdated) //  && (mnMatchesInliers>30))
 	{
-		cout << "track local map from last Frame" << endl;
+//		cout << "track local map from last Frame" << endl;
 		inliers =
 			Optimizer::PoseDvlGyrosOPtimizationLastFrame(&mCurrentFrame, mlamda_DVL);
 	}
 	else {
-		cout << "track local map from last Keyframe frame" << endl;
+//		cout << "track local map from last Keyframe frame" << endl;
 		inliers =
 			Optimizer::PoseDvlGyrosOPtimizationLastKeyFrame(&mCurrentFrame, mlamda_DVL);
 	}
@@ -5444,9 +5447,9 @@ bool Tracking::NeedNewKeyFrame()
 			&& mpDvlPreintegratedFromLastKF->bDVL && mCurrentFrame.mpDvlPreintegrationFrame->bDVL) {
 			return true;
 		}
-		else {
-			return false;
-		}
+//		else {
+//			return false;
+//		}
 	}
 	if (mSensor == System::DVL_STEREO) {
 		if ((mCurrentFrame.mTimeStamp - mpLastKeyFrame->mTimeStamp >= mKF_init_step)
