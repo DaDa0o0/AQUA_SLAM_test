@@ -257,13 +257,16 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
             // if (mpIntFromKF_D2D->bDVL) {
             //     bDVL_integrated = true;
             // }
-            mLastVelocity = v_d;
-            BOOST_LOG_TRIVIAL(info) << "integrate DVL " << v_d << "\n";
 
             //KF
             mpIntFromKF_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
             mpIntFromKF_C2C->v_dk_dvl = v_d;
             mpIntFromKF_C2C->SetDVLDebugVelocity(v_d);
+            mLastVelocity = cv::Point3d(mpIntFromKF_C2C->mVelocity.at<double>(0),
+                                        mpIntFromKF_C2C->mVelocity.at<double>(1),
+                                        mpIntFromKF_C2C->mVelocity.at<double>(2));
+            BOOST_LOG_TRIVIAL(info) << "integrate DVL beam velocity" << mLastVelocity << "\n";
+            BOOST_LOG_TRIVIAL(info) << "DVL output velocity" << v_d << "\n";
             // KF DVL to DVL
             // mpIntFromKF_D2D->IntegrateDVLMeasurement2(v_beam, tstep);
             // mpIntFromKF_D2D->v_dk_dvl = v_d;
