@@ -341,7 +341,6 @@ public:
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
     void SetVelocity(const cv::Mat &Vw_);
-	void SetVelocity(const Eigen::Vector3d &Vc);
 
     cv::Mat GetPose();
     cv::Mat GetPoseInverse();
@@ -352,10 +351,12 @@ public:
     cv::Mat GetStereoCenter();
     cv::Mat GetRotation();
     cv::Mat GetTranslation();
-    cv::Mat GetVelocity();
+    cv::Mat GetVelocityOld();
     cv::Mat GetDvlPosition();
     cv::Mat GetGyroRotation();
 	cv::Mat GetDvlRotation();
+    void GetDvlVelocity(Eigen::Vector3d& v_d);
+    void SetDvlVelocity(const Eigen::Vector3d& v_d);
 
     // Bag of Words Representation
     void ComputeBoW();
@@ -587,7 +588,7 @@ protected:
 
     // Velocity (Only used for inertial SLAM)
     cv::Mat Vw;
-	Eigen::Vector3d mVc; //velocity under camera frame(FOR DVL model)
+	Eigen::Vector3d mVd; //velocity under DVL frame(FOR DVL model)
 
     // Imu bias
     IMU::Bias mImuBias;

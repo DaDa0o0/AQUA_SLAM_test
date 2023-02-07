@@ -12325,6 +12325,9 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMon
 		VG->setFixed(true);
 		optimizer.addVertex(VG);
 		vpgb.push_back(VG);
+
+		//velocity
+		VertexVelocity *VV = new VertexVelocity();
 	}
 
 

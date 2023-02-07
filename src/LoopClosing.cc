@@ -1260,7 +1260,7 @@ void LoopClosing::CorrectLoop()
             if(bImuInit)
             {
                 Eigen::Matrix3d Rcor = eigR.transpose()*g2oSiw.rotation().toRotationMatrix();
-                pKFi->SetVelocity(Converter::toCvMat(Rcor)*pKFi->GetVelocity());
+                pKFi->SetVelocity(Converter::toCvMat(Rcor)* pKFi->GetVelocityOld());
             }
 
             // Make sure connections are updated
@@ -1655,7 +1655,7 @@ void LoopClosing::MergeLocal()
         if(pCurrentMap->isImuInitialized())
         {
             Eigen::Matrix3d Rcor = eigR.transpose()*vNonCorrectedSim3[pKFi].rotation().toRotationMatrix();
-            pKFi->mVwbMerge = Converter::toCvMat(Rcor)*pKFi->GetVelocity();
+            pKFi->mVwbMerge = Converter::toCvMat(Rcor)* pKFi->GetVelocityOld();
             //pKFi->SetVelocity(Converter::toCvMat(Rcor)*pKFi->GetVelocity()); // TODO: should add here scale s
         }
 
@@ -1982,7 +1982,7 @@ void LoopClosing::MergeLocal()
                     if(pCurrentMap->isImuInitialized())
                     {
                         Eigen::Matrix3d Rcor = eigR.transpose()*vNonCorrectedSim3[pKFi].rotation().toRotationMatrix();
-                        pKFi->SetVelocity(Converter::toCvMat(Rcor)*pKFi->GetVelocity()); // TODO: should add here scale s
+                        pKFi->SetVelocity(Converter::toCvMat(Rcor)* pKFi->GetVelocityOld()); // TODO: should add here scale s
                     }
 
                 }
@@ -2684,9 +2684,9 @@ void LoopClosing::RunGlobalBundleAdjustment(Map* pActiveMap, unsigned long nLoop
                         pChild->mTcwGBA = Tchildc*pKF->mTcwGBA;//*Tcorc*pKF->mTcwGBA;
 
                         cv::Mat Rcor = pChild->mTcwGBA.rowRange(0,3).colRange(0,3).t()*pChild->GetRotation();
-                        if(!pChild->GetVelocity().empty()){
+                        if(!pChild->GetVelocityOld().empty()){
                             //cout << "Child velocity: " << pChild->GetVelocity() << endl;
-                            pChild->mVwbGBA = Rcor*pChild->GetVelocity();
+                            pChild->mVwbGBA = Rcor* pChild->GetVelocityOld();
                         }
                         else
                             Verbose::PrintMess("Child velocity empty!! ", Verbose::VERBOSITY_NORMAL);
@@ -2763,7 +2763,7 @@ void LoopClosing::RunGlobalBundleAdjustment(Map* pActiveMap, unsigned long nLoop
                 if(pKF->bImu)
                 {
                     //cout << "-------Update inertial values" << endl;
-                    pKF->mVwbBefGBA = pKF->GetVelocity();
+                    pKF->mVwbBefGBA = pKF->GetVelocityOld();
                     if (pKF->mVwbGBA.empty())
                         Verbose::PrintMess("pKF->mVwbGBA is empty", Verbose::VERBOSITY_NORMAL);
 

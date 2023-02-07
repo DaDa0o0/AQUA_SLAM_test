@@ -288,7 +288,7 @@ void Map::RotateMap(const cv::Mat &R)
         Tcy.rowRange(0,3).colRange(0,3) = Tyc.rowRange(0,3).colRange(0,3).t();
         Tcy.rowRange(0,3).col(3) = -Tcy.rowRange(0,3).colRange(0,3)*Tyc.rowRange(0,3).col(3);
         pKF->SetPose(Tcy);
-        cv::Mat Vw = pKF->GetVelocity();
+        cv::Mat Vw = pKF->GetVelocityOld();
         pKF->SetVelocity(Ryw*Vw);
     }
     for(set<MapPoint*>::iterator sit=mspMapPoints.begin(); sit!=mspMapPoints.end(); sit++)
@@ -324,7 +324,7 @@ void Map::ApplyScaledRotation(const cv::Mat &R, const float s, const bool bScale
         Tcy.rowRange(0,3).colRange(0,3) = Tyc.rowRange(0,3).colRange(0,3).t();
         Tcy.rowRange(0,3).col(3) = -Tcy.rowRange(0,3).colRange(0,3)*Tyc.rowRange(0,3).col(3);
         pKF->SetPose(Tcy);
-        cv::Mat Vw = pKF->GetVelocity();
+        cv::Mat Vw = pKF->GetVelocityOld();
         if(!bScaledVel)
             pKF->SetVelocity(Ryw*Vw);
         else

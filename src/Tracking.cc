@@ -1636,7 +1636,7 @@ bool Tracking::PredictStateIMU()
 	if (mbMapUpdated && mpLastKeyFrame) {
 		const cv::Mat twb1 = mpLastKeyFrame->GetImuPosition();
 		const cv::Mat Rwb1 = mpLastKeyFrame->GetImuRotation();
-		const cv::Mat Vwb1 = mpLastKeyFrame->GetVelocity();
+		const cv::Mat Vwb1 = mpLastKeyFrame->GetVelocityOld();
 
 		const cv::Mat Gz = (cv::Mat_<float>(3, 1) << 0, 0, -IMU::GRAVITY_VALUE);
 		const float t12 = mpImuPreintegratedFromLastKF->dT;
@@ -3879,7 +3879,7 @@ void Tracking::CreateMapInAtlas()
 	}
 	else if (mSensor == System::DVL_STEREO) {
 //        GetBeamOrientation()
-        mpIntegrator->CreateNewIntFromKF_C2C(IMU::Bias(),GetExtrinsicPara(), mAlpha, mBeta);
+//         mpIntegrator->CreateNewIntFromKF_C2C(IMU::Bias(),GetExtrinsicPara(), mAlpha, mBeta);
         // mpIntegrator->CreateNewIntFromKF_D2D(IMU::Bias(),GetExtrinsicPara(), mAlpha, mBeta);
 	}
 	if (mSensor == System::DVL_STEREO) {
@@ -6188,7 +6188,7 @@ void Tracking::ResetActiveMap(bool bLocMap)
 		// }
 	// }
 
-    mpIntegrator->CreateNewIntFromKF_C2C(IMU::Bias(),GetExtrinsicPara(), mAlpha, mBeta);
+    // mpIntegrator->CreateNewIntFromKF_C2C(IMU::Bias(),GetExtrinsicPara(), mAlpha, mBeta);
     // mpIntegrator->CreateNewIntFromKF_D2D(IMU::Bias(),GetExtrinsicPara(), mAlpha, mBeta);
 
 	Verbose::PrintMess("   End reseting! ", Verbose::VERBOSITY_NORMAL);
@@ -6281,12 +6281,12 @@ void Tracking::UpdateFrameIMU(const float s, const IMU::Bias &b, KeyFrame *pCurr
 	if (mLastFrame.mnId == mLastFrame.mpLastKeyFrame->mnFrameId) {
 		mLastFrame.SetImuPoseVelocity(mLastFrame.mpLastKeyFrame->GetImuRotation(),
 		                              mLastFrame.mpLastKeyFrame->GetImuPosition(),
-		                              mLastFrame.mpLastKeyFrame->GetVelocity());
+									  mLastFrame.mpLastKeyFrame->GetVelocityOld());
 	}
 	else {
 		twb1 = mLastFrame.mpLastKeyFrame->GetImuPosition();
 		Rwb1 = mLastFrame.mpLastKeyFrame->GetImuRotation();
-		Vwb1 = mLastFrame.mpLastKeyFrame->GetVelocity();
+		Vwb1 = mLastFrame.mpLastKeyFrame->GetVelocityOld();
 		t12 = mLastFrame.mpImuPreintegrated->dT;
 
 		mLastFrame.SetImuPoseVelocity(Rwb1 * mLastFrame.mpImuPreintegrated->GetUpdatedDeltaRotation(),
@@ -6299,7 +6299,7 @@ void Tracking::UpdateFrameIMU(const float s, const IMU::Bias &b, KeyFrame *pCurr
 	if (mCurrentFrame.mpImuPreintegrated) {
 		twb1 = mCurrentFrame.mpLastKeyFrame->GetImuPosition();
 		Rwb1 = mCurrentFrame.mpLastKeyFrame->GetImuRotation();
-		Vwb1 = mCurrentFrame.mpLastKeyFrame->GetVelocity();
+		Vwb1 = mCurrentFrame.mpLastKeyFrame->GetVelocityOld();
 		t12 = mCurrentFrame.mpImuPreintegrated->dT;
 
 		mCurrentFrame.SetImuPoseVelocity(Rwb1 * mCurrentFrame.mpImuPreintegrated->GetUpdatedDeltaRotation(),
@@ -6341,13 +6341,13 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
 	if (mLastFrame.mnId == mLastFrame.mpLastKeyFrame->mnFrameId) {
 		mLastFrame.SetDvlPoseVelocity(mLastFrame.mpLastKeyFrame->GetGyroRotation(),
 		                              mLastFrame.mpLastKeyFrame->GetDvlPosition(),
-		                              mLastFrame.mpLastKeyFrame->GetVelocity());
+									  mLastFrame.mpLastKeyFrame->GetVelocityOld());
 	}
 	else {
 		twdvl1 = mLastFrame.mpLastKeyFrame->GetDvlPosition();
 		Rwgyro1 = mLastFrame.mpLastKeyFrame->GetGyroRotation();
 		Rwdvl1 = mLastFrame.mpLastKeyFrame->GetDvlRotation();
-		Vwdvl1 = mLastFrame.mpLastKeyFrame->GetVelocity();
+		Vwdvl1 = mLastFrame.mpLastKeyFrame->GetVelocityOld();
 		t12 = mLastFrame.mpDvlPreintegrationKeyFrame->dT;
 
 		cv::Mat Rwgyro2 =
@@ -6367,7 +6367,7 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
 		twdvl1 = mCurrentFrame.mpLastKeyFrame->GetDvlPosition();
 		Rwgyro1 = mCurrentFrame.mpLastKeyFrame->GetGyroRotation();
 		Rwdvl1 = mCurrentFrame.mpLastKeyFrame->GetDvlRotation();
-		Vwdvl1 = mCurrentFrame.mpLastKeyFrame->GetVelocity();
+		Vwdvl1 = mCurrentFrame.mpLastKeyFrame->GetVelocityOld();
 		t12 = mCurrentFrame.mpDvlPreintegrationKeyFrame->dT;
 
 		cv::Mat Rwgyro2 =

@@ -529,8 +529,8 @@ void DVLGroPreIntegration::SetVelocity(const cv::Point3d &v_di)
     //		dV = dR * v;
     dV = v;
     // R_d_g * R_gj_gi * R_g_d = R_dj_di
-    mVelocity = mR_g_d.t() * dR.t() * mR_g_d * v;
-    cv::Point3d v_dj(mVelocity.at<double>(0), mVelocity.at<double>(1), mVelocity.at<double>(2));
+    mVelocity =  v;
+    // cv::Point3d v_dj(mVelocity.at<double>(0), mVelocity.at<double>(1), mVelocity.at<double>(2));
 
     //	mvMeasurements.push_back(integrable(v_dj, cv::Point3d(0, 0, 0), 0));
 }

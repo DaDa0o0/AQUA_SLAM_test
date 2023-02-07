@@ -107,6 +107,8 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     SetPose(F.mTcw);
 
     mnOriginMapId = pMap->GetId();
+
+    cv::cv2eigen(mpDvlPreintegrationKeyFrame->mVelocity, mVd);
 }
 
 void KeyFrame::ComputeBoW()
@@ -139,17 +141,17 @@ void KeyFrame::SetPose(const cv::Mat &Tcw_)
     Cw = Twc*center;
 
 	//update velocity
-	if(mPrevKF){
-		Eigen::Isometry3d T_ci_w,T_w_cj;
-		cv::cv2eigen(mPrevKF->GetPose(),T_ci_w.matrix());
-		cv::cv2eigen(Twc,T_w_cj.matrix());
-		Eigen::Isometry3d T_ci_cj = T_ci_w * T_w_cj;
-		Eigen::Matrix3d R_cj_ci = T_ci_cj.rotation().transpose();
-		Eigen::Vector3d v_ci_ci_cj= T_ci_cj.translation() / (this->mTimeStamp - mPrevKF->mTimeStamp);
-		Eigen::Vector3d v_cj_ci_cj = R_cj_ci * v_ci_ci_cj;
-		mVc = v_cj_ci_cj;
-		mPrevKF->SetVelocity(v_ci_ci_cj);
-	}
+	// if(mPrevKF){
+	// 	Eigen::Isometry3d T_ci_w,T_w_cj;
+	// 	cv::cv2eigen(mPrevKF->GetPose(),T_ci_w.matrix());
+	// 	cv::cv2eigen(Twc,T_w_cj.matrix());
+	// 	Eigen::Isometry3d T_ci_cj = T_ci_w * T_w_cj;
+	// 	Eigen::Matrix3d R_cj_ci = T_ci_cj.rotation().transpose();
+	// 	Eigen::Vector3d v_ci_ci_cj= T_ci_cj.translation() / (this->mTimeStamp - mPrevKF->mTimeStamp);
+	// 	Eigen::Vector3d v_cj_ci_cj = R_cj_ci * v_ci_ci_cj;
+	// 	mVc = v_cj_ci_cj;
+	// 	mPrevKF->SetVelocity(v_ci_ci_cj);
+	// }
 }
 
 void KeyFrame::SetVelocity(const cv::Mat &Vw_)
@@ -188,6 +190,16 @@ cv::Mat KeyFrame::GetDvlRotation()
 	unique_lock<mutex> lock(mMutexPose);
 	// R_w_c * R_c_dvl
 	return Twc.rowRange(0,3).colRange(0,3) * mImuCalib.mT_c_dvl.rowRange(0, 3).colRange(0, 3);
+}
+
+void KeyFrame::GetDvlVelocity(Eigen::Vector3d& v_d)
+{
+    v_d = mVd;
+}
+
+void KeyFrame::SetDvlVelocity(const Eigen::Vector3d &v_d)
+{
+    mVd = v_d;
 }
 
 cv::Mat KeyFrame::GetGyroRotation()
@@ -235,7 +247,7 @@ cv::Mat KeyFrame::GetTranslation()
     return Tcw.rowRange(0,3).col(3).clone();
 }
 
-cv::Mat KeyFrame::GetVelocity()
+cv::Mat KeyFrame::GetVelocityOld()
 {
     unique_lock<mutex> lock(mMutexPose);
     return Vw.clone();
@@ -1323,10 +1335,6 @@ void KeyFrame::IntegrateDVL(KeyFrame *kp_i)
 	Eigen::Isometry3d T_e0_ei=kp_i->mT_e0_ej;
 	mT_ei_ej = T_e0_ei.inverse()*mT_e0_ej;
 }
-void KeyFrame::SetVelocity(const Eigen::Vector3d &Vc)
-{
-	unique_lock<mutex> lock(mMutexPose);
-	mVc = Vc;
-}
+
 
 } //namespace ORB_SLAM

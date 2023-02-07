@@ -661,7 +661,7 @@ Eigen::Vector3d EdgeMonoInvdepthBody::cam_unproject(const double u, const double
 
 VertexVelocity::VertexVelocity(KeyFrame* pKF)
 {
-    setEstimate(Converter::toVector3d(pKF->GetVelocity()));
+    setEstimate(Converter::toVector3d(pKF->GetVelocityOld()));
 }
 
 VertexVelocity::VertexVelocity(Frame* pF)
