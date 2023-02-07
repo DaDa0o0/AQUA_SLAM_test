@@ -1642,6 +1642,28 @@ public:
 
 };
 
+class EdgeDvlIMUInit: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDvlIMUInit(DVLGroPreIntegration *pInt);
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError();
+//	virtual void linearizeOplus();
+
+//	const Eigen::Matrix3d JRg, JVg, JPg;
+//	const Eigen::Matrix3d JVa, JPa;
+	DVLGroPreIntegration *mpInt;
+	const double dt;
+
+};
+
 class EdgeDVLBeamCalibration1: public g2o::BaseUnaryEdge<4, DVLGroPreIntegration *, VertexDVLBeamOritenstion>
 {
 public:

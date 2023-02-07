@@ -30,11 +30,11 @@
 namespace ORB_SLAM3
 {
 
-Atlas::Atlas(){
+Atlas::Atlas():mDvlImuInitailized(false){
     mpCurrentMap = static_cast<Map*>(NULL);
 }
 
-Atlas::Atlas(int initKFid): mnLastInitKFidMap(initKFid), mHasViewer(false)
+Atlas::Atlas(int initKFid): mnLastInitKFidMap(initKFid), mHasViewer(false), mDvlImuInitailized(false)
 {
     mpCurrentMap = static_cast<Map*>(NULL);
     CreateNewMap();
@@ -438,6 +438,16 @@ void Atlas::clearMap(Map *pMap)
 	}
 	else
 		ROS_ERROR_STREAM("fail to clear map!!!");
+}
+bool Atlas::isDvlImuInitialized()
+{
+	unique_lock<mutex> lock(mMutexAtlas);
+	return mDvlImuInitailized;
+}
+void Atlas::SetDvlImuInitialized()
+{
+	unique_lock<mutex> lock(mMutexAtlas);
+	mDvlImuInitailized = true;
 }
 
 } //namespace ORB_SLAM3

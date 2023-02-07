@@ -165,7 +165,7 @@ class DVLGroPreIntegration
 		ar & mb;
 		serializeMatrix(ar, dR, version);
 		serializeMatrix(ar, dV, version);
-		serializeMatrix(ar, dP, version);
+		serializeMatrix(ar, dP_dvl, version);
 		serializeMatrix(ar, mVelocity, version);
 		serializeMatrix(ar, mR_g_d, version);
 		serializePoint3d(ar, mAngV, version);
@@ -209,6 +209,7 @@ public:
 	                     double velocity_threshold,
 	                     bool bDVL = false);
 	DVLGroPreIntegration(DVLGroPreIntegration *pDVLPre);
+    DVLGroPreIntegration(const DVLGroPreIntegration& integration);
 	DVLGroPreIntegration()
 	{}
 	~DVLGroPreIntegration()
@@ -233,12 +234,6 @@ public:
 	 * @param v_dk: V_dk
 	 */
 	void IntegrateDVLMeasurement(const cv::Point3d &v_dk, const double &dt);
-
-	/***
-	 * @param v_di
-	 * @param dt
-	 */
-	void IntegrateVelocity(const cv::Point3d &v_di, const double &dt);
 
 	/***
 	 *
@@ -291,13 +286,15 @@ public:
 
 	// Values for the original bias (when integration was computed)
 	Bias mb;
+	Calib mCalib;
 	/***
 	 * dR: R_gi_gj. during integrtion R_gi_gk
 	 * dV: V_di
 	 * dP: t_di_didj, during integration t_di_didk
-	 * dDeltaV: Delta_V_gi_gj = R_i_w * (V_w_j - V_w_i - g_w * delta_t_i_j)
+	 * dDeltaV: Delta_V_bi_bj = R_bi_w * (V_w_bj - V_w_bi - g_w * delta_t_i_j)
 	 */
-	cv::Mat dR, dV, dP, dDeltaV;
+	cv::Mat dR, dV, dP_dvl, dDeltaV, dP_acc;
+    cv::Mat dR_C2D, dR_D2C;
 	// mVelocity: V_dk velocity reading in DVL frame at time k
 	// mAngV: angular_v last angular v, this is used for DVL inegration
 	cv::Mat mVelocity, mR_g_d;

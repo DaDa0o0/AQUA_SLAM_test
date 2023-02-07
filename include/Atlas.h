@@ -122,6 +122,9 @@ public:
     void SetImuInitialized();
     bool isImuInitialized();
 
+	bool isDvlImuInitialized();
+	void SetDvlImuInitialized();
+
     // Function for garantee the correction of serialization of this object
     void PreSave();
     void PostLoad();
@@ -159,6 +162,9 @@ protected:
     // Class references for the map reconstruction from the save file
     KeyFrameDatabase* mpKeyFrameDB;
     ORBVocabulary* mpORBVocabulary;
+
+	// DVL IMU Init status
+	bool mDvlImuInitailized;
 
 
 }; // class Atlas

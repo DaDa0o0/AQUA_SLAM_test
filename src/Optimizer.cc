@@ -11320,7 +11320,7 @@ void Optimizer::DvlGyroInitOptimization3(Map *pMap,
 	g2o::VertexSE3Expmap *vT_g_d = new g2o::VertexSE3Expmap();
 	vT_g_d->setEstimate(Converter::toSE3Quat(vpKFs[0]->mImuCalib.mT_gyro_dvl));
 	vT_g_d->setId(maxKFid + 1 + maxKFid + 2);
-	vT_g_d->setFixed(false);
+	vT_g_d->setFixed(true);
 	optimizer.addVertex(vT_g_d);
 
 
@@ -12286,7 +12286,7 @@ void Optimizer::DvlGyroInitOptimization4(Map *pMap,
 
 void Optimizer::DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG)
 {
-	Verbose::PrintMess("inertial optimization", Verbose::VERBOSITY_NORMAL);
+	// Verbose::PrintMess("inertial optimization", Verbose::VERBOSITY_NORMAL);
 	int its = 200; // Check number of iterations
 	long unsigned int maxKFid = pMap->GetMaxKFid();
 	const vector<KeyFrame *> vpKFs = pMap->GetAllKeyFrames();

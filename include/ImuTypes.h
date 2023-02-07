@@ -336,7 +336,7 @@ public:
 		:
 		mT_gyro_c(calib.mT_gyro_c.clone()), mT_dvl_c(calib.mT_dvl_c.clone()), mT_c_gyro(calib.mT_c_gyro.clone()),
 		mT_c_dvl(calib.mT_c_dvl.clone()),
-		mT_gyro_dvl(calib.mT_gyro_dvl)
+		mT_gyro_dvl(calib.mT_gyro_dvl.clone())
 	{
 		Tbc = calib.Tbc.clone();
 		Tcb = calib.Tcb.clone();

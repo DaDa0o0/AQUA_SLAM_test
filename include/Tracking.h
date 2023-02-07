@@ -54,6 +54,7 @@ class LoopClosing;
 class System;
 class RosHandling;
 class DenseMapper;
+class Integrator;
 
 class Tracking
 {
@@ -189,7 +190,7 @@ public:
 	// Current Frame
 	Frame mCurrentFrame;
 	Frame mLastFrame;
-	Frame mLastFrameBeforeLoss;
+	// Frame mLastFrameBeforeLoss;
 //    Frame mLastFrameBeforeLoss;
 	// for debug
 	Frame mCurrentFrame_orb;
@@ -274,6 +275,7 @@ protected:
 	// Main tracking function. It is independent of the input sensor.
 	void Track();
 	void TrackDVLGyro();
+	void TrackDVLImu();
 	void TrackKLT();
 
 	// Map initialization for stereo and RGB-D
@@ -486,10 +488,10 @@ public:
 	DVLGroPreIntegration *mpDvlPreintegratedFromLastKFBeforeLost;
 	bool mDoLossIntegration;
 	DVLGroPreIntegration *getLossIntegrationRef();
-	void setLossIntegrationRef(DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost);
 
 	void SetBeamOrientation(const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta);
 	void GetBeamOrientation(Eigen::Vector4d &alpha, Eigen::Vector4d &beta);
+	Integrator* mpIntegrator;
 
 	LKTracker *mpLKTracker;
 };

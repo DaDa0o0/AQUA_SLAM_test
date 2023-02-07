@@ -4,8 +4,8 @@ project(ORB_DVL2)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -w")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-SET(ROS_BUILD_TYPE RelWithDebInfo)
-SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+#SET(ROS_BUILD_TYPE RelWithDebInfo)
+#SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 add_definitions(-DCOMPILEDWITHC11)
@@ -261,7 +261,7 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/src/DenseMapper.cpp
         ${PROJECT_SOURCE_DIR}/src/cv_bridge.cpp
         ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp
-        ${PROJECT_SOURCE_DIR}/src/LKTracker.cpp src/FrameKLT.cpp src/FrameKLT.h)
+        ${PROJECT_SOURCE_DIR}/src/LKTracker.cpp src/FrameKLT.cpp src/FrameKLT.h src/Integrator.cpp src/Integrator.h)
 
 target_link_libraries(${PROJECT_NAME}
         ${OpenCV_LIBS}

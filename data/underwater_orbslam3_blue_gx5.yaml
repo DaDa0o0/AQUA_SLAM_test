@@ -73,11 +73,11 @@ Viewer.ViewpointF: 500
 
 # Optimization Parameters
 Optimizer.visual_lamda: 1
-Optimizer.DVL_lamda: 10
+Optimizer.DVL_lamda: 0.1
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.0
-Optimizer.KF_num_for_init: 50
+Optimizer.KF_num_for_init: 200
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
@@ -116,7 +116,7 @@ LeftImgTopic: "/camera/left/image_dehazed"
 RightImgTopic: "/camera/right/image_dehazed"
 ImuTopic: "/imu/data"
 DvlTopic: "/bluerov2/DVL"
-EnableLoopDetection: 1
+EnableLoopDetection: 0
 
 # IMU to orb
 # only use rotation
@@ -124,9 +124,9 @@ T_gyro_c: !!opencv-matrix
   rows: 4
   cols: 4
   dt: f
-  data: [ 0.0745125, -0.995122, -0.064652, 0.13, #tf gx5 to camera, 2022/10/24 data collection
-          -0.0203243, 0.0633033, -0.997787, -0.25,
-          0.997013, 0.0756616, -0.0155082, -0.06,
+  data: [ 0.079044774353702135,  -0.99439043359826096, -0.070282211231823016, 0.13, #tf gx5 to camera, 2022/10/24 data collection
+          -0.028188393175066075,  0.068245041001919582,  -0.99727028877273516, -0.25,
+          0.99647244725460438,  0.080810147549107897, -0.022635854645036313, -0.06,
           0, 0, 0, 1 ]
 #  data: [ 1,  0,   0,   0, # I
 #          0,  1,   0,    0,
@@ -141,9 +141,9 @@ T_dvl_c: !!opencv-matrix
 #          -1,  0,   0,    0,
 #          0,  -1,  0,    0.1,
 #          0,  0,   0,    1 ]
-  data: [ 0.0011888419381439509,    0.02851617044875765,    0.99959262436143614,   0.10060381898008802, # real rov 4-beam
-          0.99937623712471568,   0.035246597423590931, -0.0021940921822520229,    0.044242992513024326,
-          -0.035294805925107663,     0.9989717240207534,  -0.028456480487092373,    -0.24123071505358376,
+  data: [ -0.050616530414611553, -0.041923403320645092,   0.99783786012698528,   0.10060381898008802, # real rov 4-beam
+          0.99857956351442967,  0.014520198613423137,  0.051264209381967372,    0.044242992513024326,
+          -0.016637974038871173,   0.99901531123714082,  0.041128891714226568,    -0.24123071505358376,
           0,  0,   0,    1 ]
 
 DenseMapper:
