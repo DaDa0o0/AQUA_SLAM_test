@@ -139,6 +139,8 @@ protected:
 
 	boost::shared_ptr<ros::ServiceServer> mp_save_srv, m_load_srv, m_calib_srv;
 
+    Eigen::Isometry3d mT_w_c0;
+
 public:
 	void setLocalMapping(LocalMapping *mpLocalMapping)
 	{

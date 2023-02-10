@@ -101,7 +101,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(DVLGroPreIntegration* pDVLPre) : dT(p
                                                                             mE(pDVLPre->mE),
                                                                             mETEInv(pDVLPre->mETEInv),
                                                                             mR_g_d(pDVLPre->mR_g_d),
-                                                                            mVelocity(pDVLPre->mVelocity)
+                                                                            mVelocity(pDVLPre->mVelocity.clone())
 {
 
 }
@@ -138,7 +138,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(const DVLGroPreIntegration &integrati
                                                                                       mETEInv(integration.mETEInv),
                                                                                       mR_g_d(integration.mR_g_d),
                                                                                       mVelocity(
-                                                                                              integration.mVelocity)
+                                                                                              integration.mVelocity.clone())
 {
 
 }
@@ -169,6 +169,30 @@ void DVLGroPreIntegration::Initialize(const Bias &b_)
     dT = 0.0f;
     mvMeasurements.clear();
     mvMeasurements2.clear();
+}
+
+void DVLGroPreIntegration::ReintegrateWithBias(const Bias &b)
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    const std::vector<integrable> aux = mvMeasurements;
+    const std::vector<integrable> aux2 = mvMeasurements2;
+    cv::Mat v = dV.clone();
+    Initialize(bu);
+    SetVelocity(cv::Point3d(v.at<double>(0), v.at<double>(1), v.at<double>(2)));
+    mb = b;
+    for (size_t i = 0; i < aux2.size(); i++) {
+        if (aux2[i].v.x == 0 && aux2[i].v.y == 0 && aux2[i].v.z == 0) {
+            // IntegrateGroMeasurement(aux[i].w, aux[i].t);
+            IntegrateGroAccMeasurement(aux2[i].a, aux2[i].w, aux2[i].t);
+        }
+        else if (aux2[i].w.x == 0 && aux2[i].w.y == 0 && aux2[i].w.z == 0) {
+            IntegrateDVLMeasurement2(aux2[i].v_beam, aux2[i].t);
+        }
+        else {
+            cout << "found error in measurement" << endl;
+        }
+    }
+    mvMeasurements = aux;
 }
 
 void DVLGroPreIntegration::ReintegrateWithVelocity()
@@ -292,10 +316,10 @@ void DVLGroPreIntegration::ReintegrateWithBiasRotationBeamOri(const Bias &b, con
 
 void DVLGroPreIntegration::IntegrateGroMeasurement(const cv::Point3d &angVel, const double &dt)
 {
-    if (dV.at<double>(0) == 0 && dV.at<double>(1) == 0 && dV.at<double>(2) == 0) {
-        ROS_ERROR_STREAM("velocity is not initialized");
-        exit(-1);
-    }
+    // if (dV.at<double>(0) == 0 && dV.at<double>(1) == 0 && dV.at<double>(2) == 0) {
+    //     ROS_ERROR_STREAM("velocity is not initialized");
+    //     exit(-1);
+    // }
     mvMeasurements.push_back(integrable(cv::Point3d(0, 0, 0), angVel, dt));
     mvMeasurements2.push_back(
             integrable(cv::Point3d(0, 0, 0), angVel, cv::Point3d(0, 0, 0), Eigen::Vector4d::Zero(), dt));
@@ -348,7 +372,7 @@ void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc, co
     mvMeasurements2.push_back(integrable(acc, angVel, cv::Point3d(0, 0, 0), Eigen::Vector4d::Zero(), dt));
 
     // acc measurement without bias in body frame
-    cv::Mat acc_b = (cv::Mat_<double>(3, 1) << acc.x - mb.bwx, acc.y - mb.bwy, acc.z - mb.bwz);
+    cv::Mat acc_b = (cv::Mat_<double>(3, 1) << acc.x - mb.bax, acc.y - mb.bay, acc.z - mb.baz);
     mAngV = angVel;
 
     //3*1
@@ -402,7 +426,6 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3d &v_dk, cons
     v << v_dk.x, v_dk.y, v_dk.z;
     //	if (cv::norm(v)>(double)mVelocityThreshold)
     //		return;
-    mVelocity = v;
     bDVL = true;
     //	ReintegrateWithVelocity();
     if (dV.at<double>(0) == 0 && dV.at<double>(1) == 0 && dV.at<double>(2) == 0) {
@@ -463,13 +486,14 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     v << V_dk.x(), V_dk.y(), V_dk.z();
     //	if (cv::norm(v)>(double)mVelocityThreshold)
     //		return;
-    mVelocity = v;
+    // mVelocity = v;
     bDVL = true;
     //	ReintegrateWithVelocity();
     if (dV.at<double>(0) == 0 && dV.at<double>(1) == 0 && dV.at<double>(2) == 0) {
         //		dV = dR * mR_g_d* v;
         //		dV = dR * v;
         dV = mR_g_d.t() * dR * mR_g_d * v;
+        mVelocity = v.clone();
         //		cout<<"dR:"<<dR<<endl;
         //		cout<<"dV:"<<dV<<endl;
         ROS_INFO_STREAM("reintegration with velocity");
@@ -477,7 +501,9 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     }
     else {
         //		dV = dR * v;
-        dV = mR_g_d.t() * dR * mR_g_d * v;
+        mVelocity = (v+mVelocity)/2;
+        // mVelocity = v.clone();
+        dV = mR_g_d.t() * dR * mR_g_d * mVelocity;
     }
     // update pose from Last gyro frame to current dvl frame
     cv::Mat accW = (cv::Mat_<double>(3, 1) << mAngV.x - mb.bwx, mAngV.y - mb.bwy, mAngV.z - mb.bwz);
@@ -529,7 +555,7 @@ void DVLGroPreIntegration::SetVelocity(const cv::Point3d &v_di)
     //		dV = dR * v;
     dV = v;
     // R_d_g * R_gj_gi * R_g_d = R_dj_di
-    mVelocity =  v;
+    mVelocity =  v.clone();
     // cv::Point3d v_dj(mVelocity.at<double>(0), mVelocity.at<double>(1), mVelocity.at<double>(2));
 
     //	mvMeasurements.push_back(integrable(v_dj, cv::Point3d(0, 0, 0), 0));
@@ -649,7 +675,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaRotation(const Bias &b_)
 {
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
-    cv::Mat R = NormalizeRotation(dR * ExpSO3(JRg * dbg));
+    cv::Mat R = NormalizeRotation(dR);
     R.convertTo(R, CV_32F);
     return R;
 }
@@ -676,7 +702,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    cv::Mat P = dP_dvl + JPg * dbg;
+    cv::Mat P = dP_dvl ;
     P.convertTo(P, CV_32F);
     return P;
 }

@@ -80,7 +80,7 @@ Tracking::Tracking(System *pSys,
 	// initialize the pose pulisher
 	ros::NodeHandle n;
 	mPose_pub = n.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/orb_pose", 10);
-	mEKFPose_pub = n.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/preintegrated_pose", 10);
+	// mEKFPose_pub = n.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/preintegrated_pose", 10);
 	// Load camera parameters from settings file
 	cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
 
@@ -2782,8 +2782,8 @@ void Tracking::TrackDVLGyro()
 			//	decide whether use DVL+ gyros to optimize in tracking thread or not
 			//	use them make visual tracking easy to lose
 			if(mCalibrated)
-				bOK = TrackLocalMapWithDvlGyro();
-//				bOK = TrackLocalMap();
+				// bOK = TrackLocalMapWithDvlGyro();
+				bOK = TrackLocalMap();
 			else//
 				bOK = TrackLocalMap();
 		}

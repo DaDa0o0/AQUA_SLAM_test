@@ -259,9 +259,10 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
             // }
 
             //KF
-            mpIntFromKF_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
             mpIntFromKF_C2C->v_dk_dvl = v_d;
             mpIntFromKF_C2C->SetDVLDebugVelocity(v_d);
+            mpIntFromKF_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
+
             mLastVelocity = cv::Point3d(mpIntFromKF_C2C->mVelocity.at<double>(0),
                                         mpIntFromKF_C2C->mVelocity.at<double>(1),
                                         mpIntFromKF_C2C->mVelocity.at<double>(2));
@@ -272,14 +273,16 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
             // mpIntFromKF_D2D->v_dk_dvl = v_d;
             // mpIntFromKF_D2D->SetDVLDebugVelocity(v_d);
             // F
-            mpIntFromF_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
             mpIntFromF_C2C->v_dk_dvl = v_d;
             mpIntFromF_C2C->SetDVLDebugVelocity(v_d);
+            mpIntFromF_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
+
             // Loss
             if (mbDoLossIntegration) {
-                mpIntFromKFBeforeLost_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
                 mpIntFromKFBeforeLost_C2C->v_dk_dvl = v_d;
                 mpIntFromKFBeforeLost_C2C->SetDVLDebugVelocity(v_d);
+                mpIntFromKFBeforeLost_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
+
             }
         }
     }

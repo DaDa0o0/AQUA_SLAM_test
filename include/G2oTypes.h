@@ -1642,7 +1642,7 @@ public:
 
 };
 
-class EdgeDvlIMUInit: public g2o::BaseMultiEdge<6, Eigen::Matrix<float, 6, 1>>
+class EdgeDvlIMUInit: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW

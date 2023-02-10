@@ -215,9 +215,9 @@ void LocalMapping::Run()
 
 
 				// Check redundant local Keyframes
-				if(mpTracker->mCalibrated){
-					KeyFrameCulling();
-				}
+				// if(mpTracker->mCalibrated){
+				// 	KeyFrameCulling();
+				// }
 
 
 				t6 = std::chrono::steady_clock::now();
@@ -1681,7 +1681,7 @@ void LocalMapping::InitializeDvlIMU()
 		minTime = 1.0;
 		nMinKF = 10;
 	}
-	nMinKF = mpTracker->mKF_num_for_init;
+	nMinKF = 10;
 
 	if (mpAtlas->KeyFramesInMap() < nMinKF) {
 		return;
@@ -1738,20 +1738,20 @@ void LocalMapping::InitializeDvlIMU()
 //	mpTracker->mLastKfBeforeLoss=NULL;
 //	mpTracker->mpDvlPreintegratedFromLastKFBeforeLost=NULL;
 
-	if (!mpAtlas->isImuInitialized()) {
-		for (auto pKF:vpKF) {
-			pKF->bImu = true;
-		}
-		mpAtlas->SetImuInitialized();
-	}
-	mbCalibrated = true;
+	// if (!mpAtlas->isImuInitialized()) {
+	// 	for (auto pKF:vpKF) {
+	// 		pKF->bImu = true;
+	// 	}
+	// 	mpAtlas->SetImuInitialized();
+	// }
+	// mbCalibrated = true;
 
 	/**todo_tightly
 	 * 	execute a full DVL_Gyro BA after initilization
 	 */
 
-	DvlGyroOptimizer::FullDVLGyroBundleAdjustment(nullptr, mpAtlas->GetCurrentMap(), mpTracker->mlamda_DVL);
-	cout<<"full BA excuted after calibration!"<<endl;
+	// DvlGyroOptimizer::FullDVLGyroBundleAdjustment(nullptr, mpAtlas->GetCurrentMap(), mpTracker->mlamda_DVL);
+	// cout<<"full BA excuted after calibration!"<<endl;
 
 	//todo_tightly
 	//	not sure whether this is safe in different thread

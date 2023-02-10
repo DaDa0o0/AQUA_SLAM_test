@@ -661,7 +661,9 @@ Eigen::Vector3d EdgeMonoInvdepthBody::cam_unproject(const double u, const double
 
 VertexVelocity::VertexVelocity(KeyFrame* pKF)
 {
-    setEstimate(Converter::toVector3d(pKF->GetVelocityOld()));
+    Eigen::Vector3d v_d;
+    pKF->GetDvlVelocity(v_d);
+    setEstimate(v_d);
 }
 
 VertexVelocity::VertexVelocity(Frame* pF)
@@ -1470,16 +1472,19 @@ void EdgeDvlGyroInit3::computeError()
 
 EdgeDvlIMUInit::EdgeDvlIMUInit(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
 {
-	resize(6);
+	resize(9);
 }
 void EdgeDvlIMUInit::computeError()
 {
 	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
 	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
-	const auto * V_bw = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
-	const auto * V_v = dynamic_cast<const VertexVelocity*>(_vertices[3]);
-	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[4]);
-	const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[5]);
+    const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
+    const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
+    const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
+    const auto * VA = dynamic_cast<const VertexAccBias*>(_vertices[5]);
+	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[6]);
+	const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[7]);
+    const auto * VR_G = dynamic_cast<const VertexGDir*>(_vertices[8]);
 
 
 	const Eigen::Isometry3d T_dvl_c=VT_d_c->estimate();
@@ -1495,33 +1500,32 @@ void EdgeDvlIMUInit::computeError()
 	R_g_d.convertTo(R_g_d,CV_32FC1);
 	const Eigen::Matrix3d R_dvl_gyros=R_gyros_dvl.transpose();
 
-	Eigen::Vector3d v_d = V_v->estimate();
-	Eigen::Vector3d v_test(0.1,0.1,0.1);
-	Eigen::Vector3d v_gt(mpInt->v_dk_dvl.x, mpInt->v_dk_dvl.y, mpInt->v_dk_dvl.z);
+	Eigen::Vector3d v1 = VV1->estimate();
+    Eigen::Vector3d v2 = VV2->estimate();
 
-	mpInt->ReintegrateWithVelocity(v_d);
+    Eigen::Matrix3d R_b0_w = VR_G->estimate().Rwg;
+    Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
 
+    IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
+    mpInt->ReintegrateWithBias(b);
 
-
-	const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->dR);
-	const Eigen::Vector3d dP=Converter::toVector3d(mpInt->dP_dvl);
-
-
-	const Eigen::Matrix3d R_est= R_gyros_dvl * R_dvl_c * VP1->estimate().Rcw[0] * VP2->estimate().Rwc * R_c_dvl * R_dvl_gyros;
-	const Eigen::Vector3d t_est= (t_dvl_c - R_dvl_c * VP1->estimate().Rcw[0] * VP2->estimate().Rwc * R_c_dvl * t_dvl_c
-		+ R_dvl_c *(VP1->estimate().Rcw[0]*VP2->estimate().twc - VP1->estimate().Rcw[0]*VP1->estimate().twc));
+    // mpInt->ReintegrateWithVelocity();
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
 
 
+    // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
+    // * R_c_d*V_di - R_c_d * R_d_b * R_b0_w * g_w * t_ij)
+    const Eigen::Vector3d VDelta_est = R_gyros_dvl * R_dvl_c * VP1->estimate().Rcw[0]* (VP2->estimate().Rwc*R_c_dvl*v2
+            - VP1->estimate().Rwc*R_c_dvl*v1 - R_c_dvl *R_dvl_gyros * R_b0_w * g_w*mpInt->dT);
 
 //	mpInt->ReintegrateWithVelocity(v_gt );
 
 //	const Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
 
-	const Eigen::Vector3d e_R(0,0,0);
+	const Eigen::Vector3d e_V = VDelta_est - dDelta_V;
 
-	const Eigen::Vector3d e_p =  t_est - dP;
 
-	_error<<e_R,e_p;
+	_error<<e_V;
 }
 
 EdgeDvlGyroBA::EdgeDvlGyroBA(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
@@ -1583,9 +1587,12 @@ void EdgeDvlGyroBA::computeError()
 
 	//	Eigen::Vector3d err= T_gi_gj_est.inverse() * p_0 - T_gi_gj_mea.inverse() * p_0;
 
-	const Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est)*100;
+	Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
 
-	const Eigen::Vector3d e_p =  t_est - dP;
+	Eigen::Vector3d e_p =  t_est - dP;
+    // e_R(0) = 0;
+    // e_R(1) = 0;
+    // e_p(2) = 0;
 
 	//	_error<<err;
 	_error<<e_R,e_p;

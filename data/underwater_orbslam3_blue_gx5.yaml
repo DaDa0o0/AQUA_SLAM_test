@@ -32,6 +32,7 @@ Camera.RGB: 0
 
 # Close/Far threshold. Baseline times.
 ThDepth: 35.0
+ThFarDepth: 10.0
 
 # scale image by a factor
 ImageScale: 1.0

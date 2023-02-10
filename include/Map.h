@@ -119,6 +119,9 @@ public:
     void SetInitKFid(long unsigned int initKFif);
     long unsigned int GetMaxKFid();
 
+    /***
+    * @return the first KeyFrame in the map
+    */
     KeyFrame* GetOriginKF();
 
     void SetCurrentMap();
@@ -224,6 +227,8 @@ protected:
     bool mbIMU_BA2;
 
     std::mutex mMutexMap;
+public:
+    Eigen::Matrix3d mR_b0_w;
 };
 
 } //namespace ORB_SLAM3

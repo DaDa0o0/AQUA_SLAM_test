@@ -693,7 +693,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 	int N_map_points = LocalMapPoints.size();
 //	cout << "map point to optimize: " << N_map_points << endl;
 
-	const int maxFixedKF = 200;
+	const int maxFixedKF = 30;
 	for (vector<MapPoint *>::iterator it = LocalMapPoints.begin(); it != LocalMapPoints.end(); it++) {
 		map<KeyFrame *, tuple<int, int>> observations = (*it)->GetObservations();
 		for (map<KeyFrame *, tuple<int, int>>::iterator it_ob = observations.begin(); it_ob != observations.end();
@@ -947,7 +947,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 	optimizer.initializeOptimization(0);
 	optimizer.optimize(5);
 
-	if(1){
+	if(0){
 		int mono_outlier;
 		int stereo_outlier;
 		float visula_chi2, dvl_chi2;

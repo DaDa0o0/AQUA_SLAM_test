@@ -248,6 +248,7 @@ public:
 	void SetBeamOrientation(const Eigen::Vector4d &alpha, const Eigen::Vector4d &beta);
 	void ReintegrateWithVelocity();
 	void ReintegrateWithVelocity(const Eigen::Vector3d &velocity);
+    void ReintegrateWithBias(const Bias &b);
 	void ReintegrateWithBiasAndRotation(const Bias &b, const cv::Mat &R_g_d);
 	void ReintegrateWithBiasRotationBeamOri(const Bias &b,
 	                                        const cv::Mat &R_g_d,

@@ -35,6 +35,7 @@ mbFail(false), mIsInUse(false), mHasTumbnail(false), mbBad(false), mnMapChangeNo
     mnId=nNextId++;
     mThumbnail = static_cast<GLubyte*>(NULL);
     mColor=Eigen::Vector3d::Zero();
+    mR_b0_w.setIdentity();
 }
 
 Map::Map(int initKFid):mnInitKFid(initKFid), mnMaxKFid(initKFid),mnLastLoopKFid(initKFid), mnBigChangeIdx(0), mIsInUse(false),
@@ -44,6 +45,7 @@ Map::Map(int initKFid):mnInitKFid(initKFid), mnMaxKFid(initKFid),mnLastLoopKFid(
     mnId=nNextId++;
     mThumbnail = static_cast<GLubyte*>(NULL);
 	mColor=Eigen::Vector3d::Zero();
+    mR_b0_w.setIdentity();
 }
 Map::Map(int initKFid,Eigen::Vector3d color):mnInitKFid(initKFid), mnMaxKFid(initKFid),mnLastLoopKFid(initKFid), mnBigChangeIdx(0), mIsInUse(false),
 											 mHasTumbnail(false), mbBad(false), mbImuInitialized(false), mpFirstRegionKF(static_cast<KeyFrame*>(NULL)),
@@ -52,6 +54,7 @@ Map::Map(int initKFid,Eigen::Vector3d color):mnInitKFid(initKFid), mnMaxKFid(ini
 {
 	mnId=nNextId++;
 	mThumbnail = static_cast<GLubyte*>(NULL);
+    mR_b0_w.setIdentity();
 }
 
 Map::~Map()

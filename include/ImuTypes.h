@@ -252,8 +252,8 @@ public:
 	Bias()
 		: bax(0), bay(0), baz(0), bwx(0), bwy(0), bwz(0)
 	{}
-	Bias(const float &b_acc_x, const float &b_acc_y, const float &b_acc_z,
-	     const float &b_ang_vel_x, const float &b_ang_vel_y, const float &b_ang_vel_z)
+	Bias(const double &b_acc_x, const double &b_acc_y, const double &b_acc_z,
+	     const double &b_ang_vel_x, const double &b_ang_vel_y, const double &b_ang_vel_z)
 		:
 		bax(b_acc_x), bay(b_acc_y), baz(b_acc_z), bwx(b_ang_vel_x), bwy(b_ang_vel_y), bwz(b_ang_vel_z)
 	{}
@@ -261,8 +261,8 @@ public:
 	friend std::ostream &operator<<(std::ostream &out, const Bias &b);
 
 public:
-	float bax, bay, baz;
-	float bwx, bwy, bwz;
+	double bax, bay, baz;
+	double bwx, bwy, bwz;
 };
 
 //IMU calibration (Tbc, Tcb, noise)
