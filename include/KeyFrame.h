@@ -692,6 +692,8 @@ public:
 
 	// Dvl and Gyro preintegration from last Keyframe
 	DVLGroPreIntegration *mpDvlPreintegrationKeyFrame;
+    DVLGroPreIntegration *mpDvlPreintegrationLossRefKF=nullptr;
+    KeyFrame* mpLossRefKF = nullptr;
 
 	void IntegrateDVL(KeyFrame* kp_i);
 

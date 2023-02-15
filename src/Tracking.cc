@@ -191,9 +191,10 @@ Tracking::Tracking(System *pSys,
 	mCurT_g0_gj = Eigen::Isometry3d::Identity();
 
 	// init LK tracker
-	mpLKTracker = new LKTracker(mSensor == System::DVL_STEREO);
+	// mpLKTracker = new LKTracker(mSensor == System::DVL_STEREO);
 
     mpIntegrator = new Integrator();
+    mpIntegrator->CreateNewIntFromKF_C2C(IMU::Bias(),GetExtrinsicPara(),mAlpha,mBeta);
 }
 
 Tracking::~Tracking()
@@ -1001,7 +1002,7 @@ cv::Mat Tracking::GrabImageStereoDvl(const cv::Mat &imRectLeft,
 	}
 	else {
 		ROS_ERROR_STREAM("Wrong Mode!");
-		exit(-1);
+        assert(0);
 	}
 
 
@@ -1070,7 +1071,7 @@ cv::Mat Tracking::GrabImageStereoDvlgyro(const Mat &imRectLeft,
 	}
 	else {
 		ROS_ERROR_STREAM("Wrong Mode!");
-		exit(-1);
+        assert(0);
 	}
 
 
@@ -1688,63 +1689,36 @@ bool Tracking::PredictStateDvlGro()
 {
 	//	if (mState == NOT_INITIALIZED && mpAtlas->GetAllMaps().size() > 1) {
 	{
-		DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = mpIntegrator->mpIntFromKFBeforeLost_C2C;
 		// std::lock_guard<std::mutex> lock_LossRfe(mLossIntegrationRefMutex);
 		if (mpIntegrator->GetDoLossIntegration()) {
 //		cout << "preintegration from Last Frame [" << mLastFrameBeforeLoss.mnId << "] before lost" << endl;
-
-			const cv::Mat twdvl1 = mpIntegrator->mpLossRefKF->GetDvlPosition();
-			// R_w_gro1
-			const cv::Mat Rwgro1 = mpIntegrator->mpLossRefKF->GetGyroRotation();
-			const cv::Mat Rwdvl1 = mpIntegrator->mpLossRefKF->GetDvlRotation();
-
-			const cv::Mat Gz = (cv::Mat_<float>(3, 1) << 0, 0, -IMU::GRAVITY_VALUE);
-			const float t12 = pDvlPreintegratedFromLastKFBeforeLost->dT;
-
-			// R_w_b2 = R_w_b1 * dR = R_w_b1 * R_b1_b2
-//		cv::Mat Rwb2 = IMU::NormalizeRotation(Rwb1*mpDvlPreintegratedFromLastKFBeforeLost->GetDeltaRotation(mpLastKeyFrame->GetImuBias()));
-			/***
-			 * t_w_b2 = t_w_b1 + R_w_b1 * dP
-			 * = t_w_b1 + R_w_b1 * t_b1_b2
-			 */
-//		cv::Mat twb2 = twb1 + Rwb1*pDvlPreintegratedFromLastKFBeforeLost->GetDeltaPosition(mpLastKeyFrame->GetImuBias());
-
-			cv::Mat Rwgro2 = IMU::NormalizeRotation(
-				Rwgro1 * pDvlPreintegratedFromLastKFBeforeLost->GetDeltaRotation(mpIntegrator->mpLossRefKF->GetImuBias()));
-			cv::Mat
-				twdvl2 =
-				twdvl1
-					+ Rwdvl1 * pDvlPreintegratedFromLastKFBeforeLost->GetDeltaPosition(mpIntegrator->mpLossRefKF->GetImuBias());
-			cv::Mat
-				Vwdvl2 =
-				Rwdvl1 * pDvlPreintegratedFromLastKFBeforeLost->GetDeltaVelocity(mpIntegrator->mpLossRefKF->GetImuBias());
+            DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = mpIntegrator->mpIntFromKFBeforeLost_C2C;
+            cv::Mat T_c0_cf_cv = mpIntegrator->mpLossRefKF->GetPoseInverse();
+            Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
+            cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
+            cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
+            cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
+            cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
+            cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
+            Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
+            Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
+            cv::cv2eigen(pDvlPreintegratedFromLastKFBeforeLost->dR,R_gf_g1);
+            cv::cv2eigen(pDvlPreintegratedFromLastKFBeforeLost->dP_dvl,t_df_df_d1);
+            Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
+            Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+            T_df_d1.pretranslate(t_df_df_d1);
+            T_df_d1.rotate(R_df_d1);
+            Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
+            cv::Mat T_c1_c0_cv(4,4,CV_32F);
+            cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
+            T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
+            mCurrentFrame.SetPose(T_c1_c0_cv);
 
 
-//		cv::Mat Vwb2 = Vwb1  + Rwb1*mpImuPreintegratedFromLastKF->GetDeltaVelocity(mpLastKeyFrame->GetImuBias());
-			Frame f_test(mCurrentFrame);
-			f_test.SetDvlPoseVelocity(Rwgro2, twdvl2, Vwdvl2);
-//		mCurrentFrame.mPredRwb = Rwgro2.clone();
-//		mCurrentFrame.mPredtwb = twdvl2.clone();
-//		mCurrentFrame.mPredVwb = Vwb1.clone();
-			f_test.mImuBias = mLastFrame.mImuBias;
-			f_test.mPredBias = mCurrentFrame.mImuBias;
-
-			//publish loss integration pose
-			cv::Mat T_dr_d0_cv = mpIntegrator->mpLossRefKF->mImuCalib.mT_dvl_c *
-                    mpIntegrator->mpLossRefKF->GetPose()
-				* mpIntegrator->mpLossRefKF->mImuCalib.mT_c_dvl;
-			Eigen::Isometry3d T_dr_d0;
-			cv::cv2eigen(T_dr_d0_cv, T_dr_d0.matrix());
-			Eigen::Isometry3d T_d0_dr = T_dr_d0.inverse();
-			cv::Mat T_dj_d0_cv = f_test.mImuCalib.mT_dvl_c * f_test.mTcw * f_test.mImuCalib.mT_c_dvl;
-			Eigen::Isometry3d T_dj_d0, T_d0_dj;
-			cv::cv2eigen(T_dj_d0_cv, T_dj_d0.matrix());
-			T_d0_dj = T_dj_d0.inverse();
-			mpRosHandler->PublishLossInteration(T_d0_dr, T_d0_dj);
-
-			mCurrentFrame.SetDvlPoseVelocity(Rwgro2, twdvl2, Vwdvl2);
+			// mCurrentFrame.SetDvlPoseVelocity(Rwgro2, twdvl2, Vwdvl2);
 			mCurrentFrame.mImuBias = mLastFrame.mImuBias;
 			mCurrentFrame.mPredBias = mCurrentFrame.mImuBias;
+            ROS_INFO_STREAM("predict pose by DLV-IMU integration");
 			return true;
 		}
 	}
@@ -1760,60 +1734,55 @@ bool Tracking::PredictStateDvlGro()
 		//cout << "preintegration from Last KF, velocity: " << mpDvlPreintegratedFromLastKF->dV.t() << endl;
 		// t_w_d1
 
-		const cv::Mat twdvl1 = mpLastKeyFrame->GetDvlPosition();
-		// R_w_gro1
-		const cv::Mat Rwgro1 = mpLastKeyFrame->GetGyroRotation();
-		const cv::Mat Rwdvl1 = mpLastKeyFrame->GetDvlRotation();
+        DVLGroPreIntegration *pDvlPreintegratedFromKF = mCurrentFrame.mpDvlPreintegrationKeyFrame;
+        cv::Mat T_c0_cf_cv = mpLastKeyFrame->GetPoseInverse();
+        Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
+        cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
+        cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
+        cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
+        cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
+        cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
+        Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
+        Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
+        cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gf_g1);
+        cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_df_d1);
+        Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
+        Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+        T_df_d1.pretranslate(t_df_df_d1);
+        T_df_d1.rotate(R_df_d1);
+        Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
+        cv::Mat T_c1_c0_cv(4,4,CV_32F);
+        cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
+        T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
+        mCurrentFrame.SetPose(T_c1_c0_cv);
 
-		const cv::Mat Gz = (cv::Mat_<float>(3, 1) << 0, 0, -IMU::GRAVITY_VALUE);
-		// const float t12 = mpIntegrator->mpIntFromKF_C2C->dT;
-
-		// R_w_b2 = R_w_b1 * dR = R_w_b1 * R_b1_b2
-		//		cv::Mat Rwb2 = IMU::NormalizeRotation(Rwb1*mpDvlPreintegratedFromLastKF->GetDeltaRotation(mpLastKeyFrame->GetImuBias()));
-		/***
-		* t_w_b2 = t_w_b1 + R_w_b1 * dP
-		* = t_w_b1 + R_w_b1 * t_b1_b2
-		*/
-		//		cv::Mat twb2 = twb1 + Rwb1*mpDvlPreintegratedFromLastKF->GetDeltaPosition(mpLastKeyFrame->GetImuBias());
-
-		cv::Mat Rwgro2 = IMU::NormalizeRotation(
-			Rwgro1 * mCurrentFrame.mpDvlPreintegrationKeyFrame->GetDeltaRotation(mpLastKeyFrame->GetImuBias()));
-		cv::Mat twdvl2 = twdvl1 + Rwdvl1 * mCurrentFrame.mpDvlPreintegrationKeyFrame->GetDeltaPosition(mpLastKeyFrame->GetImuBias());
-		cv::Mat Vwdvl2 = Rwdvl1 * mCurrentFrame.mpDvlPreintegrationKeyFrame->GetDeltaVelocity(mpLastKeyFrame->GetImuBias());
-
-
-		//		cv::Mat Vwb2 = Vwb1  + Rwb1*mpImuPreintegratedFromLastKF->GetDeltaVelocity(mpLastKeyFrame->GetImuBias());
-		mCurrentFrame.SetDvlPoseVelocity(Rwgro2, twdvl2, Vwdvl2);
-		//		mCurrentFrame.mPredRwb = Rwgro2.clone();
-		//		mCurrentFrame.mPredtwb = twdvl2.clone();
-		//		mCurrentFrame.mPredVwb = Vwb1.clone();
-		mCurrentFrame.mImuBias = mLastFrame.mImuBias;
-		mCurrentFrame.mPredBias = mCurrentFrame.mImuBias;
 		return true;
 	}
 
 	else if (!mbMapUpdated && mState == OK) {
-		//cout << "preintegration from Last Frame" << endl;
-		// c0_t_c0_d1
-		const cv::Mat twdvl1 = mLastFrame.GetDvlPosition();
-		// R_c0_gro1
-		const cv::Mat Rwgro1 = mLastFrame.GetGyroRotation();
-		const cv::Mat Rwdvl1 = mLastFrame.GetDvlRotation();
+        DVLGroPreIntegration *pDvlPreintegratedFromKF = mCurrentFrame.mpDvlPreintegrationFrame;
+        cv::Mat T_ci_c0_cv = mLastFrame.mTcw;
+        Eigen::Isometry3d T_g_d,T_d_c,T_ci_c0, T_c0_ci;
+        cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
+        cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
+        cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
+        cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
+        cv::cv2eigen(T_ci_c0_cv, T_ci_c0.matrix());
+        T_c0_ci = T_ci_c0.inverse();
+        Eigen::Matrix3d R_gi_gj = Eigen::Matrix3d::Identity();
+        Eigen::Vector3d t_di_di_dj = Eigen::Vector3d::Identity();
+        cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gi_gj);
+        cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_di_di_dj);
+        Eigen::Matrix3d R_di_dj = T_g_d.rotation().inverse() * R_gi_gj * T_g_d.rotation();
+        Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
+        T_di_dj.pretranslate(t_di_di_dj);
+        T_di_dj.rotate(R_di_dj);
+        Eigen::Isometry3d T_c0_cj = T_c0_ci * T_d_c.inverse() * T_di_dj * T_d_c;
+        cv::Mat T_cj_c0_cv(4, 4, CV_32F);
+        cv::eigen2cv(T_c0_cj.inverse().matrix(), T_cj_c0_cv);
+        T_cj_c0_cv.convertTo(T_cj_c0_cv, CV_32F);
+        mCurrentFrame.SetPose(T_cj_c0_cv);
 
-//		const cv::Mat Vwb1 = mLastFrame.mVw;
-		//R_c0_g2
-		cv::Mat Rwgro2 = IMU::NormalizeRotation(
-			Rwgro1 * mCurrentFrame.mpDvlPreintegrationFrame->GetDeltaRotation(mLastFrame.mImuBias));
-		//c0_t_c0_d2
-		cv::Mat
-			twdvl2 = twdvl1 + Rwdvl1 * mCurrentFrame.mpDvlPreintegrationFrame->GetDeltaPosition(mLastFrame.mImuBias);
-		//c0_v_v1_v2
-		cv::Mat Vwdvl2 = Rwdvl1 * mCurrentFrame.mpDvlPreintegrationFrame->GetDeltaVelocity(mLastFrame.mImuBias);
-
-		mCurrentFrame.SetDvlPoseVelocity(Rwgro2, twdvl2, Vwdvl2);
-//		mCurrentFrame.mPredRwb = Rwgro2.clone();
-//		mCurrentFrame.mPredtwb = twdvl2.clone();
-//		mCurrentFrame.mPredVwb = Vwb1.clone();
 		mCurrentFrame.mImuBias = mLastFrame.mImuBias;
 		mCurrentFrame.mPredBias = mCurrentFrame.mImuBias;
 		return true;
@@ -2658,6 +2627,9 @@ void Tracking::TrackDVLGyro()
 		pCurrentMap->SetLastMapChange(nCurMapChangeIndex);
 		mbMapUpdated = true;
 	}
+    if (mSensor == System::DVL_STEREO ) {
+        PreintegrateDvlGro3();
+    }
 
 	// Initialization
 	if (mState == NOT_INITIALIZED) {
@@ -2684,9 +2656,9 @@ void Tracking::TrackDVLGyro()
 
 		// do DVL-IMU printegration
 
-		if (mSensor == System::DVL_STEREO ) {
-            PreintegrateDvlGro3();
-		}
+		// if (mSensor == System::DVL_STEREO ) {
+        //     PreintegrateDvlGro3();
+		// }
 
 		// Initial camera pose estimation using motion model or relocalization (if tracking is lost)
 		// State OK
@@ -2717,57 +2689,26 @@ void Tracking::TrackDVLGyro()
 
 
 			if (!bOK) {
-				if (pCurrentMap->KeyFramesInMap() > 10) {
-					cout << "KF in map: " << pCurrentMap->KeyFramesInMap() << endl;
-					mState = RECENTLY_LOST;
-					mTimeStampLost = mCurrentFrame.mTimeStamp;
-					//mCurrentFrame.SetPose(mLastFrame.mTcw);
-				}
-				else {
-					mState = LOST;
-				}
+                mState = LOST;
 			}
 		}
 		else {
-			if (mState == RECENTLY_LOST) {
-				Verbose::PrintMess("Lost for a short time", Verbose::VERBOSITY_NORMAL);
+            Verbose::PrintMess("A new map is started...", Verbose::VERBOSITY_NORMAL);
 
-				bOK = true;
-				// when lost recently, using IMU to predict pose
-				// then try to tracklocalmap()
-				// if slam can tracklocalmap() successfully in time_recently_lost, then continue
-				// if failed to tracklocalmap()  in time_recently_lost, then lost
-				if ((mSensor == System::DVL_STEREO && mCalibrated)) {
-					// PredictStateDvlGro();
-                    bOK = TrackWithMotionModel();
-					if (mCurrentFrame.mTimeStamp - mTimeStampLost > time_recently_lost) {
-						mState = LOST;
-						Verbose::PrintMess("Track Lost...", Verbose::VERBOSITY_NORMAL);
-						cout << "Track Lost..." << endl;
-						bOK = false;
+            if (pCurrentMap->KeyFramesInMap() < mKFThresholdForMap) {
+                mpSystem->ResetActiveMap();
+                mpMapToReset = mpAtlas->GetCurrentMap();
+                cout << "Reseting current map..." << endl;
+            }
+            else {
+                CreateMapInAtlas();
+            }
 
-					}
-				}
-			}
-			else if (mState == LOST) {
+            if (mpLastKeyFrame) {
+                mpLastKeyFrame = static_cast<KeyFrame *>(NULL);
+            }
 
-				Verbose::PrintMess("A new map is started...", Verbose::VERBOSITY_NORMAL);
-
-				if (pCurrentMap->KeyFramesInMap() < mKFThresholdForMap) {
-					mpSystem->ResetActiveMap();
-					mpMapToReset = mpAtlas->GetCurrentMap();
-					cout << "Reseting current map..." << endl;
-				}
-				else {
-					CreateMapInAtlas();
-				}
-
-				if (mpLastKeyFrame) {
-					mpLastKeyFrame = static_cast<KeyFrame *>(NULL);
-				}
-
-				return;
-			}
+            return;
 
 		}
 
@@ -2786,9 +2727,10 @@ void Tracking::TrackDVLGyro()
 				bOK = TrackLocalMap();
 			else//
 				bOK = TrackLocalMap();
-		}
-		if (!bOK) {
-			ROS_INFO_STREAM("Fail to track local map!");
+
+            if (!bOK) {
+                ROS_INFO_STREAM("Fail to track local map!");
+            }
 		}
 
 		if (bOK) {
@@ -2796,17 +2738,7 @@ void Tracking::TrackDVLGyro()
 		}
 			// lost first
 		else if (mState == OK) {
-			if (mSensor == System::DVL_STEREO) {
-				if (!mCalibrated) {
-					cout << "Gyros is not initialized. Reseting active map..." << endl;
-					mpSystem->ResetActiveMap();
-				}
-
-				mState = RECENTLY_LOST;
-			}
-			else {
-				mState = LOST;
-			} // visual to lost
+            mState = LOST;
 
 			if (mCurrentFrame.mnId > mnLastRelocFrameId + mMaxFrames) {
 				mTimeStampLost = mCurrentFrame.mTimeStamp;
@@ -2858,7 +2790,7 @@ void Tracking::TrackDVLGyro()
 
 
 		// handle the result of tracklocalmap()
-		if (bOK || mState == RECENTLY_LOST) {
+		if (bOK) {
 			// Update motion model
 
 			if (!mLastFrame.mTcw.empty() && !mCurrentFrame.mTcw.empty()) {
@@ -2926,11 +2858,17 @@ void Tracking::TrackDVLGyro()
 //				CreateNewKeyFrame();
 //			}
 			if (bNeedKF && bOK) {
+                if (pCurrentMap->KeyFramesInMap() >= mKFThresholdForMap) {
+                    // mDoLossIntegration = false;
+                    if(mpIntegrator->GetDoLossIntegration()){
+                        mpIntegrator->SetDoLossIntegration(false);
+                        mCurrentFrame.mpDvlPreintegrationLossRefKF = mpIntegrator->mpIntFromKFBeforeLost_C2C;
+                        mCurrentFrame.mpLossRefKF = mpIntegrator->mpLossRefKF;
+                        ROS_INFO_STREAM("Loss Reference KF has beed set");
+                    }
+                }
 				CreateNewKeyFrame();
-				if (pCurrentMap->KeyFramesInMap() >= mKFThresholdForMap) {
-					// mDoLossIntegration = false;
-                    mpIntegrator->SetDoLossIntegration(false);
-				}
+
 			}
 
 			// We allow points with high innovation (considererd outliers by the Huber Function)
@@ -2972,7 +2910,7 @@ void Tracking::TrackDVLGyro()
 	}
 
 
-	if (mState == OK || mState == RECENTLY_LOST) {
+	if (mState == OK) {
 		// Store frame pose information to retrieve the complete camera trajectory afterwards.
 		if (!mCurrentFrame.mTcw.empty()) {
 			cv::Mat Tcr = mCurrentFrame.mTcw * mCurrentFrame.mpReferenceKF->GetPoseInverse();
@@ -3408,43 +3346,31 @@ void Tracking::StereoInitialization()
 {
 	if (mCurrentFrame.N > 500) {
 		if (mSensor == System::DVL_STEREO) {
-			if (!mCurrentFrame.mbDVL) {
-				return;
-			}
+            if (mpIntegrator->GetDoLossIntegration()) {
+                PredictStateDvlGro();
+                topicPublishDVLOnly();
+            }
+            else {
+                // cv::Mat T_cj_c0 = cv::Mat::eye(4, 4, CV_32F);
+                // cv::Mat T_cj_d0 = T_cj_c0 * mCurrentFrame.mImuCalib.mT_c_dvl;
+                mCurrentFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
+                //				mCurrentFrame.SetPose(T_cj_d0);
+                //				cv::Mat Rwgyro0 = mCurrentFrame.mImuCalib.mT_c_gyro.rowRange(0, 3).colRange(0, 3).clone();
+                //				cv::Mat twdvl0 = mCurrentFrame.mImuCalib.mT_c_dvl.rowRange(0, 3).col(3).clone();
+                //				mCurrentFrame.SetDvlPoseVelocity(Rwgyro0, twdvl0, cv::Mat::zeros(3, 1, CV_32F));
+            }
+            if (!mCurrentFrame.mbDVL) {
+                return;
+            }
 
             mpIntegrator->CreateNewIntFromKF_C2C(IMU::Bias(), GetExtrinsicPara(), mAlpha, mBeta);
-            // mpIntegrator->CreateNewIntFromKF_D2D(IMU::Bias(), GetExtrinsicPara(), mAlpha, mBeta);
-			mpIntegrator->IntegrateMeasurements(mCurrentFrame,mlQueueDVLGyroData,mMutexImuQueue,mvGyroDVLFromLastFrame);
+            if(!mlQueueDVLGyroData.empty()){
+                mpIntegrator->IntegrateMeasurements(mCurrentFrame,mlQueueDVLGyroData,mMutexImuQueue,mvGyroDVLFromLastFrame);
+                mCurrentFrame.mpDvlPreintegrationFrame = mpIntegrator->mpIntFromF_C2C;
+                mCurrentFrame.mpDvlPreintegrationKeyFrame = mpIntegrator->mpIntFromKF_C2C;
+                mCurrentFrame.setIntegrated();
+            }
 
-
-			// DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = NULL;
-			// {
-			// 	std::lock_guard<std::mutex> lock(mLossIntegrationRefMutex);
-			// 	if (!mpDvlPreintegratedFromLastKFBeforeLost) {
-			// 		mpDvlPreintegratedFromLastKFBeforeLost = new DVLGroPreIntegration(IMU::Bias(), GetExtrinsicPara());
-			// 		mLastFrameBeforeLoss = Frame(mCurrentFrame);
-			// 		mLastFrameBeforeLoss.SetPose(cv::Mat::eye(4, 4, CV_32F));
-			// 	}
-			// 	pDvlPreintegratedFromLastKFBeforeLost = mpDvlPreintegratedFromLastKFBeforeLost;
-			// }
-
-			if (mpIntegrator->GetDoLossIntegration()) {
-				PredictStateDvlGro();
-				topicPublishDVLOnly();
-			}
-			else {
-				cv::Mat T_cj_c0 = cv::Mat::eye(4, 4, CV_32F);
-				cv::Mat T_cj_d0 = T_cj_c0 * mCurrentFrame.mImuCalib.mT_c_dvl;
-				mCurrentFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
-//				mCurrentFrame.SetPose(T_cj_d0);
-//				cv::Mat Rwgyro0 = mCurrentFrame.mImuCalib.mT_c_gyro.rowRange(0, 3).colRange(0, 3).clone();
-//				cv::Mat twdvl0 = mCurrentFrame.mImuCalib.mT_c_dvl.rowRange(0, 3).col(3).clone();
-//				mCurrentFrame.SetDvlPoseVelocity(Rwgyro0, twdvl0, cv::Mat::zeros(3, 1, CV_32F));
-			}
-			// mCurrentFrame.mpDvlPreintegrationKeyFrame = mpDvlPreintegratedFromLastKF;
-            mCurrentFrame.mpDvlPreintegrationFrame = mpIntegrator->mpIntFromF_C2C;
-            mCurrentFrame.mpDvlPreintegrationKeyFrame = mpIntegrator->mpIntFromKF_C2C;
-//			mCurrentFrame.mpDvlPreintegrationKeyFrame = mpIntegrator.
 		}
 		else {
 			mCurrentFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
@@ -3892,7 +3818,7 @@ void Tracking::CreateMapInAtlas()
 		// mLastFrameBeforeLoss = Frame(mCurrentFrame);
 		// mDoLossIntegration = true;
 
-        mpIntegrator->CreateNewIntFromKFBeforeLoss_D2D(mpLastKeyFrame->mpDvlPreintegrationKeyFrame);
+        mpIntegrator->CreateNewIntFromKFBeforeLoss_D2D(mpIntegrator->mpIntFromKF_C2C);
         mpIntegrator->SetLossRefKF(mpLastKeyFrame);
         mpIntegrator->SetDoLossIntegration(true);
 	}
@@ -4421,7 +4347,7 @@ bool Tracking::TrackWithMotionModel()
 		PredictStateIMU();
 		return true;
 	}
-	else if (mSensor == System::DVL_STEREO && mCalibrated) {
+	else if (mSensor == System::DVL_STEREO && mCalibrated && mpAtlas->GetCurrentMap()->isImuInitialized()) {
 		PredictStateDvlGro();
 //		return true;
 // 		mVelocity.convertTo(mVelocity, CV_32FC1);

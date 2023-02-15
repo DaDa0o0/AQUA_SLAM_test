@@ -1470,11 +1470,11 @@ void EdgeDvlGyroInit3::computeError()
 
 }
 
-EdgeDvlIMUInit::EdgeDvlIMUInit(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
+EdgeDvlIMUInitWithoutBias::EdgeDvlIMUInitWithoutBias(DVLGroPreIntegration *pInt): mpInt(pInt), dt(pInt->dT)
 {
 	resize(9);
 }
-void EdgeDvlIMUInit::computeError()
+void EdgeDvlIMUInitWithoutBias::computeError()
 {
 	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
 	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
@@ -1507,7 +1507,7 @@ void EdgeDvlIMUInit::computeError()
     Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
 
     IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
-    mpInt->ReintegrateWithBias(b);
+    // mpInt->ReintegrateWithBias(b);
 
     // mpInt->ReintegrateWithVelocity();
     const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
@@ -1526,6 +1526,123 @@ void EdgeDvlIMUInit::computeError()
 
 
 	_error<<e_V;
+}
+
+EdgeDvlIMUInitRefineWithBias::EdgeDvlIMUInitRefineWithBias(DVLGroPreIntegration* pInt):mpInt(pInt), dt(mpInt->dT)
+{
+    resize(9);
+}
+
+void EdgeDvlIMUInitRefineWithBias::computeError()
+{
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
+    const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
+    const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
+    const auto * VA = dynamic_cast<const VertexAccBias*>(_vertices[5]);
+    const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[6]);
+    const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[7]);
+    const auto * VR_G = dynamic_cast<const VertexGDir*>(_vertices[8]);
+
+
+    const Eigen::Isometry3d T_dvl_c=VT_d_c->estimate();
+    const Eigen::Matrix3d R_dvl_c=T_dvl_c.rotation();
+    const Eigen::Matrix3d R_c_dvl=T_dvl_c.inverse().rotation();
+    const Eigen::Vector3d t_dvl_c=T_dvl_c.translation();
+    const Eigen::Vector3d t_c_dvl=T_dvl_c.inverse().translation();
+
+    const Eigen::Isometry3d T_gyros_dvl=VT_g_d->estimate();
+    const Eigen::Matrix3d R_gyros_dvl=T_gyros_dvl.rotation();
+    cv::Mat R_g_d;
+    cv::eigen2cv(R_gyros_dvl,R_g_d);
+    R_g_d.convertTo(R_g_d,CV_32FC1);
+    const Eigen::Matrix3d R_dvl_gyros=R_gyros_dvl.transpose();
+
+    Eigen::Vector3d v1 = VV1->estimate();
+    Eigen::Vector3d v2 = VV2->estimate();
+
+    Eigen::Matrix3d R_b0_w = VR_G->estimate().Rwg;
+    Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
+
+    IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
+    mpInt->ReintegrateWithBias(b);
+
+    // mpInt->ReintegrateWithVelocity();
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
+
+
+    // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
+    // * R_c_d*V_di - R_c_d * R_d_b * R_b0_w * g_w * t_ij)
+    const Eigen::Vector3d VDelta_est = R_gyros_dvl * R_dvl_c * VP1->estimate().Rcw[0]* (VP2->estimate().Rwc*R_c_dvl*v2
+                                                                                        - VP1->estimate().Rwc*R_c_dvl*v1 - R_c_dvl *R_dvl_gyros * R_b0_w * g_w*mpInt->dT);
+
+    //	mpInt->ReintegrateWithVelocity(v_gt );
+
+    //	const Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
+
+    const Eigen::Vector3d e_V = VDelta_est - dDelta_V;
+
+
+    _error<<e_V;
+}
+
+EdgeDvlIMUGravityRefine::EdgeDvlIMUGravityRefine(DVLGroPreIntegration* pInt):mpInt(pInt), dt(pInt->dT)
+{
+    resize(9);
+}
+
+void EdgeDvlIMUGravityRefine::computeError()
+{
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
+    const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
+    const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
+    const auto * VA = dynamic_cast<const VertexAccBias*>(_vertices[5]);
+    const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[6]);
+    const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[7]);
+    const auto * VR_G = dynamic_cast<const VertexGDir*>(_vertices[8]);
+
+    const Eigen::Isometry3d T_dvl_c=VT_d_c->estimate();
+    const Eigen::Matrix3d R_dvl_c=T_dvl_c.rotation();
+    const Eigen::Matrix3d R_c_dvl=T_dvl_c.inverse().rotation();
+    const Eigen::Vector3d t_dvl_c=T_dvl_c.translation();
+    const Eigen::Vector3d t_c_dvl=T_dvl_c.inverse().translation();
+
+    const Eigen::Isometry3d T_gyros_dvl=VT_g_d->estimate();
+    const Eigen::Matrix3d R_gyros_dvl=T_gyros_dvl.rotation();
+    cv::Mat R_g_d;
+    cv::eigen2cv(R_gyros_dvl,R_g_d);
+    R_g_d.convertTo(R_g_d,CV_32FC1);
+    const Eigen::Matrix3d R_dvl_gyros=R_gyros_dvl.transpose();
+
+    Eigen::Vector3d v1 = VV1->estimate();
+    Eigen::Vector3d v2 = VV2->estimate();
+
+    Eigen::Matrix3d R_b0_w = VR_G->estimate().Rwg;
+    Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
+
+    IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
+    // mpInt->ReintegrateWithBias(b);
+
+    // mpInt->ReintegrateWithVelocity();
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
+
+
+    // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
+    // * R_c_d*V_di - R_c_d * R_d_b * R_b0_w * g_w * t_ij)
+    const Eigen::Vector3d VDelta_est = R_gyros_dvl * R_dvl_c * VP1->estimate().Rcw[0]* (VP2->estimate().Rwc*R_c_dvl*v2
+                                                                                        - VP1->estimate().Rwc*R_c_dvl*v1 - R_c_dvl *R_dvl_gyros * R_b0_w * g_w*mpInt->dT);
+
+    //	mpInt->ReintegrateWithVelocity(v_gt );
+
+    //	const Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
+
+    const Eigen::Vector3d e_V = VDelta_est - dDelta_V;
+
+
+    _error<<e_V;
 }
 
 EdgeDvlGyroBA::EdgeDvlGyroBA(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)

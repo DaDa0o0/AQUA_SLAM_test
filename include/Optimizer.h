@@ -139,6 +139,9 @@ public:
 
 	void static DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 
+    void static DvlIMURefineOptimization(Atlas *pAtlas);
+
+
 	void static DvlBeamOptimization(Map *pMap);
 	void static DvlBeamOptimization_dvl(Map *pMap);
 };

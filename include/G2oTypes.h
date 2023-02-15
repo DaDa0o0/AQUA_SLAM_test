@@ -1642,12 +1642,12 @@ public:
 
 };
 
-class EdgeDvlIMUInit: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
+class EdgeDvlIMUGravityRefine: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-	EdgeDvlIMUInit(DVLGroPreIntegration *pInt);
+    EdgeDvlIMUGravityRefine(DVLGroPreIntegration *pInt);
 
 	virtual bool read(std::istream &is)
 	{ return false; }
@@ -1661,6 +1661,50 @@ public:
 //	const Eigen::Matrix3d JVa, JPa;
 	DVLGroPreIntegration *mpInt;
 	const double dt;
+
+};
+
+class EdgeDvlIMUInitWithoutBias: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    EdgeDvlIMUInitWithoutBias(DVLGroPreIntegration *pInt);
+
+    virtual bool read(std::istream &is)
+    { return false; }
+    virtual bool write(std::ostream &os) const
+    { return false; }
+
+    void computeError();
+    //	virtual void linearizeOplus();
+
+    //	const Eigen::Matrix3d JRg, JVg, JPg;
+    //	const Eigen::Matrix3d JVa, JPa;
+    DVLGroPreIntegration *mpInt;
+    const double dt;
+
+};
+
+class EdgeDvlIMUInitRefineWithBias: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    EdgeDvlIMUInitRefineWithBias(DVLGroPreIntegration *pInt);
+
+    virtual bool read(std::istream &is)
+    { return false; }
+    virtual bool write(std::ostream &os) const
+    { return false; }
+
+    void computeError();
+    //	virtual void linearizeOplus();
+
+    //	const Eigen::Matrix3d JRg, JVg, JPg;
+    //	const Eigen::Matrix3d JVa, JPa;
+    DVLGroPreIntegration *mpInt;
+    const double dt;
 
 };
 

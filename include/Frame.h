@@ -220,8 +220,11 @@ public:
 
     // Imu preintegration from last keyframe
     IMU::Preintegrated* mpImuPreintegrated;
-	// Imu preintegration from last keyframe
+	// DVL-Imu preintegration from last keyframe
 	DVLGroPreIntegration *mpDvlPreintegrationKeyFrame=nullptr;
+    // DVL-Imu preintegration from reference loss keyframe
+    DVLGroPreIntegration *mpDvlPreintegrationLossRefKF=nullptr;
+    KeyFrame* mpLossRefKF = nullptr;
     KeyFrame* mpLastKeyFrame;
 
     // Pointer to previous frame

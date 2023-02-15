@@ -81,8 +81,8 @@ Frame::Frame(const Frame &frame)
 	  mTime_ekf(frame.mTime_ekf), mGood_EKF(frame.mGood_EKF), mT_e_c(frame.mT_e_c),
 	  mT_e_g(frame.mT_e_g), mT_g0_gj(frame.mT_g0_gj), mV_e(frame.mV_e), mbDVL(frame.mbDVL),
 	  mpDvlPreintegrationFrame(frame.mpDvlPreintegrationFrame),
-	  mpDvlPreintegrationKeyFrame(frame.mpDvlPreintegrationKeyFrame), mT_c0_cj_dvl(frame.mT_c0_cj_dvl),
-	  mImuCalib(frame.mImuCalib), mpExtrinsic_mutex(frame.mpExtrinsic_mutex)
+	  mpDvlPreintegrationKeyFrame(frame.mpDvlPreintegrationKeyFrame), mpDvlPreintegrationLossRefKF(frame.mpDvlPreintegrationLossRefKF),
+      mpLossRefKF(frame.mpLossRefKF), mT_c0_cj_dvl(frame.mT_c0_cj_dvl), mImuCalib(frame.mImuCalib), mpExtrinsic_mutex(frame.mpExtrinsic_mutex)
 {
 	for (int i = 0; i < FRAME_GRID_COLS; i++)
 		for (int j = 0; j < FRAME_GRID_ROWS; j++) {

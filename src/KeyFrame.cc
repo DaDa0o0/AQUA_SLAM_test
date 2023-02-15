@@ -70,7 +70,8 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mvLeftToRightMatch(F.mvLeftToRightMatch),mvRightToLeftMatch(F.mvRightToLeftMatch),mTlr(F.mTlr.clone()),
     mvKeysRight(F.mvKeysRight), NLeft(F.Nleft), NRight(F.Nright), mTrl(F.mTrl), mnNumberOfOpt(0),
     mT_e0_ej(F.mT_e0_ej),mT_g0_gj(F.mT_g0_gj),mT_e_c(F.mT_e_c),mGood_EKF(F.mGood_EKF),mV_e(F.mV_e),
-    mbDVL(F.mbDVL), mpDvlPreintegrationKeyFrame(F.mpDvlPreintegrationKeyFrame)
+    mbDVL(F.mbDVL), mpDvlPreintegrationKeyFrame(F.mpDvlPreintegrationKeyFrame), mpDvlPreintegrationLossRefKF(F.mpDvlPreintegrationLossRefKF),
+    mpLossRefKF(F.mpLossRefKF)
 {
 
     imgLeft = F.imgLeft.clone();

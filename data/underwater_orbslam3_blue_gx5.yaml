@@ -74,7 +74,7 @@ Viewer.ViewpointF: 500
 
 # Optimization Parameters
 Optimizer.visual_lamda: 1
-Optimizer.DVL_lamda: 0.1
+Optimizer.DVL_lamda: 10
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
 Optimizer.KF_init_step: 0.0
@@ -82,7 +82,7 @@ Optimizer.KF_num_for_init: 200
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
 Tracker.KFThresholdForMap: 5
-Tracker.ReLocalTime: 0.5
+Tracker.ReLocalTime: 5
 
 
 alpha: !!opencv-matrix
@@ -113,8 +113,10 @@ IMU.AccWalk: 0.01
 
 VisualIntegration: 0
 
-LeftImgTopic: "/camera/left/image_dehazed"
-RightImgTopic: "/camera/right/image_dehazed"
+#LeftImgTopic: "/camera/left/image_dehazed"
+#RightImgTopic: "/camera/right/image_dehazed"
+LeftImgTopic: "/img_l"
+RightImgTopic: "/img_r"
 ImuTopic: "/imu/data"
 DvlTopic: "/bluerov2/DVL"
 EnableLoopDetection: 0

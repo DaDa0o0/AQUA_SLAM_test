@@ -76,7 +76,7 @@ public:
 	void PublishEkf(const Eigen::Isometry3d &T_e0_ej_ekf, const ros::Time &stamp);
 	void PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, const ros::Time &stamp);
 	//publish pointcloud and octomap
-	void UpdateMap(ORB_SLAM3::Atlas *pAtlas, const cv::Mat &T_d_c);
+	void UpdateMap(ORB_SLAM3::Atlas *pAtlas);
 	void PublishMap(ORB_SLAM3::Atlas *pAtlas, int state);
 	void BroadcastTF(const Eigen::Isometry3d &T_c0_cj_orb,
 	                 const ros::Time &stamp,
@@ -105,6 +105,9 @@ protected:
 	//publish qualisys path
 	nav_msgs::Path m_integration_path;
 	boost::shared_ptr<ros::Publisher> mp_integration_path_pub;
+    // publish reference integration path
+    nav_msgs::Path m_ref_integration_path;
+    boost::shared_ptr<ros::Publisher> mp_ref_integration_path_pub;
 	//publish qulisys pose(if exist),
 	boost::shared_ptr<ros::Publisher> mp_gt_pub;
 	//publish qualisys path
@@ -139,6 +142,7 @@ protected:
 
 	boost::shared_ptr<ros::ServiceServer> mp_save_srv, m_load_srv, m_calib_srv;
 
+    // gravity dir of current map
     Eigen::Isometry3d mT_w_c0;
 
 public:

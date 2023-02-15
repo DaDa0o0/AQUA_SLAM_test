@@ -32,12 +32,14 @@ namespace ORB_SLAM3
 
 Atlas::Atlas():mDvlImuInitailized(false){
     mpCurrentMap = static_cast<Map*>(NULL);
+    mR_b0_w.setIdentity();
 }
 
 Atlas::Atlas(int initKFid): mnLastInitKFidMap(initKFid), mHasViewer(false), mDvlImuInitailized(false)
 {
     mpCurrentMap = static_cast<Map*>(NULL);
     CreateNewMap();
+    mR_b0_w.setIdentity();
 }
 
 Atlas::~Atlas()
@@ -168,6 +170,17 @@ std::vector<KeyFrame*> Atlas::GetAllKeyFrames()
 {
     unique_lock<mutex> lock(mMutexAtlas);
     return mpCurrentMap->GetAllKeyFrames();
+}
+
+std::vector<KeyFrame*> Atlas::GetAllKeyFramesinAllMap()
+{
+    std::vector<KeyFrame*> all_kf;
+    unique_lock<mutex> lock(mMutexAtlas);
+    for(auto m:mspMaps){
+        auto all_kf_cur_map = m->GetAllKeyFrames();
+        all_kf.insert(all_kf.end(),all_kf_cur_map.begin(),all_kf_cur_map.end());
+    }
+    return all_kf;
 }
 
 std::vector<MapPoint*> Atlas::GetAllMapPoints()

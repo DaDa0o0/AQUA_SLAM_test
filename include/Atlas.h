@@ -99,6 +99,7 @@ public:
 
     // Method for get data in current map
     std::vector<KeyFrame*> GetAllKeyFrames();
+    std::vector<KeyFrame*> GetAllKeyFramesinAllMap();
     std::vector<MapPoint*> GetAllMapPoints();
     std::vector<MapPoint*> GetReferenceMapPoints();
 
@@ -165,6 +166,10 @@ protected:
 
 	// DVL IMU Init status
 	bool mDvlImuInitailized;
+
+public:
+    //Gravity
+    Eigen::Matrix3d mR_b0_w;
 
 
 }; // class Atlas

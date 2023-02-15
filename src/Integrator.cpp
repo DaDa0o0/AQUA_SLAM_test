@@ -54,7 +54,7 @@ void Integrator::CreateNewIntFromKF_D2D(const Bias &b, const Calib &c, const Eig
 
 void Integrator::CreateNewIntFromKFBeforeLoss_D2D(const DVLGroPreIntegration &integration)
 {
-    DeleteInt(mpIntFromKFBeforeLost_C2C);
+    // DeleteInt(mpIntFromKFBeforeLost_C2C);
     mpIntFromKFBeforeLost_C2C = new DVLGroPreIntegration(integration);
 }
 
@@ -65,7 +65,7 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
     auto cur_time = cur_F.mTimeStamp;
     auto pre_time = cur_F.mpPrevFrame->mTimeStamp;
     if (pre_time == 0) {
-        ROS_WARN_STREAM("non prev frame ");
+        ROS_WARN_STREAM("non prev frame, frame timestamp: "<<cur_time);
         //		Verbose::PrintMess(, Verbose::VERBOSITY_NORMAL);
         cur_F.setIntegrated();
         return;
@@ -128,7 +128,7 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
     // KF
     if (!mpIntFromKF_C2C) {
         ROS_ERROR_STREAM("null poniter mpIntFromKF_C2C");
-        exit(-1);
+        assert(0);
     }
 
     // set initial velocity of Frame integration
@@ -137,11 +137,17 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
     }
     else if ((mLastVelocity.x == 0) && (mLastVelocity.y == 0) && (mLastVelocity.z == 0)) {
         // initialization velocity
+        bool isDVL_there = false;
         for (auto m: measurements) {
             if ((m.v.x != 0) && (m.v.y != 0) && (m.v.z != 0)) {
                 mpIntFromKF_C2C->SetVelocity(m.v);
                 CreateNewIntFromF_C2C(mpIntFromKF_C2C);
+                isDVL_there = true;
             }
+        }
+        if(!isDVL_there){
+            ROS_WARN_STREAM("wait init, skip integration");
+            return;
         }
     }
     else {

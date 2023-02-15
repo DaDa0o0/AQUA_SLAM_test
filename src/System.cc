@@ -56,15 +56,15 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 	  mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mStrVocabularyFilePath(strVocFile)
 {
 	// Output welcome message
-	cout << endl
-	     << "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
-	     << endl
-	     << "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
-	     << endl
-	     << "This program comes with ABSOLUTELY NO WARRANTY;" << endl
-	     << "This is free software, and you are welcome to redistribute it" << endl
-	     << "under certain conditions. See LICENSE.txt." << endl
-	     << endl;
+	// cout << endl
+	//      << "ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
+	//      << endl
+	//      << "ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza."
+	//      << endl
+	//      << "This program comes with ABSOLUTELY NO WARRANTY;" << endl
+	//      << "This is free software, and you are welcome to redistribute it" << endl
+	//      << "under certain conditions. See LICENSE.txt." << endl
+	//      << endl;
 
 	cout << "Input sensor was set to: ";
 
@@ -92,7 +92,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 	cv::FileStorage fsSettings(strSettingsFile.c_str(), cv::FileStorage::READ);
 	if (!fsSettings.isOpened()) {
 		cerr << "Failed to open settings file at: " << strSettingsFile << endl;
-		exit(-1);
+        assert(0);
 	}
 
 	bool loadedAtlas = false;
@@ -107,7 +107,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 	if (!bVocLoad) {
 		cerr << "Wrong path to vocabulary. " << endl;
 		cerr << "Falied to open at: " << strVocFile << endl;
-		exit(-1);
+        assert(0);
 	}
 	cout << "Vocabulary loaded!" << endl
 	     << endl;
@@ -304,7 +304,7 @@ cv::Mat System::TrackStereoGroDVL(const cv::Mat &imLeft,
 {
 	if (mSensor != DVL_STEREO) {
 		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
-		exit(-1);
+        assert(0);
 	}
 
 	// Check mode change
@@ -370,7 +370,7 @@ cv::Mat System::TrackStereoGroDVL(const Mat &imLeft,
 {
 	if (mSensor != DVL_STEREO) {
 		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
-		exit(-1);
+        assert(0);
 	}
 
 	// Check mode change
@@ -1086,7 +1086,7 @@ cv::Mat System::TrackStereoGroDVLKLT(const Mat &imLeft,
 {
 	if (mSensor != DVL_STEREO) {
 		cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo-DVL." << endl;
-		exit(-1);
+        assert(0);
 	}
 
 	// Check reset
