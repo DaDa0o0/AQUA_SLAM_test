@@ -636,11 +636,6 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
     int numCandidates = vpBowCand.size();
     vector<int> vnStage(numCandidates, 0);
     vector<int> vnMatchesStage(numCandidates, 0);
-
-//	sensor_msgs::ImagePtr img_cur=cv_bridge::CvImage(std_msgs::Header(),"mono8",mpCurrentKF->imgLeft).toImageMsg();
-//	sensor_msgs::ImagePtr img_map=cv_bridge::CvImage(std_msgs::Header(),"mono8",vpBowCand[0]->imgLeft).toImageMsg();
-//	mImgPub_cur_keyframe.publish(img_cur);
-//	mImgPub_map_keyframe.publish(img_map);
     /**
      * iterate all candidates to find the best one
      */
@@ -676,7 +671,9 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
         // the max number of matches for a single pair of keyframe arround the candidate keyframe and the current keyframe
         int nMostBoWNumMatches = 0;
 
+        // all map pointers matched in the covisiable KeyFrames
         std::vector<MapPoint*> vpMatchedPoints = std::vector<MapPoint*>(mpCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
+        // all KF pointers with matched map points
         std::vector<KeyFrame*> vpKeyFrameMatchedMP = std::vector<KeyFrame*>(mpCurrentKF->GetMapPointMatches().size(), static_cast<KeyFrame*>(NULL));
 
         /***
@@ -732,19 +729,9 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
             }
         }
 
-        //cout <<"BoW: " << numBoWMatches << " independent putative matches" << endl;
-//		cout<<"bAbortByNearKF: "<<bAbortByNearKF<<endl;
-//        cout<<"numBoWMatches: "<<numBoWMatches<<endl;
-//        cout<<"nBoWMatches: "<<nBoWMatches<<endl;
-		//ROS_INFO_STREAM("bAbortByNearKF: "<<bAbortByNearKF);
-		//ROS_INFO_STREAM("numBoWMatches: "<<numBoWMatches<<" threshold: "<<nBoWMatches);
+
         if(!bAbortByNearKF && numBoWMatches >= nBoWMatches) // TODO pick a good threshold
         {
-			//ROS_INFO_STREAM("Geometric validation with " << numBoWMatches);
-//            cout << "-------------------------------" << endl;
-//            cout << "Geometric validation with " << numBoWMatches << endl;
-//            cout << "KFc: " << mpCurrentKF->mnId << "; KFm: " << pMostBoWMatchesKF->mnId << endl;
-            // Geometric validation
 
             bool bFixedScale = mbFixScale;
             if(mpTracker->mSensor==System::IMU_MONOCULAR && !mpCurrentKF->GetMap()->GetIniertialBA2())
@@ -769,10 +756,6 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                 mTcm = solver.iterate(20,bNoMore, vbInliers, nInliers, bConverge);
             }
 
-//            cout << "Num inliers: " << nInliers << endl;
-//			cout<<"Ransac solver converged?: "<<bConverge<<endl;
-			//ROS_INFO_STREAM("Num inliers: " << nInliers);
-			//ROS_INFO_STREAM("Ransac solver converged?: "<<bConverge);
             if(bConverge)
             {
                 //cout <<"BoW: " << nInliers << " inliers in Sim3Solver" << endl;
@@ -839,9 +822,6 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         bFixedScale=false;
 
                     int numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedMP, gScm, 10, mbFixScale, mHessian7x7, true);
-                    //cout <<"BoW: " << numOptMatches << " inliers in the Sim3 optimization" << endl;
-                    //cout << "Inliers in Sim3 optimization: " << numOptMatches << endl;
-					//ROS_INFO_STREAM("Inliers in Sim3 optimization: " << numOptMatches<<" threshold: "<<nSim3Inliers);
 
                     if(numOptMatches >= nSim3Inliers)
                     {
@@ -902,14 +882,9 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                                     }
                                 }
                             }
-                            //cout << "BoW: Coord in X -> " << min_x << ", " << max_x << "; and Y -> " << min_y << ", " << max_y << endl;
-                            //cout << "BoW: features area in X -> " << (max_x - min_x) << " and Y -> " << (max_y - min_y) << endl;
 
                             //nNumKFs=nBestNumCoindicendes=nNumCoincidences
                             int nNumKFs = 0;
-
-                            //vpMatchedMPs = vpMatchedMP;
-                            //vpMPs = vpMapPoints;
 
                             // Check the Sim3 transformation with the current KeyFrame covisibles
 
@@ -1302,7 +1277,8 @@ void LoopClosing::CorrectLoop()
 
 
     // After the MapPoint fusion, new links in the covisibility graph will appear attaching both sides of the loop
-    //cout << "LC: start updating covisibility graph" << endl;
+    // clear all old edge between current KF and its neighbors, keep new edge between current and neighbors of its loop KF
+    // LoopConnections stores all new edge between current KF and neighbors of its loop KF
     map<KeyFrame*, set<KeyFrame*> > LoopConnections;
 
     for(vector<KeyFrame*>::iterator vit=mvpCurrentConnectedKFs.begin(), vend=mvpCurrentConnectedKFs.end(); vit!=vend; vit++)
@@ -1375,7 +1351,7 @@ void LoopClosing::MergeLocal()
     Verbose::PrintMess("MERGE-VISUAL: Merge Visual detected!!!!", Verbose::VERBOSITY_NORMAL);
     //mpTracker->SetStepByStep(true);
 
-    int numTemporalKFs = 15; //TODO (set by parameter): Temporal KFs in the local window if the map is inertial.
+    int numTemporalKFs = 100; //TODO (set by parameter): Temporal KFs in the local window if the map is inertial.
 
     //Relationship to rebuild the essential graph, it is used two times, first in the local window and later in the rest of the map
     KeyFrame* pNewChild;
@@ -1928,159 +1904,70 @@ void LoopClosing::MergeLocal()
     }
     else
     {
-        Verbose::PrintMess("MERGE-VISUAL: Calculate the new position of the elements outside of the window", Verbose::VERBOSITY_DEBUG);
-        //Apply the transformation
-        {
-            if(mpTracker->mSensor == System::MONOCULAR)
-            {
-				unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
-				while(!currentLock.try_lock_for(std::chrono::milliseconds(300))){
-					if(mbResetActiveMapRequested){
-						continue;
-					}
-
-				}
-
-                for(KeyFrame* pKFi : vpCurrentMapKFs)
-                {
-                    if(!pKFi || pKFi->isBad() || pKFi->GetMap() != pCurrentMap)
-                    {
-                        continue;
-                    }
-
-                    g2o::Sim3 g2oCorrectedSiw;
-
-                    cv::Mat Tiw = pKFi->GetPose();
-                    cv::Mat Riw = Tiw.rowRange(0,3).colRange(0,3);
-                    cv::Mat tiw = Tiw.rowRange(0,3).col(3);
-                    g2o::Sim3 g2oSiw(Converter::toMatrix3d(Riw),Converter::toVector3d(tiw),1.0);
-                    //Pose without correction
-                    vNonCorrectedSim3[pKFi]=g2oSiw;
-
-                    cv::Mat Tic = Tiw*Twc;
-                    cv::Mat Ric = Tic.rowRange(0,3).colRange(0,3);
-                    cv::Mat tic = Tic.rowRange(0,3).col(3);
-                    g2o::Sim3 g2oSim(Converter::toMatrix3d(Ric),Converter::toVector3d(tic),1.0);
-                    g2oCorrectedSiw = g2oSim*mg2oMergeScw;
-                    vCorrectedSim3[pKFi]=g2oCorrectedSiw;
-
-                    // Update keyframe pose with corrected Sim3. First transform Sim3 to SE3 (scale translation)
-                    Eigen::Matrix3d eigR = g2oCorrectedSiw.rotation().toRotationMatrix();
-                    Eigen::Vector3d eigt = g2oCorrectedSiw.translation();
-                    double s = g2oCorrectedSiw.scale();
-
-                    pKFi->mfScale = s;
-                    eigt *=(1./s); //[R t/s;0 1]
-
-                    cv::Mat correctedTiw = Converter::toCvSE3(eigR,eigt);
-
-                    pKFi->mTcwBefMerge = pKFi->GetPose();
-                    pKFi->mTwcBefMerge = pKFi->GetPoseInverse();
-
-                    pKFi->SetPose(correctedTiw);
-
-                    if(pCurrentMap->isImuInitialized())
-                    {
-                        Eigen::Matrix3d Rcor = eigR.transpose()*vNonCorrectedSim3[pKFi].rotation().toRotationMatrix();
-                        pKFi->SetVelocity(Converter::toCvMat(Rcor)* pKFi->GetVelocityOld()); // TODO: should add here scale s
-                    }
-
-                }
-                for(MapPoint* pMPi : vpCurrentMapMPs)
-                {
-                    if(!pMPi || pMPi->isBad()|| pMPi->GetMap() != pCurrentMap)
-                        continue;
-
-                    KeyFrame* pKFref = pMPi->GetReferenceKeyFrame();
-                    g2o::Sim3 g2oCorrectedSwi = vCorrectedSim3[pKFref].inverse();
-                    g2o::Sim3 g2oNonCorrectedSiw = vNonCorrectedSim3[pKFref];
-
-                    // Project with non-corrected pose and project back with corrected pose
-                    cv::Mat P3Dw = pMPi->GetWorldPos();
-                    Eigen::Matrix<double,3,1> eigP3Dw = Converter::toVector3d(P3Dw);
-                    Eigen::Matrix<double,3,1> eigCorrectedP3Dw = g2oCorrectedSwi.map(g2oNonCorrectedSiw.map(eigP3Dw));
-
-                    cv::Mat cvCorrectedP3Dw = Converter::toCvMat(eigCorrectedP3Dw);
-                    pMPi->SetWorldPos(cvCorrectedP3Dw);
-
-                    pMPi->UpdateNormalAndDepth();
-                }
-            }
-        }
-        Verbose::PrintMess("MERGE-VISUAL: Apply transformation to all elements of the old map", Verbose::VERBOSITY_DEBUG);
-
         mpLocalMapper->RequestStop();
         // Wait until Local Mapping has effectively stopped
         while(!mpLocalMapper->isStopped())
         {
             usleep(1000);
         }
-        Verbose::PrintMess("MERGE-VISUAL: Local Map stopped", Verbose::VERBOSITY_DEBUG);
+        unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
+        while(!currentLock.try_lock_for(std::chrono::milliseconds(30))){
+            if(mbResetActiveMapRequested){
+                break;
+            }
 
-        // Optimize graph (and update the loop position for each element form the begining to the end)
-        if(mpTracker->mSensor != System::MONOCULAR)
-        {
-	        unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
-	        while(!currentLock.try_lock_for(std::chrono::milliseconds(300))){
-		        if(mbResetActiveMapRequested){
-			        break;
-		        }
-
-	        }
-
-	        bool bOptimizationFinished=false;
-            Optimizer::OptimizeEssentialGraph(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, bOptimizationFinished, &mbResetActiveMapRequested);
         }
 
+        bool bOptimizationFinished=false;
+        // Optimizer::OptimizeEssentialGraph(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, bOptimizationFinished, &mbResetActiveMapRequested);
+        ROS_INFO_STREAM("do GlobalVAPoseGraphOptimization!");
+        Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, mpAtlas);
 
-        {
-            // Get Merge Map Mutex
-			unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
-			while(!currentLock.try_lock_for(std::chrono::milliseconds(300))){
-				if(mbResetActiveMapRequested){
-					break;
-				}
-			}
-            unique_lock<timed_mutex> mergeLock(pMergeMap->mMutexMapUpdate,std::defer_lock); // We remove the Kfs and MPs in the merged area from the old map
-			while(!mergeLock.try_lock_for(std::chrono::milliseconds(300))){
-				if(mbResetActiveMapRequested){
-					break;
-				}
-			}
-
-            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->KeyFramesInMap()) + " KFs in the map", Verbose::VERBOSITY_DEBUG);
-            Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapKFs.size()) + " KFs in the map", Verbose::VERBOSITY_DEBUG);
-
-            for(KeyFrame* pKFi : vpCurrentMapKFs)
-            {
-                if(!pKFi || pKFi->isBad() || pKFi->GetMap() != pCurrentMap)
-                {
-                    continue;
-                }
-
-                // Make sure connections are updated
-                pKFi->UpdateMap(pMergeMap);
-                pMergeMap->AddKeyFrame(pKFi);
-                pCurrentMap->EraseKeyFrame(pKFi);
+        // Get Merge Map Mutex
+        // unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
+        // while(!currentLock.try_lock_for(std::chrono::milliseconds(30))){
+        // 	if(mbResetActiveMapRequested){
+        // 		break;
+        // 	}
+        // }
+        unique_lock<timed_mutex> mergeLock(pMergeMap->mMutexMapUpdate,std::defer_lock); // We remove the Kfs and MPs in the merged area from the old map
+        while(!mergeLock.try_lock_for(std::chrono::milliseconds(30))){
+            if(mbResetActiveMapRequested){
+                break;
             }
-			ROS_INFO_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
-			ROS_INFO_STREAM("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map");
-//            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
-//            Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
-
-            for(MapPoint* pMPi : vpCurrentMapMPs)
-            {
-                if(!pMPi || pMPi->isBad())
-                    continue;
-
-                pMPi->UpdateMap(pMergeMap);
-                pMergeMap->AddMapPoint(pMPi);
-                pCurrentMap->EraseMapPoint(pMPi);
-            }
-			ROS_INFO_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
-			mpAtlas->SetMapBad(pCurrentMap);
-//            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
         }
+
+        Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->KeyFramesInMap()) + " KFs in the map", Verbose::VERBOSITY_DEBUG);
+        Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapKFs.size()) + " KFs in the map", Verbose::VERBOSITY_DEBUG);
+
+        for(KeyFrame* pKFi : vpCurrentMapKFs)
+        {
+            if(!pKFi || pKFi->isBad() || pKFi->GetMap() != pCurrentMap)
+            {
+                continue;
+            }
+
+            // Make sure connections are updated
+            pKFi->UpdateMap(pMergeMap);
+            pMergeMap->AddKeyFrame(pKFi);
+            pCurrentMap->EraseKeyFrame(pKFi);
+        }
+        ROS_INFO_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
+        ROS_INFO_STREAM("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map");
+        //            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
+        //            Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
+
+        for(MapPoint* pMPi : vpCurrentMapMPs)
+        {
+            if(!pMPi || pMPi->isBad())
+                continue;
+
+            pMPi->UpdateMap(pMergeMap);
+            pMergeMap->AddMapPoint(pMPi);
+            pCurrentMap->EraseMapPoint(pMPi);
+        }
+        ROS_INFO_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
+        mpAtlas->SetMapBad(pCurrentMap);
 
         Verbose::PrintMess("MERGE-VISUAL: Optimaze the essential graph", Verbose::VERBOSITY_DEBUG);
     }

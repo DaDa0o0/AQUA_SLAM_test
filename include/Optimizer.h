@@ -42,6 +42,7 @@ namespace ORB_SLAM3
 {
 
 class LoopClosing;
+class Atlas;
 
 class Optimizer
 {
@@ -78,8 +79,31 @@ public:
                                        const bool &bFixScale);
     void static OptimizeEssentialGraph6DoF(KeyFrame* pCurKF, vector<KeyFrame*> &vpFixedKFs, vector<KeyFrame*> &vpFixedCorrectedKFs,
                                            vector<KeyFrame*> &vpNonFixedKFs, vector<MapPoint*> &vpNonCorrectedMPs, double scale);
+    /***
+    *
+    * @param pCurKF current KeyFrame
+    * @param vpFixedKFs pervious KFs in previous map optimized LocalBA
+    * @param vpFixedCorrectedKFs current KFs but already corrected by loop transformation and optimized by LocalBA
+    * @param vpNonFixedKFs others KFs haven't optimized by LocalBA in current map
+    * @param vpNonCorrectedMPs others Map Points haven't optimized by LocalBA in current map
+    * @param bFinished
+    * @param bReSet
+    */
     void static OptimizeEssentialGraph(KeyFrame *pCurKF, vector<KeyFrame *> &vpFixedKFs, vector<KeyFrame *> &vpFixedCorrectedKFs,
                                        vector<KeyFrame *> &vpNonFixedKFs, vector<MapPoint *> &vpNonCorrectedMPs, bool &bFinished, bool* bReSet);
+
+    /***
+    *
+    * @param pCurKF current KeyFrame
+    * @param vpFixedKFs pervious KFs in previous map optimized LocalBA
+    * @param vpFixedCorrectedKFs current KFs but already corrected by loop transformation and optimized by LocalBA
+    * @param vpNonFixedKFs others KFs haven't optimized by LocalBA in current map
+    * @param vpNonCorrectedMPs others Map Points haven't optimized by LocalBA in current map
+    * @param pAtlas pointer to the atlas
+    */
+    void static GlobalVAPoseGraphOptimization(KeyFrame *pCurKF, vector<KeyFrame *> &vpFixedKFs, vector<KeyFrame *> &vpFixedCorrectedKFs,vector<KeyFrame *> &vpNonFixedKFs,
+                                              vector<MapPoint *> &vpNonCorrectedMPs, Atlas* pAtlas);
+
     void static OptimizeEssentialGraph(KeyFrame* pCurKF,
                                        const LoopClosing::KeyFrameAndPose &NonCorrectedSim3,
                                        const LoopClosing::KeyFrameAndPose &CorrectedSim3);
@@ -141,6 +165,7 @@ public:
 
     void static DvlIMURefineOptimization(Atlas *pAtlas);
 
+    void static DvlIMUMiltiMapOptimization(Atlas *pAtlas);
 
 	void static DvlBeamOptimization(Map *pMap);
 	void static DvlBeamOptimization_dvl(Map *pMap);

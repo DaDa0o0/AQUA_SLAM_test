@@ -146,57 +146,28 @@ void LocalMapping::Run()
 
 			if (!CheckNewKeyFrames() && !stopRequested()) {
 				if (mpAtlas->KeyFramesInMap() > 2) {
-					if (mbInertial && mpCurrentKeyFrame->GetMap()->isImuInitialized()) {
-						float dist = cv::norm(
-							mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()) +
-							cv::norm(mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter()
-										 - mpCurrentKeyFrame->mPrevKF->GetCameraCenter());
+                    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+                    if (!mpAtlas->GetCurrentMap()->isImuInitialized()) {
+                        Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
+                                                         &mbAbortBA,
+                                                         mpCurrentKeyFrame->GetMap(),
+                                                         num_FixedKF_BA);
+                    }
+                    else {
+                        // DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(mpCurrentKeyFrame,
+                        // 											   &mbAbortBA,
+                        // 											   mpCurrentKeyFrame->GetMap(),
+                        // 											   num_FixedKF_BA,
+                        // 											   mpTracker->mlamda_DVL);
+                        DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpCurrentKeyFrame,
+                                                                      &mbAbortBA,
+                                                                      mpCurrentKeyFrame->GetMap(),
+                                                                      num_FixedKF_BA,
+                                                                      mpTracker->mlamda_DVL);
+                    }
+                    //						Optimizer::LocalDVLBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpCurrentKeyFrame->GetMap(),num_FixedKF_BA);
 
-						if (dist > 0.05) {
-							mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
-						}
-						if (!mpCurrentKeyFrame->GetMap()->GetIniertialBA2()) {
-							if ((mTinit < 10.f) && (dist < 0.02)) {
-								cout << "Not enough motion for initializing. Reseting..." << endl;
-								unique_lock<mutex> lock(mMutexReset);
-								mbResetRequestedActiveMap = true;
-								mpMapToReset = mpCurrentKeyFrame->GetMap();
-								mbBadImu = true;
-							}
-						}
-
-						bool bLarge = ((mpTracker->GetMatchesInliers() > 75) && mbMonocular)
-							|| ((mpTracker->GetMatchesInliers() > 100) && !mbMonocular);
-						Optimizer::LocalInertialBA(mpCurrentKeyFrame,
-												   &mbAbortBA,
-												   mpCurrentKeyFrame->GetMap(),
-												   bLarge,
-												   !mpCurrentKeyFrame->GetMap()->GetIniertialBA2());
-					}
-					else {
-						std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-						if (!mpAtlas->GetCurrentMap()->isImuInitialized()) {
-							Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
-															 &mbAbortBA,
-															 mpCurrentKeyFrame->GetMap(),
-															 num_FixedKF_BA);
-						}
-						else {
-							// DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(mpCurrentKeyFrame,
-							// 											   &mbAbortBA,
-							// 											   mpCurrentKeyFrame->GetMap(),
-							// 											   num_FixedKF_BA,
-							// 											   mpTracker->mlamda_DVL);
-                            DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpCurrentKeyFrame,
-                                                                          &mbAbortBA,
-                                                                          mpCurrentKeyFrame->GetMap(),
-                                                                          num_FixedKF_BA,
-                                                                          mpTracker->mlamda_DVL);
-						}
-//						Optimizer::LocalDVLBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpCurrentKeyFrame->GetMap(),num_FixedKF_BA);
-
-						std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-					}
+                    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 					// auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
 //					mpDenseMapper->Update();
 				}
@@ -211,7 +182,7 @@ void LocalMapping::Run()
                         ROS_INFO_STREAM("DVL-IMU init");
 					    InitializeDvlIMU();
 				}
-                else if(!mpAtlas->GetAllMaps().back()->isImuInitialized()){
+                else if(!mpAtlas->GetAllMaps().back()->isImuInitialized()&&mpAtlas->GetAllKeyFrames().size()>10){
                     ROS_INFO_STREAM("DVL-IMU refine");
                     RefineGravityDvlIMU();
                     current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
@@ -1728,6 +1699,8 @@ void LocalMapping::InitializeDvlIMU()
 
 void LocalMapping::RefineGravityDvlIMU()
 {
+    if(mpAtlas->GetAllKeyFrames().size()<10)
+        return;
     if (mbResetRequested) {
         return;
     }

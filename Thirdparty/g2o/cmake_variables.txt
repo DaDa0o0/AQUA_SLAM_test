@@ -1582,10 +1582,10 @@ ORB_DVL2_URL_BUGTRACKER=
 ORB_DVL2_URL_REPOSITORY=
 ORB_DVL2_URL_WEBSITE=
 ORB_DVL2_VERSION=0.0.0
-OUTPUT=Change Dir: /home/da/project/ros/orb_dvl2_ws/src/build/CMakeFiles/CMakeScratch/TryCompile-pOniNg
+OUTPUT=Change Dir: /home/da/project/ros/orb_dvl2_ws/src/build/CMakeFiles/CMakeScratch/TryCompile-EnD3B5
 
-Run Build Command(s):/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.6890.13/bin/ninja/linux/x64/ninja cmTC_c8559 && [1/2] Building C object CMakeFiles/cmTC_c8559.dir/CheckFunctionExists.c.o
-[2/2] Linking C executable cmTC_c8559
+Run Build Command(s):/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.6890.13/bin/ninja/linux/x64/ninja cmTC_550ba && [1/2] Building C object CMakeFiles/cmTC_550ba.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_550ba
 
 
 OpenCV_CONFIG=/home/da/project/Thirdparty/opencv3.2/share/OpenCV/OpenCVConfig.cmake

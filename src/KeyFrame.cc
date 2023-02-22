@@ -447,6 +447,7 @@ MapPoint* KeyFrame::GetMapPoint(const size_t &idx)
 
 void KeyFrame::UpdateConnections(bool upParent)
 {
+    // <pointer to KF, number of shared map points with that KF>
     map<KeyFrame*,int> KFcounter;
 
     vector<MapPoint*> vpMP;
