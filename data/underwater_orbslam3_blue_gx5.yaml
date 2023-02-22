@@ -81,7 +81,7 @@ Optimizer.KF_init_step: 0.0
 Optimizer.KF_num_for_init: 200
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
-Tracker.KFThresholdForMap: 5
+Tracker.KFThresholdForMap: 30
 Tracker.ReLocalTime: 5
 
 
@@ -134,7 +134,7 @@ T_gyro_c: !!opencv-matrix
 #  data: [ -0.025627013068640403,  -0.027523668915143649,   -0.99929260171915124,   0.13, # real rov
 #          0.0019232000194252391,    0.99961769576091752,  -0.027581943791494354,    -0.25,
 #          0.99966972421038436, -0.0026286823850409039,   -0.02556428223231702,    -0.06,
-          0,  0,   0,    1 ]
+#          0,  0,   0,    1 ]
 #  data: [ 1,  0,   0,   0, # I
 #          0,  1,   0,    0,
 #          0,  0,  1,    0,

@@ -182,7 +182,7 @@ void LocalMapping::Run()
                         ROS_INFO_STREAM("DVL-IMU init");
 					    InitializeDvlIMU();
 				}
-                else if(!mpAtlas->GetAllMaps().back()->isImuInitialized()&&mpAtlas->GetAllKeyFrames().size()>10){
+                else if(!mpAtlas->GetAllMaps().back()->isImuInitialized()&&mpAtlas->GetAllKeyFrames().size()>mpTracker->mKFThresholdForMap){
                     ROS_INFO_STREAM("DVL-IMU refine");
                     RefineGravityDvlIMU();
                     current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
@@ -194,6 +194,7 @@ void LocalMapping::Run()
                 }
 
 
+
 				// Check redundant local Keyframes
 				// if(mpTracker->mCalibrated){
 				// 	KeyFrameCulling();
@@ -203,7 +204,7 @@ void LocalMapping::Run()
 				t6 = std::chrono::steady_clock::now();
 
 			}
-            if(mpAtlas->GetCurrentMap()->isImuInitialized() && new_KF>10){
+            if(mpAtlas->GetAllMaps().front()->isImuInitialized()&&new_KF>10){
                 mpTracker->mpRosHandler->UpdateMap(mpAtlas);
                 mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
                 new_KF = 0;

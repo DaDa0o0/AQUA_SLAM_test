@@ -576,7 +576,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             cv::cv2eigen(T_c0_c1_cv, T_c0_c1.matrix());
 
             Eigen::Isometry3d T_d0_d1 = T_d_c * T_c0_c1 * T_d_c.inverse();
-            T_d0_dj = T_d0_dj * T_d0_d1;
+            // T_d0_dj = T_d0_dj * T_d0_d1;
             if(pKF->mpDvlPreintegrationLossRefKF){
                 Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
                 Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
@@ -649,8 +649,8 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
                 m_ref_integration_path.header = pose_to_pub.header;
             }
 
-            cv::Mat R_gi_gj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaRotation(pKF->GetImuBias()).clone();
-            cv::Mat t_di_dj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaPosition(pKF->GetImuBias()).clone();
+            cv::Mat R_gi_gj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaRotation(pKF->GetImuBias());
+            cv::Mat t_di_dj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaPosition(pKF->GetImuBias());
             cv::Mat R_di_dj_cv = R_g_d_cv.t() * R_gi_gj_cv * R_g_d_cv;
             Eigen::Matrix3d R_di_dj;
             cv::cv2eigen(R_di_dj_cv, R_di_dj);

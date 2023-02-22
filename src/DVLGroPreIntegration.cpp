@@ -702,7 +702,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    cv::Mat P = dP_dvl ;
+    cv::Mat P = dP_dvl.clone();
     P.convertTo(P, CV_32F);
     return P;
 }

@@ -12,7 +12,6 @@ Panels:
         - /DVL2.01/Image2
         - /DenseMapper1/Image2
         - /Poss_recorder1/Path1
-        - /Poss_recorder1/Path1/Status1
       Splitter Ratio: 0.5043668150901794
     Tree Height: 655
   - Class: rviz/Selection
@@ -475,7 +474,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 18.902681350708008
+      Distance: 13.398077011108398
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -483,17 +482,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 3.898857355117798
-        Y: 0.3329768180847168
-        Z: 1.8299850225448608
+        X: 1.644294023513794
+        Y: -1.5526602268218994
+        Z: -0.9265832901000977
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.2297967672348022
       Target Frame: base_link
-      Yaw: 3.0181798934936523
+      Yaw: 5.978236198425293
     Saved: ~
 Window Geometry:
   Displays:
