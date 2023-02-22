@@ -523,6 +523,27 @@ void ImageGrabber::SyncWithImu2()
 				vDVLMeas.clear();
 				while (!mpDvlGb->dvlBuf2.empty() && mpDvlGb->dvlBuf2.front()->header.stamp.toSec() <= tImLeft) {
 					double t = mpDvlGb->dvlBuf2.front()->header.stamp.toSec();
+                    // //skip bad DVL
+                    // bool is_badDVLdata=false;
+                    // int bad_beam_count = 0;
+                    // for(auto beam:mpDvlGb->dvlBuf2.front()->beams){
+                    //     if(beam.rssi<0){
+                    //         is_badDVLdata=true;
+                    //     }
+                    //     if(beam.rssi<beam.nsd){
+                    //         bad_beam_count++;
+                    //     }
+                    // }
+                    // if(is_badDVLdata){
+                    //     BOOST_LOG_TRIVIAL(warning) << "skip bad DVL data";
+                    //     mpDvlGb->dvlBuf2.pop();
+                    //     continue;
+                    // }
+                    // if(bad_beam_count>1){
+                    //     BOOST_LOG_TRIVIAL(warning) << "skip bad DVL data, bad beam number: "<<bad_beam_count;
+                    //     mpDvlGb->dvlBuf2.pop();
+                    //     continue;
+                    // }
 //					cv::Point3f vel(mpDvlGb->dvlBuf2.front()->twist.twist.linear.x,
 //					                mpDvlGb->dvlBuf2.front()->twist.twist.linear.y,
 //					                mpDvlGb->dvlBuf2.front()->twist.twist.linear.z);
