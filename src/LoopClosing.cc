@@ -1921,6 +1921,7 @@ void LoopClosing::MergeLocal()
         bool bOptimizationFinished=false;
         // Optimizer::OptimizeEssentialGraph(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, bOptimizationFinished, &mbResetActiveMapRequested);
         ROS_INFO_STREAM("do GlobalVAPoseGraphOptimization!");
+        aaa
         Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, mpAtlas);
 
         // Get Merge Map Mutex
