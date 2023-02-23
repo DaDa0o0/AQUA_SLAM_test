@@ -1642,6 +1642,28 @@ public:
 
 };
 
+class EdgeDvlIMU: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+	EdgeDvlIMU(DVLGroPreIntegration *pInt);
+
+	virtual bool read(std::istream &is)
+	{ return false; }
+	virtual bool write(std::ostream &os) const
+	{ return false; }
+
+	void computeError();
+	//	virtual void linearizeOplus();
+
+	//	const Eigen::Matrix3d JRg, JVg, JPg;
+	//	const Eigen::Matrix3d JVa, JPa;
+	DVLGroPreIntegration *mpInt;
+	const double dt;
+
+};
+
 class EdgeDvlIMUGravityRefine: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
 {
 public:
@@ -1663,6 +1685,28 @@ public:
 	const double dt;
 
 };
+
+class EdgeDvlIMUGravityRefineWithBias: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        EdgeDvlIMUGravityRefineWithBias(DVLGroPreIntegration *pInt);
+
+        virtual bool read(std::istream &is)
+        { return false; }
+        virtual bool write(std::ostream &os) const
+        { return false; }
+
+        void computeError();
+        //	virtual void linearizeOplus();
+
+        //	const Eigen::Matrix3d JRg, JVg, JPg;
+        //	const Eigen::Matrix3d JVa, JPa;
+        DVLGroPreIntegration *mpInt;
+        const double dt;
+
+    };
 
 class EdgeDvlIMUInitWithoutBias: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
 {

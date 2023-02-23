@@ -1206,7 +1206,10 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
         VA->setFixed(true);
         optimizer.addVertex(VA);
-        vpab.push_back(VA);
+        if(vpab.size()<5){
+            vpab.push_back(VA);
+        }
+
 
         VertexVelocity *VV = new VertexVelocity(pKFi);
         VV->setId((maxKFid + 1)*3 + pKFi->mnId);
@@ -1403,7 +1406,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
             dvl_edges.push_back(ei);
             optimizer.addEdge(ei);
 
-            EdgeDvlIMUGravityRefine *eG = new EdgeDvlIMUGravityRefine(pKFi->mpDvlPreintegrationKeyFrame);
+			EdgeDvlIMU *eG = new EdgeDvlIMU(pKFi->mpDvlPreintegrationKeyFrame);
             eG->setLevel(0);
             eG->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
             eG->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
@@ -1414,9 +1417,29 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
             eG->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
             eG->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            eG->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
+            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
             eG->setId(maxKFid+1 + pKFi->mnId);
             optimizer.addEdge(eG);
+
+            // eG1->setId(maxKFid+1 + pKFi->mnId);
+            // only add first 5 KF for bias optimization
+            if((pKF->mnId - pKFi->mnId)<5){
+                EdgeDvlIMUGravityRefineWithBias *eG1 = new EdgeDvlIMUGravityRefineWithBias(pKFi->mpDvlPreintegrationKeyFrame);
+                eG1->setLevel(1);
+                eG1->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
+                eG1->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
+                eG1->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
+                eG1->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
+                eG1->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
+                eG1->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
+                eG1->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
+                eG1->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
+                eG1->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
+                eG1->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
+                optimizer.addEdge(eG1);
+                // ROS_INFO_STREAM("add bias refine edge, KF: "<<pKFi->mnId);
+            }
+
 
 
         }
@@ -1432,6 +1455,9 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     optimizer.initializeOptimization(0);
     optimizer.optimize(5);
 
+    for(auto p:vpab){
+        p->setFixed(false);
+    }
     // optimizer.initializeOptimization(1);
     // optimizer.optimize(2);
 
@@ -1443,6 +1469,8 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
 
 
     // Recover optimized data
+    stringstream ss;
+    ss<<"LocalVisualAcousticInertial BA"<<"\n";
     for (size_t i = 0; i < N; i++) {
         KeyFrame *pKFi = OptKFs[i];
         int kf_id = pKFi->mnId;
@@ -1471,8 +1499,12 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         IMU::Bias b(v_ab->estimate().x(), v_ab->estimate().y(), v_ab->estimate().z(),
                     v_gb->estimate().x(), v_gb->estimate().y(), v_gb->estimate().z());
         pKFi->SetNewBias(b);
+        if((pKF->mnId - pKFi->mnId)<5){
+            ss<<"KF["<<pKFi->mnId<<"] bias[acc gyros]: "<<v_ab->estimate().transpose()<<" "<<v_gb->estimate().transpose()<<"\n";
+        }
 
     }
+	// ROS_INFO_STREAM(ss.str());
 
     for (int i = 0; i < N_map_points; i++) {
         MapPoint *pMP = LocalMapPoints[i];

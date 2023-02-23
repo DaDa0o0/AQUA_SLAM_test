@@ -5267,7 +5267,7 @@ void Tracking::CreateNewKeyFrame()
 		pKF->bImu = true;
 	}
 
-	pKF->SetNewBias(mCurrentFrame.mImuBias);
+	pKF->SetNewBias(mpLastKeyFrame->GetImuBias());
 	mpReferenceKF = pKF;
 	mCurrentFrame.mpReferenceKF = pKF;
 

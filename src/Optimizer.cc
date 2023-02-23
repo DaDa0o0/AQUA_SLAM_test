@@ -12804,18 +12804,6 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMon
 			g2o::HyperGraph::Vertex *VT_d_c = optimizer.vertex((maxKFid + 1)*4);
 			g2o::HyperGraph::Vertex *VT_g_d = optimizer.vertex((maxKFid + 1)*4+1);
             g2o::HyperGraph::Vertex *VR_w_b0 = optimizer.vertex((maxKFid + 1)*4+2);
-			//				g2o::HyperGraph::Vertex *VA = optimizer.vertex(maxKFid * 2 + 3);
-			//				g2o::HyperGraph::Vertex *VGDir = optimizer.vertex(maxKFid * 2 + 4);
-			//				g2o::HyperGraph::Vertex *VS = optimizer.vertex(maxKFid * 2 + 5);
-			//				cout<<"VP1: Rcw[0]"<<VP1->estimate().Rcw[0]<<endl;
-			//				cout<<"VP1: Rwc"<<VP1->estimate().Rwc<<endl;
-			//				cout<<"VP1: tcw[0]"<<VP1->estimate().tcw[0]<<endl;
-			//				cout<<"VP1: twc"<<VP1->estimate().twc<<endl;
-			//
-			//				cout<<"VP2: Rcw[0]"<<VP2->estimate().Rcw[0]<<endl;
-			//				cout<<"VP2: Rwc"<<VP2->estimate().Rwc<<endl;
-			//				cout<<"VP2: tcw[0]"<<VP2->estimate().tcw[0]<<endl;
-			//				cout<<"VP2: twc"<<VP2->estimate().twc<<endl;
 
 			if (!VP1 || !VG || !VP2) {
 				cout << "Error" << VP1 << ", " << VG << ", " << VP2 << endl;
@@ -12848,6 +12836,21 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMon
 			ei->setId(pKFi->mnId);
             optimizer.addEdge(ei);
 
+			EdgeDvlIMUInitRefineWithBias *ei2 = new EdgeDvlIMUInitRefineWithBias(pKFi->mpDvlPreintegrationKeyFrame);
+			ei2->setLevel(1);
+			ei2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
+			ei2->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
+			ei2->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
+			ei2->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
+			ei2->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
+			ei2->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
+			ei2->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
+			ei2->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
+			ei2->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_w_b0));
+			ei2->setInformation(Eigen::Matrix<double, 3, 3>::Identity()*100);
+			// ei2->setId(pKFi->mnId);
+			optimizer.addEdge(ei2);
+
 		}
 	}
 
@@ -12861,22 +12864,15 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMon
     }
     optimizer.initializeOptimization(1);
     optimizer.optimize(2);
-    // for(VertexGyroBias* v:vpgb){
-    //     v->setFixed(false);
-    // }
-
-    // vT_d_c->setFixed(false);
-    // optimizer.initializeOptimization();
-    // optimizer.optimize(5);
 
     // update gravity direction
     // Eigen::Matrix3d R_b0_w = NormalizeRotation(VGDir->estimate().Rwg);
-    Eigen::Matrix3d R_b0_w = VGDir->estimate().Rwg;
-    ROS_INFO_STREAM("gravity calibration result: "<< R_b0_w);
+    // Eigen::Matrix3d R_b0_w = VGDir->estimate().Rwg;
+    // ROS_INFO_STREAM("gravity calibration result: "<< R_b0_w);
     // Sophus::SO3<double> R_b0_w_SO3(R_b0_w);
     // Eigen::Vector3d R_b0_w_so3 = R_b0_w_SO3.log();
     // ROS_INFO_STREAM("gravity calibration result: "<< R_b0_w_so3.transpose());
-    pMap->mR_b0_w = R_b0_w;
+    pMap->mR_b0_w = VGDir->estimate().Rwg;
     pMap->SetImuInitialized();
 
 
@@ -12900,60 +12896,10 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMon
 		cv::Mat cvbg;
 		cv::eigen2cv(bg, cvbg);
 		cvbg.convertTo(cvbg, CV_32F);
-		//		if (cv::norm(pkf->GetGyroBias() - cvbg) > 0.01) {
-		//			pkf->SetNewBias(b);
-		//			if (pkf->mpDvlPreintegrationKeyFrame) {
-		//				pkf->mpDvlPreintegrationKeyFrame->ReintegrateWithVelocity();
-		//			}
-		//		}
-		//		else {
-		//			pkf->SetNewBias(b);
-		//		}
 		pkf->SetNewBias(b);
-        pkf->mpDvlPreintegrationKeyFrame->ReintegrateWithBias(b);
+        // pkf->mpDvlPreintegrationKeyFrame->ReintegrateWithBias(b);
 	}
-
-    Eigen::Isometry3d T_dvl_c = vT_d_c->estimate();
-    Eigen::Isometry3d T_gyros_dvl = vT_g_d->estimate();
-
-    Eigen::Matrix3d R_gt;
-    R_gt << 0, 0, 1,
-            -1, 0, 0,
-            0, -1, 0;
-    cout << "init optimization result: \n"
-         << "R_dvl_c:\n" << T_dvl_c.rotation() << "\n"
-         << "R_dvl_c(eular yaw-pitch-roll):" << T_dvl_c.rotation().eulerAngles(2, 1, 0).transpose() << "\n"
-         << "t_dvl_c:" << T_dvl_c.translation().transpose() << "\n"
-         << "R_dvl_c distance with R_gt(LogSO3()): " << LogSO3(T_dvl_c.rotation().inverse() * R_gt).transpose() << "\n"
-         << "R_gyros_dvl:\n" << T_gyros_dvl.rotation() << "\n"
-         << "R_gyros_dvl(eular yaw-pitch-roll):" << T_gyros_dvl.rotation().eulerAngles(2, 1, 0).transpose() << "\n"
-         << endl;
-
-
-    cv::Mat cvbg = Converter::toCvMat(bg);
-
-    //Keyframes velocities and biases
-    std::cout << "update Keyframes biases and extrinsic paramters" << std::endl;
-
-    cv::Mat T_dvl_c_cv, T_gyros_dvl_cv, T_gyros_c_cv;
-    cv::eigen2cv(T_dvl_c.matrix(), T_dvl_c_cv);
-    T_dvl_c_cv.convertTo(T_dvl_c_cv, CV_32FC1);
-    cv::eigen2cv(T_gyros_dvl.matrix(), T_gyros_dvl_cv);
-    T_gyros_dvl_cv.convertTo(T_gyros_dvl_cv, CV_32FC1);
-    Eigen::Isometry3d T_gyros_c = T_gyros_dvl * T_dvl_c;
-    cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
-    T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
-
-    IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
-
-    const int N = vpKFs.size();
-    for (size_t i = 0; i < N; i++) {
-        KeyFrame *pKFi = vpKFs[i];
-        if (pKFi->mnId > maxKFid) {
-            continue;
-        }
-        pKFi->mImuCalib = extrinsic_para;
-    }
+	// pkf->SetNewBias(b)
 
 }
 

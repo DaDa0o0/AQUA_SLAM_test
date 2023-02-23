@@ -192,7 +192,7 @@ void DVLGroPreIntegration::ReintegrateWithBias(const Bias &b)
             cout << "found error in measurement" << endl;
         }
     }
-    mvMeasurements = aux;
+    // mvMeasurements = aux;
 }
 
 void DVLGroPreIntegration::ReintegrateWithVelocity()
@@ -391,6 +391,8 @@ void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc, co
     // update P_di_di_dk according to gyros and DVL
     // P_di_di_dk = P_di_di_dk-i + V_di * t
     dP_dvl = dP_dvl + dV * dt;
+    // P_bi_bi_bk = P_bi_bi_bk-i + V_di * t
+    dP_acc = dP_acc + dDeltaV*dt + 0.5*dR*acc_b*dt*dt;
 
     //update DeltaV_bi_bj according to acc and gyros
     // DeltaV_bi_bk = DeltaV_bi_bk-1 +
@@ -508,6 +510,14 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     // update pose from Last gyro frame to current dvl frame
     cv::Mat accW = (cv::Mat_<double>(3, 1) << mAngV.x - mb.bwx, mAngV.y - mb.bwy, mAngV.z - mb.bwz);
 
+    cv::Mat acc_b;
+    if(mvMeasurements2.size()>0){
+        auto  acc = mvMeasurements2.back().a;
+        acc_b = (cv::Mat_<double>(3, 1) << acc.x - mb.bax, acc.y - mb.bay, acc.z - mb.baz);
+    }
+    else
+        acc_b = cv::Mat::zeros(3,1,CV_64F);
+
 
     // Total integrated time
     dT += dt;
@@ -516,6 +526,8 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     dP_dvl = dP_dvl + dV * dt;
     //	if (dP.at<double>(0,0)!=0)
     //		cout<<"dP: "<<dP<<endl;
+    dP_acc = dP_acc + dDeltaV*dt + 0.5*dR*acc_b*dt*dt;
+    dDeltaV = dDeltaV + dR * (acc_b * dt);
 
     // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
     cv::Mat v_k_hat = (cv::Mat_<double>(3, 3) << 0, -dV.at<double>(2), dV.at<double>(1), dV.at<double>(

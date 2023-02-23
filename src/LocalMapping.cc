@@ -129,18 +129,6 @@ void LocalMapping::Run()
 				// Find more matches in neighbor keyframes and fuse point duplications
 				SearchInNeighbors();
 			}
-
-			std::chrono::steady_clock::time_point t4 = std::chrono::steady_clock::now();
-			std::chrono::steady_clock::time_point t5 = t4, t6 = t4;
-			// mbAbortBA = false;
-
-			//DEBUG--
-			/*f_lm << setprecision(0);
-			f_lm << mpCurrentKeyFrame->mTimeStamp*1e9 << ",";
-			f_lm << mpCurrentKeyFrame->GetVectorCovisibleKeyFrames().size() << ",";
-			f_lm << mpCurrentKeyFrame->GetMap()->GetAllKeyFrames().size() << ",";
-			f_lm << mlpRecentAddedMapPoints.size() << ",";
-			f_lm << mpCurrentKeyFrame->GetMap()->GetAllMapPoints().size() << ",";*/
 			//--
 			int num_FixedKF_BA = 0;
 
@@ -165,15 +153,11 @@ void LocalMapping::Run()
                                                                       num_FixedKF_BA,
                                                                       mpTracker->mlamda_DVL);
                     }
-                    //						Optimizer::LocalDVLBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpCurrentKeyFrame->GetMap(),num_FixedKF_BA);
-
-                    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 					// auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
 //					mpDenseMapper->Update();
 				}
 
 
-				t5 = std::chrono::steady_clock::now();
 
 				// Initialize IMU here
 				if (!mpAtlas->GetAllMaps().front()->isImuInitialized()) {
@@ -193,15 +177,10 @@ void LocalMapping::Run()
                     current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
                 }
 
-
-
 				// Check redundant local Keyframes
 				// if(mpTracker->mCalibrated){
 				// 	KeyFrameCulling();
 				// }
-
-
-				t6 = std::chrono::steady_clock::now();
 
 			}
             if(mpAtlas->GetAllMaps().front()->isImuInitialized()&&new_KF>10){
@@ -209,30 +188,9 @@ void LocalMapping::Run()
                 mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
                 new_KF = 0;
             }
-			std::chrono::steady_clock::time_point t7 = std::chrono::steady_clock::now();
 
 			mpLoopCloser->InsertKeyFrame(mpCurrentKeyFrame);
-			std::chrono::steady_clock::time_point t8 = std::chrono::steady_clock::now();
 
-			double t_procKF = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t1 - t0).count();
-			double t_MPcull = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t2 - t1).count();
-			double t_CheckMP = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t3 - t2).count();
-			double
-				t_searchNeigh = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t4 - t3).count();
-			double t_Opt = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t5 - t4).count();
-			double t_KF_cull = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t6 - t5).count();
-			double t_Insert = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(t8 - t7).count();
-
-			//DEBUG--
-			/*f_lm << setprecision(6);
-			f_lm << t_procKF << ",";
-			f_lm << t_MPcull << ",";
-			f_lm << t_CheckMP << ",";
-			f_lm << t_searchNeigh << ",";
-			f_lm << t_Opt << ",";
-			f_lm << t_KF_cull << ",";
-			f_lm << setprecision(0) << num_FixedKF_BA << "\n";*/
-			//--
 
 		}
 		else if (Stop() && !mbBadImu) {
