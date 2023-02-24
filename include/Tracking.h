@@ -38,6 +38,7 @@
 #include "GeometricCamera.h"
 
 #include <mutex>
+#include <shared_mutex>
 #include <unordered_set>
 
 #include <Eigen/Core>
@@ -494,6 +495,12 @@ public:
 	Integrator* mpIntegrator;
 
 	LKTracker *mpLKTracker;
+
+    //store all KF during camera loss
+    std::shared_mutex mLossKFMutex;
+    protected: set<KeyFrame*,KFComparator> mvpLossKF;
+public:
+    set<KeyFrame*, KFComparator> getMvpLossKf();
 };
 
 } //namespace ORB_SLAM

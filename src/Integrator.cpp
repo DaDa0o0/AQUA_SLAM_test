@@ -4,6 +4,7 @@
 
 #include "Integrator.h"
 #include "Frame.h"
+#include "KeyFrame.h"
 #include <ros/ros.h>
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
@@ -65,7 +66,7 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
     auto cur_time = cur_F.mTimeStamp;
     auto pre_time = cur_F.mpPrevFrame->mTimeStamp;
     if (pre_time == 0) {
-        ROS_WARN_STREAM("non prev frame, frame timestamp: "<<cur_time);
+        ROS_WARN_STREAM(fixed<<setprecision(6)<<"non prev frame, frame timestamp: "<<cur_time);
         //		Verbose::PrintMess(, Verbose::VERBOSITY_NORMAL);
         cur_F.setIntegrated();
         return;
@@ -307,6 +308,7 @@ bool Integrator::GetDoLossIntegration()
 
 void Integrator::SetLossRefKF(KeyFrame* pKF)
 {
+    ROS_INFO_STREAM(fixed<<setprecision(6)<<"set Loss Ref KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp);
     mpLossRefKF = pKF;
 }
 

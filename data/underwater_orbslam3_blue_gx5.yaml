@@ -81,7 +81,7 @@ Optimizer.KF_init_step: 0.0
 Optimizer.KF_num_for_init: 200
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
-Tracker.KFThresholdForMap: 30
+Tracker.KFThresholdForMap: 10
 Tracker.ReLocalTime: 5
 
 
@@ -113,10 +113,10 @@ IMU.AccWalk: 0.01
 
 VisualIntegration: 0
 
-LeftImgTopic: "/camera/left/image_dehazed"
-RightImgTopic: "/camera/right/image_dehazed"
-#LeftImgTopic: "/img_l"
-#RightImgTopic: "/img_r"
+#LeftImgTopic: "/camera/left/image_dehazed"
+#RightImgTopic: "/camera/right/image_dehazed"
+LeftImgTopic: "/img_l"
+RightImgTopic: "/img_r"
 ImuTopic: "/imu/data"
 DvlTopic: "/bluerov2/DVL"
 EnableLoopDetection: 1

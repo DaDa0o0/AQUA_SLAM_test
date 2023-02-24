@@ -325,7 +325,7 @@ bool LoopClosing::NewDetectCommonRegions()
         return false;
     }
 	//if using stereo and less than 5 keyframes in map, return false
-    if(mpTracker->mSensor == System::STEREO && mpLastMap->GetAllKeyFrames().size() < 5) //12
+    if(mpTracker->mSensor == System::STEREO && mpLastMap->GetAllKeyFrames().size() < mpTracker->mKFThresholdForMap+2) //12
     {
         mpKeyFrameDB->add(mpCurrentKF);
         mpCurrentKF->SetErase();
@@ -1861,6 +1861,13 @@ void LoopClosing::MergeLocal()
 
 			pKFi->UpdateConnections();
 		}
+        auto all_kf =pCurrentMap->GetAllKeyFrames();
+        auto all_mps = pCurrentMap->GetAllMapPoints();
+        vpLocalCurrentWindowKFs.clear();
+        vpMergeConnectedKFs.clear();
+        std::copy(spLocalWindowKFs.begin(), spLocalWindowKFs.end(), std::back_inserter(vpLocalCurrentWindowKFs));
+        std::copy(spMergeConnectedKFs.begin(), spMergeConnectedKFs.end(), std::back_inserter(vpMergeConnectedKFs));
+        Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, all_kf, all_mps, mpAtlas);
 	}
 
     //CheckObservations(spLocalWindowKFs, spMergeConnectedKFs);
@@ -1869,10 +1876,10 @@ void LoopClosing::MergeLocal()
 
     bool bStop = false;
     Verbose::PrintMess("MERGE-VISUAL: Start local BA ", Verbose::VERBOSITY_DEBUG);
-    vpLocalCurrentWindowKFs.clear();
-    vpMergeConnectedKFs.clear();
-    std::copy(spLocalWindowKFs.begin(), spLocalWindowKFs.end(), std::back_inserter(vpLocalCurrentWindowKFs));
-    std::copy(spMergeConnectedKFs.begin(), spMergeConnectedKFs.end(), std::back_inserter(vpMergeConnectedKFs));
+    // vpLocalCurrentWindowKFs.clear();
+    // vpMergeConnectedKFs.clear();
+    // std::copy(spLocalWindowKFs.begin(), spLocalWindowKFs.end(), std::back_inserter(vpLocalCurrentWindowKFs));
+    // std::copy(spMergeConnectedKFs.begin(), spMergeConnectedKFs.end(), std::back_inserter(vpMergeConnectedKFs));
     if (mpTracker->mSensor==System::IMU_MONOCULAR || mpTracker->mSensor==System::IMU_STEREO)
     {
         Verbose::PrintMess("MERGE-VISUAL: Visual-Inertial", Verbose::VERBOSITY_DEBUG);
@@ -1917,12 +1924,8 @@ void LoopClosing::MergeLocal()
             }
 
         }
-
-        bool bOptimizationFinished=false;
-        // Optimizer::OptimizeEssentialGraph(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, bOptimizationFinished, &mbResetActiveMapRequested);
-        ROS_INFO_STREAM("do GlobalVAPoseGraphOptimization!");
-        aaa
-        Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, mpAtlas);
+        // ROS_INFO_STREAM("do GlobalVAPoseGraphOptimization!");
+        // Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, mpAtlas);
 
         // Get Merge Map Mutex
         // unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information

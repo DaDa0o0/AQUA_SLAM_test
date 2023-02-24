@@ -271,7 +271,11 @@ protected:
      std::mutex mMutexFeatures;
      std::mutex mMutexMap;
 };
-
+struct MapPointComp{
+    bool operator()(MapPoint* a, MapPoint* b) const{
+        return a->mnId < b->mnId;
+    }
+};
 } //namespace ORB_SLAM
 
 #endif // MAPPOINT_H

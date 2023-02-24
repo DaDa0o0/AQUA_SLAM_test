@@ -712,6 +712,13 @@ public:
 
 };
 
+struct KFComparator{
+    bool operator()(const KeyFrame* a, const KeyFrame* b) const {
+        return a->mnId < b->mnId;
+    }
+};
+
+
 } //namespace ORB_SLAM
 
 #endif // KEYFRAME_H

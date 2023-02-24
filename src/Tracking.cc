@@ -2582,6 +2582,8 @@ void Tracking::Track()
 
 void Tracking::TrackDVLGyro()
 {
+
+    ROS_DEBUG_STREAM(fixed << setprecision(6)<<"Frame["<<mCurrentFrame.mnId<<"] "<<mCurrentFrame.mTimeStamp);
 	if (bStepByStep) {
 		while (!mbStep) {
 			usleep(500);
@@ -2592,11 +2594,6 @@ void Tracking::TrackDVLGyro()
 		usleep(500);
 	}
 
-	if (mpLocalMapper->mbBadImu) {
-		cout << "TRACK: Reset map because local mapper set the bad imu flag " << endl;
-		mpSystem->ResetActiveMap();
-		return;
-	}
 
 	Map *pCurrentMap = mpAtlas->GetCurrentMap();
 
@@ -2633,7 +2630,6 @@ void Tracking::TrackDVLGyro()
 
 	// Initialization
 	if (mState == NOT_INITIALIZED) {
-		cout << "try to initialize" << endl;
         StereoInitialization();
 
 		mpFrameDrawer->Update(this);
@@ -2642,12 +2638,15 @@ void Tracking::TrackDVLGyro()
 		{
             topicPublishDVLOnly();
 			mLastFrame = Frame(mCurrentFrame);
+            ROS_INFO_STREAM(fixed<<setprecision(6)<<"fail to initialize, Frame["<<mCurrentFrame.mnId<<"], "<<mCurrentFrame.mTimeStamp);
 			return;
 		}
 //        cout<<"initialization success"<<endl;
 		if (mpAtlas->GetAllMaps().size() == 1) {
 			mnFirstFrameId = mCurrentFrame.mnId;
 		}
+        ROS_INFO_STREAM(fixed<<setprecision(6)<<"initialization is done, Frame["<<mCurrentFrame.mnId<<"], "<<mCurrentFrame.mTimeStamp);
+        mLastFrame = Frame(mCurrentFrame);
 	}
 		// after Initialization
 	else {
@@ -2690,6 +2689,7 @@ void Tracking::TrackDVLGyro()
 
 			if (!bOK) {
                 mState = LOST;
+                PredictStateDvlGro();
 			}
 		}
 		else {
@@ -2698,6 +2698,7 @@ void Tracking::TrackDVLGyro()
             if (pCurrentMap->KeyFramesInMap() < mKFThresholdForMap) {
                 mpSystem->ResetActiveMap();
                 mpMapToReset = mpAtlas->GetCurrentMap();
+                mLastFrame = Frame(mCurrentFrame);
                 cout << "Reseting current map..." << endl;
             }
             else {
@@ -2730,6 +2731,7 @@ void Tracking::TrackDVLGyro()
 
             if (!bOK) {
                 ROS_INFO_STREAM("Fail to track local map!");
+                PredictStateDvlGro();
             }
 		}
 
@@ -2864,10 +2866,31 @@ void Tracking::TrackDVLGyro()
                         mpIntegrator->SetDoLossIntegration(false);
                         mCurrentFrame.mpDvlPreintegrationLossRefKF = mpIntegrator->mpIntFromKFBeforeLost_C2C;
                         mCurrentFrame.mpLossRefKF = mpIntegrator->mpLossRefKF;
-                        ROS_INFO_STREAM("Loss Reference KF has beed set");
+                        CreateNewKeyFrame();
+                        ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<mpLastKeyFrame->mnId
+                                             <<"] "<<mpLastKeyFrame->mTimeStamp<<" Loss Reference has beed set to KF["
+                                             <<mpLastKeyFrame->mpLossRefKF->mnId<<"] "<<mpLastKeyFrame->mpLossRefKF->mTimeStamp);
+                        KeyFrame* pkf = mpLastKeyFrame;
+                        std::unique_lock<std::shared_mutex> lock(mLossKFMutex);
+                        while(pkf){
+                            if (!pkf->isBad()){
+                                if(mvpLossKF.count(pkf)==0)
+                                    mvpLossKF.insert(pkf);
+                                pkf = pkf->mPrevKF;
+                            }
+                        }
+                        ROS_INFO_STREAM("KF during loss:");
+                        for(auto pKF:mvpLossKF){
+                            ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
+                                                 <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
+                        }
                     }
+                    else
+                        CreateNewKeyFrame();
                 }
-				CreateNewKeyFrame();
+                else
+				    CreateNewKeyFrame();
+
 
 			}
 
@@ -2883,23 +2906,19 @@ void Tracking::TrackDVLGyro()
 		}
 
 		// Reset if the camera get lost soon after initialization
-		if (mState == LOST || mState == VISUAL_LOST) {
+		if (mState == LOST) {
 			if (pCurrentMap->KeyFramesInMap() <= mKFThresholdForMap) {
-				mpSystem->ResetActiveMap();
-				mpMapToReset = mpAtlas->GetCurrentMap();
-				return;
-			}
-			if ((mSensor == System::IMU_MONOCULAR) || (mSensor == System::IMU_STEREO)
-				|| (mSensor == System::DVL_STEREO)) {
-				if (!mCalibrated) {
-					Verbose::PrintMess("Track lost before IMU initialisation, reseting...", Verbose::VERBOSITY_QUIET);
-					mpSystem->ResetActiveMap();
-					mpMapToReset = mpAtlas->GetCurrentMap();
-					return;
-				}
-			}
+                mpSystem->ResetActiveMap();
+                mpMapToReset = mpAtlas->GetCurrentMap();
+                mLastFrame = Frame(mCurrentFrame);
+                return;
+            }
+            else{
+                CreateMapInAtlas();
+                return;
+            }
 
-			CreateMapInAtlas();
+
 		}
 
 		if (!mCurrentFrame.mpReferenceKF) {
@@ -3344,6 +3363,7 @@ void Tracking::TrackKLT()
 
 void Tracking::StereoInitialization()
 {
+    ROS_INFO_STREAM("try to initialize");
 	if (mCurrentFrame.N > 500) {
 		if (mSensor == System::DVL_STEREO) {
             if (mpIntegrator->GetDoLossIntegration()) {
@@ -3351,13 +3371,7 @@ void Tracking::StereoInitialization()
                 topicPublishDVLOnly();
             }
             else {
-                // cv::Mat T_cj_c0 = cv::Mat::eye(4, 4, CV_32F);
-                // cv::Mat T_cj_d0 = T_cj_c0 * mCurrentFrame.mImuCalib.mT_c_dvl;
                 mCurrentFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
-                //				mCurrentFrame.SetPose(T_cj_d0);
-                //				cv::Mat Rwgyro0 = mCurrentFrame.mImuCalib.mT_c_gyro.rowRange(0, 3).colRange(0, 3).clone();
-                //				cv::Mat twdvl0 = mCurrentFrame.mImuCalib.mT_c_dvl.rowRange(0, 3).col(3).clone();
-                //				mCurrentFrame.SetDvlPoseVelocity(Rwgyro0, twdvl0, cv::Mat::zeros(3, 1, CV_32F));
             }
             if (!mCurrentFrame.mbDVL) {
                 return;
@@ -3381,12 +3395,6 @@ void Tracking::StereoInitialization()
 		// Create KeyFrame
 		KeyFrame *pKFini = new KeyFrame(mCurrentFrame, mpAtlas->GetCurrentMap(), mpKeyFrameDB);
 
-//		if (mpDvlPreintegratedFromLastKF) {
-//			delete mpDvlPreintegratedFromLastKF;
-//			mpDvlPreintegratedFromLastKF = new DVLGroPreIntegration(IMU::Bias(), GetExtrinsicPara());
-//		}
-
-		// Insert KeyFrame in the map
 		mpAtlas->AddKeyFrame(pKFini);
 
 		// Create MapPoints and asscoiate to KeyFrame
@@ -3453,6 +3461,15 @@ void Tracking::StereoInitialization()
 		mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
 		mState = OK;
+
+        if(mpIntegrator->GetDoLossIntegration()){
+            std::unique_lock<std::shared_mutex> lock(mLossKFMutex);
+            mvpLossKF.insert(pKFini);
+        }
+        auto all_loss_kf =getMvpLossKf();
+        if(all_loss_kf.size()>0 && (mpIntegrator->GetDoLossIntegration())){
+            Optimizer::PoseOptimizationDVLIMU(all_loss_kf);
+        }
 	}
 }
 
@@ -3821,6 +3838,14 @@ void Tracking::CreateMapInAtlas()
         mpIntegrator->CreateNewIntFromKFBeforeLoss_D2D(mpIntegrator->mpIntFromKF_C2C);
         mpIntegrator->SetLossRefKF(mpLastKeyFrame);
         mpIntegrator->SetDoLossIntegration(true);
+        std::unique_lock<std::shared_mutex> lock(mLossKFMutex);
+        mvpLossKF.clear();
+        for(auto pKF:mpLastKeyFrame->GetConnectedKeyFrames()){
+            ROS_INFO_STREAM("pKF["<<pKF->mnId<<"] inserted");
+            mvpLossKF.insert(pKF);
+        }
+        mvpLossKF.insert(mpLastKeyFrame);
+
 	}
 
 	if (mpLastKeyFrame) {
@@ -3831,7 +3856,7 @@ void Tracking::CreateMapInAtlas()
 		mpReferenceKF = static_cast<KeyFrame *>(NULL);
 	}
 
-	mLastFrame = Frame();
+	mLastFrame = Frame(mCurrentFrame);
 //	mLastFrame.mTimeStamp = mCurrentFrame.mTimeStamp;
 	mCurrentFrame = Frame();
 	mvIniMatches.clear();
@@ -5998,6 +6023,7 @@ void Tracking::Reset(bool bLocMap)
 	}
 
 	Verbose::PrintMess("   End reseting! ", Verbose::VERBOSITY_NORMAL);
+    ROS_INFO_STREAM("reset done");
 }
 
 void Tracking::ResetActiveMap(bool bLocMap)
@@ -6666,6 +6692,12 @@ void Tracking::GetBeamOrientation(Eigen::Vector4d &alpha, Eigen::Vector4d &beta)
 	std::lock_guard<std::mutex> lock(mBeamOriMutex);
 	alpha = mAlpha;
 	beta = mBeta;
+}
+
+set<KeyFrame*, KFComparator> Tracking::getMvpLossKf()
+{
+    std::shared_lock<std::shared_mutex> lock(mLossKFMutex);
+    return mvpLossKF;
 }
 
 } //namespace ORB_SLAM
