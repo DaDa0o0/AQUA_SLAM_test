@@ -1242,20 +1242,57 @@ void Optimizer::PoseOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs)
 
     // Set KeyFrame vertices (fixed poses and optimizable velocities)
     long maxKFid = (*loss_kfs.rbegin())->mnId;
-    for(auto pKFi:loss_kfs) {
+
+    // iterate ls_kf from last to first, and add vertex to optimizer, and set the last 10 of them as fixed
+    for (auto rit = loss_kfs.rbegin(); rit != loss_kfs.rend(); ++rit) {
+        KeyFrame* pKFi = *rit;
         if (pKFi->isBad()){
             ROS_ERROR_STREAM("bad KF");
             assert(-1);
         }
+        if(pKFi->GetPose().empty()){
+            ROS_ERROR_STREAM("empty pose");
+            continue;
+        }
         VertexPoseDvlGro *VP = new VertexPoseDvlGro(pKFi);
         VP->setId(pKFi->mnId);
         VP->setFixed(true);
-        if (pKFi->mnId == (*loss_kfs.rbegin())->mnId) {
+        if (pKFi->mnId >= maxKFid-5) {
             VP->setFixed(false);
         }
         optimizer.addVertex(VP);
-        // ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
     }
+
+
+    // set<KeyFrame*, KFComparator>::reverse_iterator rit;
+    // for (rit = loss_kfs.rbegin(); rit != loss_kfs.rend(); ++rit) {
+    //     KeyFrame* pKFi = *rit;
+    //     if (pKFi->isBad()){
+    //         ROS_ERROR_STREAM("bad KF");
+    //         assert(-1);
+    //     }
+    //     VertexPoseDvlGro *VP = new VertexPoseDvlGro(pKFi);
+    //     VP->setId(pKFi->mnId);
+    //     VP->setFixed(true);
+    //     if (pKFi->mnId == (*loss_kfs.rbegin())->mnId) {
+    //         VP->setFixed(false);
+    //     }
+    //     optimizer.addVertex(VP);
+    // }
+    // for(auto pKFi:loss_kfs) {
+    //     if (pKFi->isBad()){
+    //         ROS_ERROR_STREAM("bad KF");
+    //         assert(-1);
+    //     }
+    //     VertexPoseDvlGro *VP = new VertexPoseDvlGro(pKFi);
+    //     VP->setId(pKFi->mnId);
+    //     VP->setFixed(true);
+    //     if (pKFi->mnId == (*loss_kfs.rbegin())->mnId) {
+    //         VP->setFixed(false);
+    //     }
+    //     optimizer.addVertex(VP);
+    //     // ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
+    // }
 
     // Biases
     vector<VertexGyroBias*> vpgb;
@@ -1332,6 +1369,10 @@ void Optimizer::PoseOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs)
 
         for(auto pMP:LocalMapPoints){
             if (pMP) {
+                if(pMP->isBad()){
+                    ROS_ERROR_STREAM("bad MP");
+                    continue;
+                }
                 g2o::VertexSBAPointXYZ *vPoint = new g2o::VertexSBAPointXYZ();
                 vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos()));
                 int id = pMP->mnId + maxKFid + 1;
@@ -1350,10 +1391,9 @@ void Optimizer::PoseOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs)
 
                 for (auto ob: observations) {
                     KeyFrame *pKFi = ob.first;
-                    if (pKFi->mnBALocalForKF != (*loss_kfs.begin())->mnId && pKFi->mnBAFixedForKF != (*loss_kfs.begin())->mnId) {
-                        continue;
-                    }
-
+					if(loss_kfs.count(pKFi)==0){
+						continue;
+					}
                     if (!pKFi->isBad()) {
                         const int leftIndex = get<0>(ob.second);
 
@@ -1423,7 +1463,7 @@ void Optimizer::PoseOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs)
             if (pKFi->isBad() || pKFi->mPrevKF->mnId > maxKFid) {
                 continue;
             }
-
+            ROS_INFO_STREAM("add dvl-imu edge: " << pKFi->mPrevKF->mnId << " -> " << pKFi->mnId);
             VertexPoseDvlGro *VP1 = dynamic_cast<VertexPoseDvlGro *>(optimizer.vertex(pKFi->mPrevKF->mnId));
             //				g2o::HyperGraph::Vertex *VV1 = optimizer.vertex(maxKFid + (pKFi->mPrevKF->mnId) + 1);
             VertexPoseDvlGro *VP2 = dynamic_cast<VertexPoseDvlGro *>(optimizer.vertex(pKFi->mnId));
@@ -1454,7 +1494,12 @@ void Optimizer::PoseOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs)
             ei->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
             ei->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
             ei->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * 100);
+            Eigen::Matrix<double, 6, 6> cov = Eigen::Matrix<double, 6, 6>::Identity();
+            // set first 3*3 of cov to be 100 * identity matrix
+            cov.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity() * 100;
+            // set last 3*3 of cov to be 1000 * identity matrix
+            cov.block(3, 3, 3, 3) = Eigen::Matrix3d::Identity() * 0.01;
+            ei->setInformation(cov);
             ei->setId(pKFi->mnId);
             dvl_edges.push_back(ei);
             optimizer.addEdge(ei);

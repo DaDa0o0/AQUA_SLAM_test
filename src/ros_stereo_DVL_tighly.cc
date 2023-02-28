@@ -534,11 +534,14 @@ void ImageGrabber::SyncWithImu2()
                             bad_beam_count++;
                         }
                     }
-                    // if(is_badDVLdata){
-                    //     BOOST_LOG_TRIVIAL(warning) << "skip bad DVL data";
-                    //     mpDvlGb->dvlBuf2.pop();
-                    //     continue;
-                    // }
+                    if(!mpDvlGb->dvlBuf2.front()->velocity_valid){
+                        is_badDVLdata=true;
+                    }
+                    if(is_badDVLdata){
+                        BOOST_LOG_TRIVIAL(warning) << "skip bad DVL data";
+                        mpDvlGb->dvlBuf2.pop();
+                        continue;
+                    }
                     // if(bad_beam_count>1){
                     //     BOOST_LOG_TRIVIAL(warning) << "skip bad DVL data, bad beam number: "<<bad_beam_count;
                     //     mpDvlGb->dvlBuf2.pop();

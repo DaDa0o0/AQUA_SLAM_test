@@ -30,6 +30,8 @@
 #include <octomap/ColorOcTree.h>
 #include <octomap_msgs/conversions.h>
 #include <std_srvs/Empty.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
@@ -53,6 +55,8 @@
 #include <mutex>
 #include <thread>
 
+#include "KeyFrame.h"
+
 using namespace std;
 
 namespace ORB_SLAM3
@@ -70,6 +74,7 @@ public:
 	void PublishImgWithInfo(const sensor_msgs::ImageConstPtr &img);
 	void PublishImgMergeCandidate(const cv::Mat &img);
 	void PublishIntegration(Atlas *pAtlas);
+    void PublishLossKF(set<KeyFrame*,KFComparator> &loss_kfs);
 	void PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time &stamp);
 	void PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const Eigen::Isometry3d &T_d_c, const ros::Time &stamp);
 	void PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp);
@@ -82,6 +87,7 @@ public:
 	                 const ros::Time &stamp,
 	                 const string &id,
 	                 const string &child_id);
+    // publish reference integration path
 	void GenerateFreePointcloud(const pcl::PointXYZRGB &start,
 	                            const pcl::PointXYZRGB &end,
 	                            float resolution,
@@ -108,6 +114,7 @@ protected:
     // publish reference integration path
     nav_msgs::Path m_ref_integration_path;
     boost::shared_ptr<ros::Publisher> mp_ref_integration_path_pub;
+    boost::shared_ptr<ros::Publisher> mp_markers_pub;
 	//publish qulisys pose(if exist),
 	boost::shared_ptr<ros::Publisher> mp_gt_pub;
 	//publish qualisys path

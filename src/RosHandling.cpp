@@ -4,9 +4,11 @@
 
 #include "RosHandling.h"
 #include "Atlas.h"
+#include "KeyFrame.h"
 #include "Map.h"
 #include "System.h"
 #include "LocalMapping.h"
+#include "visualization_msgs/Marker.h"
 #include <fstream>
 using namespace ORB_SLAM3;
 using namespace std;
@@ -45,7 +47,9 @@ RosHandling::RosHandling(System *pSys, LocalMapping *pLocal)
     ros::Publisher ref_integration_path_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tightly/ref_integration_path", 10);
     mp_ref_integration_path_pub =
             boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(ref_integration_path_pub));
-
+    // initialize mp_markers_pub
+    ros::Publisher markers_pub = nh_.advertise<visualization_msgs::MarkerArray>("/ORBSLAM3_tightly/markers", 10);
+    mp_markers_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(markers_pub));
 	ros::Publisher pose_orb_pub = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/orb_pose", 10);
 	mp_pose_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_orb_pub));
 	ros::Publisher odom_orb_pub = nh_.advertise<nav_msgs::Odometry>("/ORBSLAM3_tightly/orb_odom", 10);
@@ -522,6 +526,8 @@ double RosHandling::LinearInterpolation(double start_x, double end_x, double sta
 void RosHandling::PublishIntegration(Atlas *pAtlas)
 {
     auto maps = pAtlas->GetAllMaps();
+    set<KeyFrame*,KFComparator> all_kf;
+    visualization_msgs::MarkerArray all_markers;
     m_integration_path.poses.clear();
     m_path_orb.poses.clear();
     m_ref_integration_path.poses.clear();
@@ -572,6 +578,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 
 
         while (pKF) {
+            all_kf.insert(pKF);
             cv::Mat T_c0_c1_cv = pKF->GetPoseInverse();
             cv::cv2eigen(T_c0_c1_cv, T_c0_c1.matrix());
 
@@ -644,7 +651,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
                 pose_to_pub.pose.orientation.y = rotation_q.y();
                 pose_to_pub.pose.orientation.z = rotation_q.z();
                 pose_to_pub.pose.orientation.w = rotation_q.w();
-                m_ref_integration_path.poses.push_back(pose_to_pub);
+                // m_ref_integration_path.poses.push_back(pose_to_pub);
 
                 m_ref_integration_path.header = pose_to_pub.header;
             }
@@ -710,6 +717,24 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             pose_to_pub.pose.orientation.z = rotation_q.z();
             pose_to_pub.pose.orientation.w = rotation_q.w();
 
+            // add a marker, set header and pose to header and pose of pose_to_pub, and add marker to all_markers
+            visualization_msgs::Marker marker;
+            marker.header = pose_to_pub.header;
+            marker.pose = pose_to_pub.pose;
+            marker.ns = "orb_slam";
+            marker.id = pKF->mnId;
+            marker.type = visualization_msgs::Marker::SPHERE;
+            marker.action = visualization_msgs::Marker::ADD;
+            marker.scale.x = 0.02;
+            marker.scale.y = 0.02;
+            marker.scale.z = 0.02;
+            marker.color.r = 0.0f;
+            marker.color.g = 1.0f;
+            marker.color.b = 0.0f;
+            marker.color.a = 1.0f;
+            marker.lifetime = ros::Duration(0);
+            all_markers.markers.push_back(marker);
+
             m_path_orb.header = pose_to_pub.header;
             m_path_orb.poses.push_back(pose_to_pub);
 
@@ -722,10 +747,69 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 	mp_integration_path_pub->publish(m_integration_path);
 	mp_path_orb_pub->publish(m_path_orb);
     mp_ref_integration_path_pub->publish(m_ref_integration_path);
+    //publish all_marker
+    mp_markers_pub->publish(all_markers);
 //	file_integration_trajectory.close();
 //	file_orb_trajectory.close();
 
 }
+
+void RosHandling::PublishLossKF(set<KeyFrame*, KFComparator> &loss_kfs)
+{
+    if (loss_kfs.empty()) {
+        ROS_INFO_STREAM("No loss KF");
+        return;
+    }
+    visualization_msgs::MarkerArray all_markers;
+    Eigen::Isometry3d T_b_c = Eigen::Isometry3d::Identity();
+    cv::cv2eigen((*loss_kfs.begin())->mImuCalib.mT_gyro_c, T_b_c.matrix());
+    Eigen::Isometry3d T_w_c0 = Eigen::Isometry3d::Identity();
+    Eigen::Matrix3d R_b0_w = (*loss_kfs.begin())->GetMap()->mR_b0_w;
+    ROS_INFO_STREAM("R_b0_w: " << R_b0_w);
+    Eigen::Matrix3d R_w_b0 = R_b0_w.transpose();
+    Eigen::Matrix3d R_w_c0 = R_w_b0 * T_b_c.rotation();
+    T_w_c0.rotate(R_w_c0);
+
+    for (auto pKF: loss_kfs) {
+        cv::Mat T_c0_cj_orb_cv = pKF->GetPoseInverse();
+        Eigen::Isometry3d T_c0_cj_orb = Eigen::Isometry3d::Identity();
+        cv::cv2eigen(T_c0_cj_orb_cv, T_c0_cj_orb.matrix());
+        //		T_c0_cj_orb = T_c_enu.inverse() * T_c0_cj_orb * T_c_enu;
+        Eigen::Isometry3d T_w_cj_orb = T_w_c0 * T_c0_cj_orb;
+
+        geometry_msgs::PoseStamped pose_to_pub;
+        pose_to_pub.header.frame_id = "orb_slam";
+        pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
+        pose_to_pub.pose.position.x = T_w_cj_orb.translation().x();
+        pose_to_pub.pose.position.y = T_w_cj_orb.translation().y();
+        pose_to_pub.pose.position.z = T_w_cj_orb.translation().z();
+        Eigen::Quaterniond rotation_q(T_w_cj_orb.rotation());
+        pose_to_pub.pose.orientation.x = rotation_q.x();
+        pose_to_pub.pose.orientation.y = rotation_q.y();
+        pose_to_pub.pose.orientation.z = rotation_q.z();
+        pose_to_pub.pose.orientation.w = rotation_q.w();
+
+        // add a marker, set header and pose to header and pose of pose_to_pub, and add marker to all_markers
+        visualization_msgs::Marker marker;
+        marker.header = pose_to_pub.header;
+        marker.pose = pose_to_pub.pose;
+        marker.ns = "orb_slam";
+        marker.id = pKF->mnId;
+        marker.type = visualization_msgs::Marker::SPHERE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.scale.x = 0.02;
+        marker.scale.y = 0.02;
+        marker.scale.z = 0.02;
+        marker.color.r = 1.0f;
+        marker.color.g = 0.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 1.0f;
+        marker.lifetime = ros::Duration(0);
+        all_markers.markers.push_back(marker);
+    }
+    mp_markers_pub->publish(all_markers);
+}
+
 void RosHandling::PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec)
 {
 	geometry_msgs::PoseStamped pose_to_pub;
