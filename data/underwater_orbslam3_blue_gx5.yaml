@@ -119,7 +119,7 @@ RightImgTopic: "/camera/right/image_dehazed"
 #RightImgTopic: "/img_r"
 ImuTopic: "/imu/data"
 DvlTopic: "/bluerov2/DVL"
-EnableLoopDetection: 1
+EnableLoopDetection: 0
 
 # IMU to orb
 # only use rotation

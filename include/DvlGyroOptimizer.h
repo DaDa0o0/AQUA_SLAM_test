@@ -35,7 +35,7 @@ public:
 
 	void static LocalDVLBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap, int& num_fixedKF);
 	void static LocalDVLGyroBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap, int& num_fixedKF, double lamda_DVL);
-    void static LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool *pbStopFlag, Map *pMap, int& num_fixedKF, double lamda_DVL);
+    void static LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool *pbStopFlag, Map *pMap, int& num_fixedKF, double lamda_DVL);
 	void static FullDVLGyroBundleAdjustment(bool *pbStopFlag, Map *pMap, double lamda_DVL);
 
 

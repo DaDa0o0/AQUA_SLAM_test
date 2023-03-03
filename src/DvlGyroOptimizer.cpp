@@ -1071,7 +1071,7 @@ void DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(KeyFrame *pKF,
 }
 
 void
-DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, Map* pMap, int &num_fixedKF,
+DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool* pbStopFlag, Map* pMap, int &num_fixedKF,
                                               double lamda_DVL)
 {
     Map *pCurrentMap = pKF->GetMap();
@@ -1129,24 +1129,24 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     int N_map_points = LocalMapPoints.size();
     //	cout << "map point to optimize: " << N_map_points << endl;
 
-    const int maxFixedKF = 30;
-    for (vector<MapPoint *>::iterator it = LocalMapPoints.begin(); it != LocalMapPoints.end(); it++) {
-        map<KeyFrame *, tuple<int, int>> observations = (*it)->GetObservations();
-        for (map<KeyFrame *, tuple<int, int>>::iterator it_ob = observations.begin(); it_ob != observations.end();
-             it_ob++) {
-            KeyFrame *pKFi = it_ob->first;
-            if (pKFi->mnBALocalForKF != pKF->mnId && pKFi->mnBAFixedForKF != pKF->mnId) {
-                pKFi->mnBAFixedForKF = pKF->mnId;
-                if (!pKFi->isBad()) {
-                    FixedKFs.push_back(pKFi);
-                    break;
-                }
-            }
-        }
-        if (FixedKFs.size() >= maxFixedKF) {
-            break;
-        }
-    }
+    // const int maxFixedKF = 30;
+    // for (vector<MapPoint *>::iterator it = LocalMapPoints.begin(); it != LocalMapPoints.end(); it++) {
+    //     map<KeyFrame *, tuple<int, int>> observations = (*it)->GetObservations();
+    //     for (map<KeyFrame *, tuple<int, int>>::iterator it_ob = observations.begin(); it_ob != observations.end();
+    //          it_ob++) {
+    //         KeyFrame *pKFi = it_ob->first;
+    //         if (pKFi->mnBALocalForKF != pKF->mnId && pKFi->mnBAFixedForKF != pKF->mnId) {
+    //             pKFi->mnBAFixedForKF = pKF->mnId;
+    //             if (!pKFi->isBad()) {
+    //                 FixedKFs.push_back(pKFi);
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //     if (FixedKFs.size() >= maxFixedKF) {
+    //         break;
+    //     }
+    // }
     int N_fixed = FixedKFs.size();
 
 
@@ -1176,7 +1176,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         VP->setId(pKFi->mnId);
         VP->setFixed(false);
         optimizer.addVertex(VP);
-        // ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
+        ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
     }
     for (int i = 0; i < FixedKFs.size(); i++) {
         KeyFrame *pKFi = FixedKFs[i];
@@ -1187,7 +1187,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         VP->setId(pKFi->mnId);
         VP->setFixed(true);
         optimizer.addVertex(VP);
-        // ROS_INFO_STREAM("fixed KF: "<<pKFi->mnId);
+        ROS_INFO_STREAM("fixed KF: "<<pKFi->mnId);
     }
 
     // Biases
@@ -1250,7 +1250,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     vT_g_d->setFixed(true);
     optimizer.addVertex(vT_g_d);
 
-    VertexGDir *VGDir = new VertexGDir(pMap->getRGravity());
+    VertexGDir *VGDir = new VertexGDir(pAtlas->getRGravity());
     VGDir->setId((maxKFid + 1)*4+2);
     VGDir->setFixed(true);
     optimizer.addVertex(VGDir);
@@ -1454,8 +1454,44 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     //	std::cout << "start optimization" << std::endl;
     // optimizer.setVerbose(true);
 
-    optimizer.initializeOptimization(0);
-    optimizer.optimize(5);
+    // optimizer.initializeOptimization(0);
+    // optimizer.optimize(5);
+    int mono_outlier;
+    int stereo_outlier;
+    float visula_chi2, dvl_chi2;
+    for (int i = 0; i < 4; i++) {
+        optimizer.initializeOptimization(0);
+        optimizer.optimize(3);
+
+        mono_outlier = 0;
+        stereo_outlier = 0;
+        visula_chi2 = 0;
+        dvl_chi2 = 0;
+        for (auto e_mono: mono_edges) {
+            e_mono->computeError();
+            const float chi2 = e_mono->chi2();
+            if (chi2 > chi2Mono[i]) {
+                e_mono->setLevel(1);
+            }
+            visula_chi2 += chi2;
+        }
+        for (auto e_stereo: stereo_edges) {
+            e_stereo->computeError();
+            const float chi2 = e_stereo->chi2();
+            if (chi2 > chi2Stereo[i]) {
+                e_stereo->setLevel(1);
+            }
+            visula_chi2 += chi2;
+        }
+        for (auto e_dvl: dvl_edges) {
+            e_dvl->computeError();
+            const float chi2 = e_dvl->chi2();
+            dvl_chi2 += chi2;
+            //			cout << "dvl error: " << e_dvl->error().transpose() << endl;
+        }
+        ROS_INFO_STREAM("iteration: " << i << " visual chi2: " << visula_chi2 << " dvl_gyro chi2: " << dvl_chi2);
+    }
+
 
     // for(auto p:vpab){
     //     p->setFixed(false);
@@ -1473,6 +1509,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     // Recover optimized data
     stringstream ss;
     ss<<"LocalVisualAcousticInertial BA"<<"\n";
+    unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
     for (size_t i = 0; i < N; i++) {
         KeyFrame *pKFi = OptKFs[i];
         int kf_id = pKFi->mnId;

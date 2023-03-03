@@ -135,7 +135,7 @@ void LocalMapping::Run()
 			if (!CheckNewKeyFrames() && !stopRequested()) {
 				if (mpAtlas->KeyFramesInMap() > 2) {
                     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-                    if (!mpAtlas->GetCurrentMap()->isImuInitialized()) {
+                    if (!mpAtlas->isDvlImuInitialized()) {
                         Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
                                                          &mbAbortBA,
                                                          mpCurrentKeyFrame->GetMap(),
@@ -147,7 +147,8 @@ void LocalMapping::Run()
                         // 											   mpCurrentKeyFrame->GetMap(),
                         // 											   num_FixedKF_BA,
                         // 											   mpTracker->mlamda_DVL);
-                        DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpCurrentKeyFrame,
+                        DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpAtlas,
+                                                                      mpCurrentKeyFrame,
                                                                       &mbAbortBA,
                                                                       mpCurrentKeyFrame->GetMap(),
                                                                       num_FixedKF_BA,
@@ -1628,6 +1629,7 @@ void LocalMapping::InitializeDvlIMU()
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
+    mpAtlas->SetDvlImuInitialized();
 
 
 	// set new bias for tracking thread, update last frame and current frame pose

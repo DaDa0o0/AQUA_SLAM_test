@@ -1720,7 +1720,7 @@ bool Tracking::PredictStateDvlGro()
             cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_d1);
             t_b0_b1 = R_b0_bf * Dt_bf_b1 + t_b0_bf + R_b0_bf * T_b_d.rotation()  * v_df * pDvlPreintegratedFromKF->dT
                       + 0.5*R_b0_w*Eigen::Vector3d(0,0,-9.8)*pDvlPreintegratedFromKF->dT*pDvlPreintegratedFromKF->dT;
-            Eigen::Vector3d t_b0_b1_dvl = t_b0_bf +  -R_bf_b1*t_b_d + R_b_d*t_df_d1 + t_b_d;
+            Eigen::Vector3d t_b0_b1_dvl = t_b0_bf + R_b0_bf*(-R_bf_b1*t_b_d + R_b_d*t_df_d1 + t_b_d);
             // Eigen::Vector3d t_b0_b1_dvl =  R_b_d*t_df_d1;
             Eigen::Vector3d t_b0_b1_acc_v = t_b0_bf + R_b0_bf * T_b_d.rotation()  * v_df * pDvlPreintegratedFromKF->dT;
 
@@ -1742,9 +1742,9 @@ bool Tracking::PredictStateDvlGro()
             Eigen::Isometry3d T_c0_c1_dvl = T_b_c.inverse() * T_b0_b1_dvl * T_b_c;
             Eigen::Isometry3d T_c0_c1_acc_v = T_b_c.inverse() * T_b0_b1_acc_v * T_b_c;
 			// ROS_INFO_STREAM("Gravity: \n" << R_b0_w);
-			ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss KF[" << pKF->mnId << "]"<< " time: " << pKF->mTimeStamp <<" bias: " << pKF->GetImuBias());
-			ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss integration time: " << pDvlPreintegratedFromKF->dT<<" bias: "
-			<<pDvlPreintegratedFromKF->mb.bax<<", "<<pDvlPreintegratedFromKF->mb.bay<<", "<<pDvlPreintegratedFromKF->mb.baz);
+			ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss KF[" << pKF->mnId << "]"<< " time: " << pKF->mTimeStamp);
+			ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss integration time: "
+            << pDvlPreintegratedFromKF->dT<<" v_d: "<<pDvlPreintegratedFromKF->mVelocity.t());
 			ROS_INFO_STREAM(fixed<<setprecision(6)<<"current frame time: " << mCurrentFrame.mTimeStamp);
             ROS_INFO_STREAM("t_c0_c1:" << T_c0_c1.translation().transpose());
             ROS_INFO_STREAM("t_c0_c1_dvl:" << T_c0_c1_dvl.translation().transpose());
@@ -2921,7 +2921,8 @@ void Tracking::TrackDVLGyro()
                                                  <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
                         }
                         auto loss_kf = mvpLossKF;
-                        Optimizer::PoseOptimizationDVLIMU(loss_kf,mpAtlas, false);
+                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas);
+                        mpRosHandler->PublishLossKF(loss_kf);
                     }
                     else
                         CreateNewKeyFrame();
@@ -2934,7 +2935,7 @@ void Tracking::TrackDVLGyro()
                         mvpLossKF.insert(pkf);
                         ROS_INFO_STREAM("add KF["<<pkf->mnId<<"] to loss KF set");
                         auto loss_kf = mvpLossKF;
-                        Optimizer::PoseOptimizationDVLIMU(loss_kf,mpAtlas, false);
+                        Optimizer::PoseOnlyOptimizationDVLIMU(loss_kf, mpAtlas);
                     }
                 }
 
@@ -3535,10 +3536,10 @@ void Tracking::StereoInitialization()
         }
         auto all_loss_kf =getMvpLossKf();
         if(all_loss_kf.size()>0 && (mpIntegrator->GetDoLossIntegration())){
-            Optimizer::PoseOptimizationDVLIMU(all_loss_kf, mpAtlas, false);
-            ROS_INFO_STREAM("DVL IMU Optimization done");
+            Optimizer::PoseOnlyOptimizationDVLIMU(all_loss_kf, mpAtlas);
+            ROS_DEBUG_STREAM("DVL IMU Optimization done");
             for (auto pKF : all_loss_kf) {
-                ROS_INFO_STREAM(fixed<<setprecision(6)<< "KF[" << pKF->mnId << "] bias: "<<pKF->GetImuBias()
+                ROS_DEBUG_STREAM(fixed<<setprecision(6)<< "KF[" << pKF->mnId << "] bias: "<<pKF->GetImuBias()
                 << " integration duration: " << pKF->mpDvlPreintegrationKeyFrame->dT);
             }
             UpdateFrameDVLGyro(pKFini->GetImuBias(),pKFini);

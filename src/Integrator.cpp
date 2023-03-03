@@ -132,6 +132,14 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
         assert(0);
     }
 
+    // get velocity from DVL
+    // cv::Point3d v(0, 0, 0);
+    // for (auto m: measurements) {
+    //     if ((m.v.x != 0) && (m.v.y != 0) && (m.v.z != 0)) {
+    //         v = m.v;
+    //         break;
+    //     }
+    // }
     // set initial velocity of Frame integration
     if (mpIntFromKF_C2C->bDVL) {
         CreateNewIntFromF_C2C(mpIntFromKF_C2C);

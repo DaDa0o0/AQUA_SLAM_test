@@ -540,7 +540,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
     cv::Mat R_g_d_cv = T_g_d_cv.rowRange(0, 3).colRange(0, 3);
     Eigen::Matrix3d R_g_d = T_g_d.rotation();
     // handle gravity dir
-    Eigen::Matrix3d R_b0_w = maps.front()->getRGravity();
+    Eigen::Matrix3d R_b0_w = pAtlas->getRGravity();
     Eigen::Isometry3d T_w_c0 = Eigen::Isometry3d::Identity();
     Eigen::Matrix3d R_w_c0 = R_b0_w.inverse() * (T_g_d * T_d_c).rotation();
     T_w_c0.rotate(R_w_c0);
