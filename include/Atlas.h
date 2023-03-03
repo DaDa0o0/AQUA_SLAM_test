@@ -30,6 +30,8 @@
 #include <mutex>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/export.hpp>
+#include <shared_mutex>
+#include <thread>
 
 
 namespace ORB_SLAM3
@@ -79,7 +81,7 @@ public:
 
     unsigned long int GetLastInitKFid();
 
-    void SetViewer(Viewer* pViewer);
+    // void SetViewer(Viewer* pViewer);
 
     // Method for change components in the current map
     void AddKeyFrame(KeyFrame* pKF);
@@ -157,7 +159,7 @@ protected:
 
     unsigned long int mnLastInitKFidMap;
 
-    Viewer* mpViewer;
+    // Viewer* mpViewer;
     bool mHasViewer;
 
     // Class references for the map reconstruction from the save file
@@ -170,6 +172,10 @@ protected:
 public:
     //Gravity
     Eigen::Matrix3d mR_b0_w;
+    std::shared_mutex mMutexGravity;
+    Eigen::Matrix3d getRGravity();
+
+    void setRGravity(const Eigen::Matrix3d &mRB0W);
 
 
 }; // class Atlas

@@ -33,7 +33,6 @@ Map::Map():mnMaxKFid(0),mnBigChangeIdx(0), mbImuInitialized(false), mnMapChange(
 mbFail(false), mIsInUse(false), mHasTumbnail(false), mbBad(false), mnMapChangeNotified(0), mbIsInertial(false), mbIMU_BA1(false), mbIMU_BA2(false)
 {
     mnId=nNextId++;
-    mThumbnail = static_cast<GLubyte*>(NULL);
     mColor=Eigen::Vector3d::Zero();
     mR_b0_w.setIdentity();
 }
@@ -43,7 +42,6 @@ Map::Map(int initKFid):mnInitKFid(initKFid), mnMaxKFid(initKFid),mnLastLoopKFid(
                        mnMapChange(0), mbFail(false), mnMapChangeNotified(0), mbIsInertial(false), mbIMU_BA1(false), mbIMU_BA2(false)
 {
     mnId=nNextId++;
-    mThumbnail = static_cast<GLubyte*>(NULL);
 	mColor=Eigen::Vector3d::Zero();
     mR_b0_w.setIdentity();
 }
@@ -53,7 +51,6 @@ Map::Map(int initKFid,Eigen::Vector3d color):mnInitKFid(initKFid), mnMaxKFid(ini
 											 mColor(color)
 {
 	mnId=nNextId++;
-	mThumbnail = static_cast<GLubyte*>(NULL);
     mR_b0_w.setIdentity();
 }
 
@@ -65,9 +62,6 @@ Map::~Map()
     //TODO: erase all keyframes from memory
     mspKeyFrames.clear();
 
-    if(mThumbnail)
-        delete mThumbnail;
-    mThumbnail = static_cast<GLubyte*>(NULL);
 
     mvpReferenceMapPoints.clear();
     mvpKeyFrameOrigins.clear();
@@ -671,6 +665,17 @@ void Map::PostLoadKFID(map<unsigned long, KeyFrame *> &mpKeyFrameId)
 	{
 		mpKeyFrameId[pKFi->mnId] = pKFi;
 	}
+}
+Eigen::Matrix3d Map::getRGravity()
+{
+    std::shared_lock<std::shared_mutex> lock(mMutexGravity);
+    return mR_b0_w;
+}
+
+void Map::setRGravity(const Eigen::Matrix3d &mRB0W)
+{
+    std::unique_lock<std::shared_mutex> lock(mMutexGravity);
+    mR_b0_w = mRB0W;
 }
 
 } //namespace ORB_SLAM3

@@ -18,14 +18,14 @@
 
 #include "System.h"
 #include "Converter.h"
-#include "Viewer.h"
+// #include "Viewer.h"
 #include "FrameDrawer.h"
 #include "Tracking.h"
 #include "Atlas.h"
 #include "LocalMapping.h"
 #include "LoopClosing.h"
 #include <thread>
-#include <pangolin/pangolin.h>
+// #include <pangolin/pangolin.h>
 #include <iomanip>
 #include <openssl/md5.h>
 #include <boost/serialization/base_object.hpp>
@@ -52,7 +52,7 @@ Verbose::eLevel Verbose::th = Verbose::VERBOSITY_NORMAL;
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
                const bool bUseViewer, const int initFr, const string &strSequence, const string &strLoadingFile)
-	: mSensor(sensor), mpViewer(static_cast<Viewer *>(NULL)), mbReset(false), mbResetActiveMap(false),
+	: mSensor(sensor), mbReset(false), mbResetActiveMap(false),
 	  mbActivateLocalizationMode(false), mbDeactivateLocalizationMode(false), mStrVocabularyFilePath(strVocFile)
 {
 	// Output welcome message
@@ -202,7 +202,6 @@ else
 
 	//Create Drawers. These are used by the Viewer
 	mpFrameDrawer = new FrameDrawer(mpAtlas);
-	mpMapDrawer = new MapDrawer(mpAtlas, strSettingsFile);
 
 
 	//set DenseMapper
@@ -216,7 +215,6 @@ else
 	mpTracker = new Tracking(this,
 	                         mpVocabulary,
 	                         mpFrameDrawer,
-	                         mpMapDrawer,
 	                         mpAtlas,
 	                         mpKeyFrameDatabase,
 	                         mRosHandler,
@@ -257,13 +255,13 @@ else
 	mptLoopClosing = new thread(&ORB_SLAM3::LoopClosing::Run, mpLoopCloser);
 
 	//Initialize the Viewer thread and launch
-	if (bUseViewer) {
-		mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker, strSettingsFile);
-		mptViewer = new thread(&Viewer::Run, mpViewer);
-		mpTracker->SetViewer(mpViewer);
-		mpLoopCloser->mpViewer = mpViewer;
-		mpViewer->both = mpFrameDrawer->both;
-	}
+	// if (bUseViewer) {
+	// 	mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker, strSettingsFile);
+	// 	mptViewer = new thread(&Viewer::Run, mpViewer);
+	// 	mpTracker->SetViewer(mpViewer);
+	// 	mpLoopCloser->mpViewer = mpViewer;
+	// 	mpViewer->both = mpFrameDrawer->both;
+	// }
 
 	//Set pointers between threads
 	mpTracker->SetLocalMapper(mpLocalMapper);
@@ -469,12 +467,6 @@ void System::Shutdown()
 {
 	mpLocalMapper->RequestFinish();
 	mpLoopCloser->RequestFinish();
-	if (mpViewer) {
-		mpViewer->RequestFinish();
-		while (!mpViewer->isFinished()) {
-			usleep(5000);
-		}
-	}
 
 	// Wait until all thread have effectively stopped
 	while (!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished() || mpLoopCloser->isRunningGBA()) {
@@ -492,9 +484,6 @@ void System::Shutdown()
 		usleep(5000);
 	}
 
-	if (mpViewer) {
-		pangolin::BindToContext("ORB-SLAM2: Map Viewer");
-	}
 }
 
 void System::SaveTrajectoryTUM(const string &filename)

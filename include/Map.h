@@ -24,13 +24,14 @@
 
 #include <set>
 #include <list>
-#include <pangolin/pangolin.h>
 #include <mutex>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include "ORBVocabulary.h"
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/set.hpp>
+#include <shared_mutex>
+#include <thread>
 
 
 namespace ORB_SLAM3
@@ -215,8 +216,6 @@ protected:
     int mnBigChangeIdx;
 
 
-    // View of the map in aerial sight (for the AtlasViewer)
-    GLubyte* mThumbnail;
 
     bool mIsInUse;
     bool mHasTumbnail;
@@ -229,6 +228,10 @@ protected:
     std::mutex mMutexMap;
 public:
     Eigen::Matrix3d mR_b0_w;
+    std::shared_mutex mMutexGravity;
+    Eigen::Matrix3d getRGravity();
+
+    void setRGravity(const Eigen::Matrix3d &mRB0W);
 };
 
 } //namespace ORB_SLAM3

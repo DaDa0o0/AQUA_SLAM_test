@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 #SET(ROS_BUILD_TYPE RelWithDebInfo)
 #SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -ferror-limit=1000")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DCOMPILEDWITHC11)
 
@@ -209,21 +209,16 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/include/KeyFrame.h
         ${PROJECT_SOURCE_DIR}/include/Atlas.h
         ${PROJECT_SOURCE_DIR}/include/Map.h
-        ${PROJECT_SOURCE_DIR}/include/MapDrawer.h
-        ${PROJECT_SOURCE_DIR}/include/Optimizer.h
+#        ${PROJECT_SOURCE_DIR}/include/MapDrawer.h
         ${PROJECT_SOURCE_DIR}/include/PnPsolver.h
         ${PROJECT_SOURCE_DIR}/include/Frame.h
         ${PROJECT_SOURCE_DIR}/include/KeyFrameDatabase.h
         ${PROJECT_SOURCE_DIR}/include/Sim3Solver.h
         ${PROJECT_SOURCE_DIR}/include/Initializer.h
-        ${PROJECT_SOURCE_DIR}/include/Viewer.h
-        ${PROJECT_SOURCE_DIR}/include/ImuTypes.h
-        ${PROJECT_SOURCE_DIR}/include/DVLGroPreIntegration.h
-        ${PROJECT_SOURCE_DIR}/include/G2oTypes.h
+#        ${PROJECT_SOURCE_DIR}/include/Viewer.h
         ${PROJECT_SOURCE_DIR}/include/CameraModels/GeometricCamera.h
         ${PROJECT_SOURCE_DIR}/include/CameraModels/Pinhole.h
         ${PROJECT_SOURCE_DIR}/include/CameraModels/KannalaBrandt8.h
-        ${PROJECT_SOURCE_DIR}/include/OptimizableTypes.h
         ${PROJECT_SOURCE_DIR}/include/MLPnPsolver.h
         ${PROJECT_SOURCE_DIR}/include/TwoViewReconstruction.h
         ${PROJECT_SOURCE_DIR}/include/RosHandling.h
@@ -241,21 +236,16 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/src/KeyFrame.cc
         ${PROJECT_SOURCE_DIR}/src/Atlas.cc
         ${PROJECT_SOURCE_DIR}/src/Map.cc
-        ${PROJECT_SOURCE_DIR}/src/MapDrawer.cc
-        ${PROJECT_SOURCE_DIR}/src/Optimizer.cc
+#        ${PROJECT_SOURCE_DIR}/src/MapDrawer.cc
         ${PROJECT_SOURCE_DIR}/src/DvlGyroOptimizer.cpp
         ${PROJECT_SOURCE_DIR}/src/PnPsolver.cc
         ${PROJECT_SOURCE_DIR}/src/Frame.cc
         ${PROJECT_SOURCE_DIR}/src/KeyFrameDatabase.cc
         ${PROJECT_SOURCE_DIR}/src/Sim3Solver.cc
         ${PROJECT_SOURCE_DIR}/src/Initializer.cc
-        ${PROJECT_SOURCE_DIR}/src/Viewer.cc
-        ${PROJECT_SOURCE_DIR}/src/ImuTypes.cc
-        ${PROJECT_SOURCE_DIR}/src/DVLGroPreIntegration.cpp
-        ${PROJECT_SOURCE_DIR}/src/G2oTypes.cc
+#        ${PROJECT_SOURCE_DIR}/src/Viewer.cc
         ${PROJECT_SOURCE_DIR}/src/CameraModels/Pinhole.cpp
         ${PROJECT_SOURCE_DIR}/src/CameraModels/KannalaBrandt8.cpp
-        ${PROJECT_SOURCE_DIR}/src/OptimizableTypes.cpp
         ${PROJECT_SOURCE_DIR}/src/MLPnPsolver.cpp
         ${PROJECT_SOURCE_DIR}/src/TwoViewReconstruction.cc
         ${PROJECT_SOURCE_DIR}/src/RosHandling.cpp
@@ -263,20 +253,36 @@ add_library(${PROJECT_NAME} SHARED
         ${PROJECT_SOURCE_DIR}/src/cv_bridge.cpp
         ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp
         ${PROJECT_SOURCE_DIR}/src/LKTracker.cpp src/FrameKLT.cpp src/FrameKLT.h src/Integrator.cpp src/Integrator.h)
-
-target_link_libraries(${PROJECT_NAME}
+add_library(${PROJECT_NAME}_Optmization SHARED
+        ${PROJECT_SOURCE_DIR}/include/Optimizer.h
+        ${PROJECT_SOURCE_DIR}/include/ImuTypes.h
+        ${PROJECT_SOURCE_DIR}/include/DVLGroPreIntegration.h
+        ${PROJECT_SOURCE_DIR}/include/G2oTypes.h
+        ${PROJECT_SOURCE_DIR}/include/OptimizableTypes.h
+        ${PROJECT_SOURCE_DIR}/src/Optimizer.cc
+        ${PROJECT_SOURCE_DIR}/src/ImuTypes.cc
+        ${PROJECT_SOURCE_DIR}/src/DVLGroPreIntegration.cpp
+        ${PROJECT_SOURCE_DIR}/src/G2oTypes.cc
+        ${PROJECT_SOURCE_DIR}/src/OptimizableTypes.cpp)
+target_link_libraries(${PROJECT_NAME}_Optmization
         ${OpenCV_LIBS}
         ${EIGEN3_LIBS}
-        ${Pangolin_LIBRARIES}
         ${Boost_LIBRARIES}
         ${PCL_LIBRARIES}
         fmt::fmt-header-only
         ${Sophus_LIBRARIES}
-        #        ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
-        #        ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
-        #        ${PROJECT_SOURCE_DIR}/Thirdparty/octomap/lib/liboctomap.so
         DBoW2
         g2o
+
+        ${catkin_LIBRARIES}
+        )
+target_link_libraries(${PROJECT_NAME}
+        ${OpenCV_LIBS}
+        ${EIGEN3_LIBS}
+        ${Boost_LIBRARIES}
+        ${PCL_LIBRARIES}
+        fmt::fmt-header-only
+        DBoW2
         octomap
         ${catkin_LIBRARIES}
         -lboost_serialization
@@ -294,7 +300,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/dvl1_node.cpp)
 add_executable(stereo_dvl2 ${PROJECT_SOURCE_DIR}/src/ros_stereo_DVL_tighly.cc)
-target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME})
+target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
 add_dependencies(stereo_dvl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

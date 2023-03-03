@@ -73,7 +73,7 @@ DenseMapper::DenseMapper(string settingFile)
 void DenseMapper::InsertNewKF(KeyFrame *pKF)
 {
 	if (pKF->GetMap()->GetAllKeyFrames().size() < 5) {
-		ROS_INFO_STREAM("DenserMapper: less than 5 KF in current map, skip");
+		ROS_DEBUG_STREAM("DenserMapper: less than 5 KF in current map, skip");
 		return;
 	}
 	else if (pKF->GetMap()->GetAllKeyFrames().size() == 5) {
@@ -349,7 +349,7 @@ void DenseMapper::Update()
 		std::lock_guard<std::mutex> lock(mKFMutex);
 		for (auto kf_pointcloud: mKFWithPointCloud) {
 			if (kf_pointcloud.first->isBad()){
-				ROS_INFO_STREAM("DenserMapper: find bad KF, remove and skip");
+                ROS_DEBUG_STREAM("DenserMapper: find bad KF, remove and skip");
 				mKFWithPointCloud.erase(kf_pointcloud.first);
 				return;
 			}

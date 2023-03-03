@@ -17,11 +17,13 @@
 */
 
 #include "Atlas.h"
-#include "Viewer.h"
+#include <ros/ros.h>
+// #include "Viewer.h"
 
 #include "GeometricCamera.h"
 #include "Pinhole.h"
 #include "KannalaBrandt8.h"
+#include "KeyFrameDatabase.h"
 
 #include <opencv2/core.hpp>
 #include <Eigen/Core>
@@ -113,11 +115,11 @@ unsigned long int Atlas::GetLastInitKFid()
     return mnLastInitKFidMap;
 }
 
-void Atlas::SetViewer(Viewer* pViewer)
-{
-    mpViewer = pViewer;
-    mHasViewer = true;
-}
+// void Atlas::SetViewer(Viewer* pViewer)
+// {
+//     mpViewer = pViewer;
+//     mHasViewer = true;
+// }
 
 void Atlas::AddKeyFrame(KeyFrame* pKF)
 {
@@ -461,6 +463,18 @@ void Atlas::SetDvlImuInitialized()
 {
 	unique_lock<mutex> lock(mMutexAtlas);
 	mDvlImuInitailized = true;
+}
+
+Eigen::Matrix3d Atlas::getRGravity()
+{
+    std::shared_lock<std::shared_mutex> lock(mMutexGravity);
+    return mR_b0_w;
+}
+
+void Atlas::setRGravity(const Eigen::Matrix3d &mRB0W)
+{
+    std::unique_lock<std::shared_mutex> lock(mMutexGravity);
+    mR_b0_w = mRB0W;
 }
 
 } //namespace ORB_SLAM3

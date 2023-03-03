@@ -1206,7 +1206,8 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
         VA->setFixed(true);
         optimizer.addVertex(VA);
-        if(vpab.size()<5){
+        if(pKFi->mnId>maxKFid - 5){
+			ROS_DEBUG_STREAM("add acc bias to optimize: "<<pKFi->mnId);
             vpab.push_back(VA);
         }
 
@@ -1227,7 +1228,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
         VA->setFixed(true);
         optimizer.addVertex(VA);
-        vpab.push_back(VA);
+        // vpab.push_back(VA);
 
         VertexVelocity *VV = new VertexVelocity(pKFi);
         VV->setId((maxKFid + 1)*3 + pKFi->mnId);
@@ -1249,7 +1250,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     vT_g_d->setFixed(true);
     optimizer.addVertex(vT_g_d);
 
-    VertexGDir *VGDir = new VertexGDir(pMap->mR_b0_w);
+    VertexGDir *VGDir = new VertexGDir(pMap->getRGravity());
     VGDir->setId((maxKFid + 1)*4+2);
     VGDir->setFixed(true);
     optimizer.addVertex(VGDir);
@@ -1365,8 +1366,8 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
             //				g2o::HyperGraph::Vertex *VV2 = optimizer.vertex(maxKFid + (pKFi->mnId) + 1);
             g2o::HyperGraph::Vertex *VV1 = optimizer.vertex((maxKFid + 1)*3 + pKFi->mPrevKF->mnId);
             g2o::HyperGraph::Vertex *VV2 = optimizer.vertex((maxKFid + 1)*3 + pKFi->mnId);
-            g2o::HyperGraph::Vertex *VG = optimizer.vertex(maxKFid + 1 + pKFi->mPrevKF->mnId);
-            g2o::HyperGraph::Vertex *VA = optimizer.vertex((maxKFid + 1)*2 + pKFi->mPrevKF->mnId);
+            g2o::HyperGraph::Vertex *VG = optimizer.vertex(maxKFid + 1 + pKFi->mnId);
+            g2o::HyperGraph::Vertex *VA = optimizer.vertex((maxKFid + 1)*2 + pKFi->mnId);
             g2o::HyperGraph::Vertex *VT_d_c = optimizer.vertex((maxKFid + 1)*4);
             g2o::HyperGraph::Vertex *VT_g_d = optimizer.vertex((maxKFid + 1)*4+1);
             g2o::HyperGraph::Vertex *VR_b0_w = optimizer.vertex((maxKFid + 1) * 4 + 2);
@@ -1424,6 +1425,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
             // eG1->setId(maxKFid+1 + pKFi->mnId);
             // only add first 5 KF for bias optimization
             if((pKF->mnId - pKFi->mnId)<5){
+				ROS_DEBUG_STREAM("add bias edge: "<<pKFi->mPrevKF->mnId<<"->"<<pKFi->mnId);
                 EdgeDvlIMUGravityRefineWithBias *eG1 = new EdgeDvlIMUGravityRefineWithBias(pKFi->mpDvlPreintegrationKeyFrame);
                 eG1->setLevel(1);
                 eG1->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
@@ -1435,7 +1437,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
                 eG1->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
                 eG1->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
                 eG1->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-                eG1->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
+                eG1->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
                 optimizer.addEdge(eG1);
                 // ROS_INFO_STREAM("add bias refine edge, KF: "<<pKFi->mnId);
             }
@@ -1455,10 +1457,10 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
     optimizer.initializeOptimization(0);
     optimizer.optimize(5);
 
-    for(auto p:vpab){
-        p->setFixed(false);
-    }
-    // optimizer.initializeOptimization(1);
+    // for(auto p:vpab){
+    //     p->setFixed(false);
+    // }
+    // optimizer.initializeOptimization(0);
     // optimizer.optimize(2);
 
 
@@ -1499,9 +1501,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(KeyFrame* pKF, bool* pbStopFlag, M
         IMU::Bias b(v_ab->estimate().x(), v_ab->estimate().y(), v_ab->estimate().z(),
                     v_gb->estimate().x(), v_gb->estimate().y(), v_gb->estimate().z());
         pKFi->SetNewBias(b);
-        if((pKF->mnId - pKFi->mnId)<5){
-            ss<<"KF["<<pKFi->mnId<<"] bias[acc gyros]: "<<v_ab->estimate().transpose()<<" "<<v_gb->estimate().transpose()<<"\n";
-        }
+        ss<<"KF["<<pKFi->mnId<<"] bias[acc gyros]: "<<v_ab->estimate().transpose()<<" "<<v_gb->estimate().transpose()<<"\n";
 
     }
 	// ROS_INFO_STREAM(ss.str());

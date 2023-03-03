@@ -92,7 +92,7 @@ public:
 
 	void ClearQueue();
 
-    Viewer* mpViewer;
+    // Viewer* mpViewer;
     ros::NodeHandlePtr mpNH;
     boost::shared_ptr<image_transport::ImageTransport> mpIt;
     // publisher for current keyframe

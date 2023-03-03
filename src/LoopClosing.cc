@@ -325,7 +325,7 @@ bool LoopClosing::NewDetectCommonRegions()
         return false;
     }
 	//if using stereo and less than 5 keyframes in map, return false
-    if(mpTracker->mSensor == System::STEREO && mpLastMap->GetAllKeyFrames().size() < mpTracker->mKFThresholdForMap+2) //12
+    if(mpLastMap->GetAllKeyFrames().size() < mpTracker->mKFThresholdForMap+10) //12
     {
         mpKeyFrameDB->add(mpCurrentKF);
         mpCurrentKF->SetErase();
@@ -1658,7 +1658,7 @@ void LoopClosing::MergeLocal()
 			return;
 		}
 		//check if there is bad data
-		ROS_INFO_STREAM("check KF size: " << vCorrectedSim3.size());
+        ROS_DEBUG_STREAM("check KF size: " << vCorrectedSim3.size());
 		for (auto it: vCorrectedSim3) {
 
 			if (!(it.first) || (it.first->isBad())) {
@@ -1671,7 +1671,7 @@ void LoopClosing::MergeLocal()
 				mpLocalMapper->Release();
 				return;
 			}
-			ROS_INFO_STREAM("KF check before map merge, KF: " << it.first->mnId << ", " << " in map: "
+            ROS_DEBUG_STREAM("KF check before map merge, KF: " << it.first->mnId << ", " << " in map: "
 			                                                  << it.first->GetMap()->GetId() << ", map is bad? "
 			                                                  << it.first->GetMap()->IsBad());
 		}
@@ -1956,8 +1956,8 @@ void LoopClosing::MergeLocal()
             pMergeMap->AddKeyFrame(pKFi);
             pCurrentMap->EraseKeyFrame(pKFi);
         }
-        ROS_INFO_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
-        ROS_INFO_STREAM("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map");
+        ROS_DEBUG_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
+        ROS_DEBUG_STREAM("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map");
         //            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
         //            Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
 
@@ -1970,7 +1970,7 @@ void LoopClosing::MergeLocal()
             pMergeMap->AddMapPoint(pMPi);
             pCurrentMap->EraseMapPoint(pMPi);
         }
-        ROS_INFO_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
+        ROS_DEBUG_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
         mpAtlas->SetMapBad(pCurrentMap);
 
         Verbose::PrintMess("MERGE-VISUAL: Optimaze the essential graph", Verbose::VERBOSITY_DEBUG);

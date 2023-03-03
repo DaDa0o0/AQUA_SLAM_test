@@ -525,15 +525,15 @@ void ImageGrabber::SyncWithImu2()
 					double t = mpDvlGb->dvlBuf2.front()->header.stamp.toSec();
                     //skip bad DVL
                     bool is_badDVLdata=false;
-                    int bad_beam_count = 0;
-                    for(auto beam:mpDvlGb->dvlBuf2.front()->beams){
-                        if(beam.rssi<0){
-                            is_badDVLdata=true;
-                        }
-                        if(beam.rssi*2<beam.nsd){
-                            bad_beam_count++;
-                        }
-                    }
+                    // int bad_beam_count = 0;
+                    // for(auto beam:mpDvlGb->dvlBuf2.front()->beams){
+                    //     if(beam.rssi<0){
+                    //         is_badDVLdata=true;
+                    //     }
+                    //     if(beam.rssi*2<beam.nsd){
+                    //         bad_beam_count++;
+                    //     }
+                    // }
                     if(!mpDvlGb->dvlBuf2.front()->velocity_valid){
                         is_badDVLdata=true;
                     }

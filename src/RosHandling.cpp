@@ -265,7 +265,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 	mp_cloud_free->clear();
 	mp_octree->clear();
     Map* p_first_map = pAtlas->GetAllMaps().front();
-    Eigen::Matrix3d R_b0_w = p_first_map->mR_b0_w;
+    Eigen::Matrix3d R_b0_w = pAtlas->getRGravity();
     cv::Mat T_b_c_cv = p_first_map->GetOriginKF()->mImuCalib.mT_gyro_c.clone();
     cv::Mat T_d_c = p_first_map->GetOriginKF()->mImuCalib.mT_dvl_c.clone();
     Eigen::Isometry3d T_b_c = Eigen::Isometry3d::Identity();cv::cv2eigen(T_b_c_cv,T_b_c.matrix());
@@ -281,7 +281,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 	vector<Map *> allMaps = pAtlas->GetAllMaps();
 	for (vector<Map *>::iterator it = allMaps.begin(); it != allMaps.end(); it++) {
 		Map *pMap = *it;
-        Eigen::Matrix3d R_b0_w = pMap->mR_b0_w;
+        // Eigen::Matrix3d R_b0_w = pAtlas->getRGravity();
         // cv::Mat T_b_c_cv = pMap->GetOriginKF()->mImuCalib.mT_gyro_c.clone();
         // Eigen::Isometry3d T_b_c = Eigen::Isometry3d::Identity();
         // cv::cv2eigen(T_b_c_cv,T_b_c.matrix());
@@ -540,7 +540,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
     cv::Mat R_g_d_cv = T_g_d_cv.rowRange(0, 3).colRange(0, 3);
     Eigen::Matrix3d R_g_d = T_g_d.rotation();
     // handle gravity dir
-    Eigen::Matrix3d R_b0_w = maps.front()->mR_b0_w;
+    Eigen::Matrix3d R_b0_w = maps.front()->getRGravity();
     Eigen::Isometry3d T_w_c0 = Eigen::Isometry3d::Identity();
     Eigen::Matrix3d R_w_c0 = R_b0_w.inverse() * (T_g_d * T_d_c).rotation();
     T_w_c0.rotate(R_w_c0);
@@ -601,7 +601,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
                 Eigen::Isometry3d T_c0_cf;
                 cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
 
-                Eigen::Matrix3d R_b0_w_ref = pKF->GetMap()->mR_b0_w;
+                Eigen::Matrix3d R_b0_w_ref = pKF->GetMap()->getRGravity();
                 Eigen::Isometry3d T_w_c0_ref = Eigen::Isometry3d::Identity();
                 Eigen::Matrix3d R_w_c0_ref = R_b0_w_ref.inverse() * (T_g_d * T_d_c).rotation();
                 T_w_c0_ref.rotate(R_w_c0_ref);
@@ -764,8 +764,8 @@ void RosHandling::PublishLossKF(set<KeyFrame*, KFComparator> &loss_kfs)
     Eigen::Isometry3d T_b_c = Eigen::Isometry3d::Identity();
     cv::cv2eigen((*loss_kfs.begin())->mImuCalib.mT_gyro_c, T_b_c.matrix());
     Eigen::Isometry3d T_w_c0 = Eigen::Isometry3d::Identity();
-    Eigen::Matrix3d R_b0_w = (*loss_kfs.begin())->GetMap()->mR_b0_w;
-    ROS_INFO_STREAM("R_b0_w: " << R_b0_w);
+    Eigen::Matrix3d R_b0_w = (*loss_kfs.begin())->GetMap()->getRGravity();
+    ROS_DEBUG_STREAM("R_b0_w: " << R_b0_w);
     Eigen::Matrix3d R_w_b0 = R_b0_w.transpose();
     Eigen::Matrix3d R_w_c0 = R_w_b0 * T_b_c.rotation();
     T_w_c0.rotate(R_w_c0);

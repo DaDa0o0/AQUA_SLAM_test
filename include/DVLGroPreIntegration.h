@@ -292,7 +292,7 @@ public:
 	 * dR: R_gi_gj. during integrtion R_gi_gk
 	 * dV: V_di
 	 * dP_dvl: t_di_didj, during integration t_di_didk
-	 * dP_acc: t_di_didj, during integration t_di_didk
+	 * dP_acc: t_bi_bibj, during integration t_bi_bibk
 	 * dDeltaV: Delta_V_bi_bj = R_bi_w * (V_w_bj - V_w_bi - g_w * delta_t_i_j)
 	 */
 	cv::Mat dR, dV, dP_dvl, dDeltaV, dP_acc;

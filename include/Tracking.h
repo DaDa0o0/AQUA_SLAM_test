@@ -30,7 +30,7 @@
 #include"KeyFrameDatabase.h"
 #include"ORBextractor.h"
 #include "Initializer.h"
-#include "MapDrawer.h"
+// #include "MapDrawer.h"
 #include <DVLGroPreIntegration.h>
 
 #include "ImuTypes.h"
@@ -64,7 +64,6 @@ public:
 	Tracking(System *pSys,
 	         ORBVocabulary *pVoc,
 	         FrameDrawer *pFrameDrawer,
-	         MapDrawer *pMapDrawer,
 	         Atlas *pAtlas,
 	         KeyFrameDatabase *pKFDB,
 	         RosHandling *pRosHandler,
@@ -103,7 +102,7 @@ public:
 
 	void SetLocalMapper(LocalMapping *pLocalMapper);
 	void SetLoopClosing(LoopClosing *pLoopClosing);
-	void SetViewer(Viewer *pViewer);
+	// void SetViewer(Viewer *pViewer);
 	void SetStepByStep(bool bSet);
 	void SetExtrinsicPara(IMU::Calib &calib);
 
@@ -359,6 +358,7 @@ protected:
 	std::mutex mMutexExtrinsic;
 
 	// Last Bias Estimation (at keyframe creation)
+	std::shared_mutex mBiasMutex;
 	IMU::Bias mLastBias;
 
 	// In case of performing only localization, this flag is true when there are no matches to
@@ -392,9 +392,9 @@ protected:
 	System *mpSystem;
 
 	//Drawers
-	Viewer *mpViewer;
+	// Viewer *mpViewer;
 	FrameDrawer *mpFrameDrawer;
-	MapDrawer *mpMapDrawer;
+	// MapDrawer *mpMapDrawer;
 	bool bStepByStep;
 
 	//Atlas
@@ -480,6 +480,7 @@ public:
 	cv::Mat mImRight;
 	RosHandling *mpRosHandler;
 	bool mCalibrated;
+    bool mInitialized;
 	bool mVisualIntegration;
 	int mKF_num_for_init;
 	int mKFThresholdForMap;
@@ -495,6 +496,8 @@ public:
 	Integrator* mpIntegrator;
 
 	LKTracker *mpLKTracker;
+
+	IMU::Bias mLastBiasBeforeLost;
 
     //store all KF during camera loss
     std::shared_mutex mLossKFMutex;

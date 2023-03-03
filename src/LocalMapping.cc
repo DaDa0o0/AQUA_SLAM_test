@@ -152,6 +152,8 @@ void LocalMapping::Run()
                                                                       mpCurrentKeyFrame->GetMap(),
                                                                       num_FixedKF_BA,
                                                                       mpTracker->mlamda_DVL);
+						mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
+
                     }
 					// auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
 //					mpDenseMapper->Update();
@@ -1625,6 +1627,9 @@ void LocalMapping::InitializeDvlIMU()
 //	Optimizer::DvlGyroInitOptimization5(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
+    mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
+
+
 	// set new bias for tracking thread, update last frame and current frame pose
 //	mpTracker->mLastKfBeforeLoss=NULL;
 //	mpTracker->mpDvlPreintegratedFromLastKFBeforeLost=NULL;
@@ -1649,6 +1654,7 @@ void LocalMapping::InitializeDvlIMU()
 	mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
 	mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
 	mpTracker->mCalibrated = true;
+	mpTracker->mInitialized = true;
 	bInitializing = false;
 	mpTracker->mpRosHandler->UpdateMap(mpAtlas);
 	mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
