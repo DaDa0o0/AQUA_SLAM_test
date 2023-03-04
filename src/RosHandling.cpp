@@ -657,7 +657,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             }
 
             cv::Mat R_gi_gj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaRotation(pKF->GetImuBias());
-            cv::Mat t_di_dj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaPosition(pKF->GetImuBias());
+            cv::Mat t_di_dj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDVLPosition(pKF->GetImuBias());
             cv::Mat R_di_dj_cv = R_g_d_cv.t() * R_gi_gj_cv * R_g_d_cv;
             Eigen::Matrix3d R_di_dj;
             cv::cv2eigen(R_di_dj_cv, R_di_dj);

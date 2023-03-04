@@ -1716,7 +1716,7 @@ bool Tracking::PredictStateDvlGro()
             Eigen::Vector3d Dt_bf_b1 = Eigen::Vector3d::Zero();
             Eigen::Vector3d t_df_d1 = Eigen::Vector3d::Zero();
              cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_bf_b1);
-            cv::cv2eigen(pDvlPreintegratedFromKF->dP_acc, Dt_bf_b1);
+            cv::cv2eigen(pDvlPreintegratedFromKF->GetDeltaPosition(pDvlPreintegratedFromKF->mb), Dt_bf_b1);
             cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_d1);
             t_b0_b1 = R_b0_bf * Dt_bf_b1 + t_b0_bf + R_b0_bf * T_b_d.rotation()  * v_df * pDvlPreintegratedFromKF->dT
                       + 0.5*R_b0_w*Eigen::Vector3d(0,0,-9.8)*pDvlPreintegratedFromKF->dT*pDvlPreintegratedFromKF->dT;
@@ -1811,7 +1811,7 @@ bool Tracking::PredictStateDvlGro()
         cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_di_di_dj);
         Eigen::Matrix3d R_di_dj = T_g_d.rotation().inverse() * R_gi_gj * T_g_d.rotation();
         Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
-        T_di_dj.pretranslate(t_di_di_dj);
+        // T_di_dj.pretranslate(t_di_di_dj);
         T_di_dj.rotate(R_di_dj);
         Eigen::Isometry3d T_c0_cj = T_c0_ci * T_d_c.inverse() * T_di_dj * T_d_c;
         cv::Mat T_cj_c0_cv(4, 4, CV_32F);
@@ -2915,14 +2915,6 @@ void Tracking::TrackDVLGyro()
                                 pkf = pkf->mPrevKF;
                             }
                         }
-                        ROS_INFO_STREAM("KF during loss:");
-                        for(auto pKF:mvpLossKF){
-                            ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
-                                                 <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
-                        }
-                        auto loss_kf = mvpLossKF;
-                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas);
-                        mpRosHandler->PublishLossKF(loss_kf);
                     }
                     else
                         CreateNewKeyFrame();

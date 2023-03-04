@@ -1510,7 +1510,7 @@ void EdgeDvlIMUInitWithoutBias::computeError()
     // mpInt->ReintegrateWithBias(b);
 
     // mpInt->ReintegrateWithVelocity();
-    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
 
 
     // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
@@ -1566,10 +1566,10 @@ void EdgeDvlIMUInitRefineWithBias::computeError()
     Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
 
     IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
-    mpInt->ReintegrateWithBias(b);
+    // mpInt->ReintegrateWithBias(b);
 
     // mpInt->ReintegrateWithVelocity();
-    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
 
 
     // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
@@ -1627,7 +1627,7 @@ void EdgeDvlIMUGravityRefine::computeError()
     // mpInt->ReintegrateWithBias(b);
 
     // mpInt->ReintegrateWithVelocity();
-    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
 
 
     // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
@@ -1688,12 +1688,12 @@ void EdgeDvlIMUGravityRefineWithBias::computeError()
     Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
 
     IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
-    mpInt->ReintegrateWithBias(b);
+    // mpInt->ReintegrateWithBias(b);
 
     // mpInt->ReintegrateWithVelocity();
     const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
-    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
-    const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->dP_acc.clone());
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
+    const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->GetDeltaPosition(b));
 
 
 
@@ -1763,12 +1763,12 @@ void EdgeDvlIMUWithBias::computeError()
     Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
 
     IMU::Bias b(VA->estimate().x(),VA->estimate().y(),VA->estimate().z(), VG->estimate().x(),VG->estimate().y(),VG->estimate().z());
-    mpInt->ReintegrateWithBias(b);
+    // mpInt->ReintegrateWithBias(b);
 
     // mpInt->ReintegrateWithVelocity();
     const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
-    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
-    const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->dP_acc.clone());
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
+    const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->GetDeltaPosition(b));
 
 
 
@@ -1843,8 +1843,8 @@ void EdgeDvlIMU::computeError()
 
     // mpInt->ReintegrateWithVelocity();
     const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
-    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->dDeltaV);
-    const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->dP_acc.clone());
+    const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
+    const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->GetDeltaPosition(b));
 
 
 
@@ -1904,7 +1904,7 @@ void EdgeDvlGyroBA::computeError()
 	//	const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b,R_g_d));
 	//	const Eigen::Vector3d dP=Converter::toVector3d(mpInt->GetDeltaPosition(b,R_g_d));
 	const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
-	const Eigen::Vector3d dP=Converter::toVector3d(mpInt->GetDeltaPosition(b));
+	const Eigen::Vector3d dP=Converter::toVector3d(mpInt->GetDVLPosition(b));
 
 	//	Eigen::Isometry3d T_gi_gj_mea=Eigen::Isometry3d::Identity();
 	//	Eigen::Isometry3d T_gi_gj_est=Eigen::Isometry3d::Identity();

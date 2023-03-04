@@ -406,8 +406,9 @@ void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc, co
 
     //todo_tightly
     //	add velocity jacobians
-    //  Update position and velocity jacobians wrt bias correction
-    JPg = JPg - dR * dt * v_k_hat * JRg;
+    JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
+    JVa = JVa - dR*dt;
+
 
 
 
@@ -503,8 +504,8 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     }
     else {
         //		dV = dR * v;
-        mVelocity = (v+mVelocity)/2;
-        // mVelocity = v.clone();
+        // mVelocity = (v+mVelocity)/2;
+        mVelocity = v.clone();
         dV = mR_g_d.t() * dR * mR_g_d * mVelocity;
     }
     // update pose from Last gyro frame to current dvl frame
@@ -536,7 +537,8 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     //todo_tightly
     //	add velocity jacobians
     //  Update position and velocity jacobians wrt bias correction
-    JPg = JPg - dR * dt * v_k_hat * JRg;
+    JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
+    JVa = JVa - dR*dt;
 
 
     // Update delta rotation
@@ -704,9 +706,19 @@ cv::Mat DVLGroPreIntegration::GetDeltaVelocity(const Bias &b_)
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    cv::Mat V = dV + JVg * dbg + JVa * dba;
-    V.convertTo(V, CV_32F);
+    cv::Mat V = dDeltaV  + JVa * dba;
+    // V.convertTo(V, CV_32F);
     return V;
+}
+
+cv::Mat DVLGroPreIntegration::GetDVLPosition(const Bias &b_)
+{
+    std::unique_lock<std::mutex> lock(mMutex);
+    cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
+    cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
+    cv::Mat P = dP_dvl.clone();
+    P.convertTo(P, CV_32F);
+    return P;
 }
 
 cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
@@ -714,8 +726,8 @@ cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    cv::Mat P = dP_dvl.clone();
-    P.convertTo(P, CV_32F);
+    cv::Mat P = dP_acc + JPa * dba ;
+    // P.convertTo(P, CV_32F);
     return P;
 }
 

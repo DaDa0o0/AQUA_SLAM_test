@@ -141,7 +141,7 @@ void LocalMapping::Run()
                                                          mpCurrentKeyFrame->GetMap(),
                                                          num_FixedKF_BA);
                     }
-                    else {
+                    else if (mpAtlas->KeyFramesInMap()>mpTracker->mKFThresholdForMap){
                         // DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(mpCurrentKeyFrame,
                         // 											   &mbAbortBA,
                         // 											   mpCurrentKeyFrame->GetMap(),
@@ -155,6 +155,20 @@ void LocalMapping::Run()
                                                                       mpTracker->mlamda_DVL);
 						mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
 
+                    }
+                    else{
+                        auto loss_kf = mpTracker->getMvpLossKf();
+                        ROS_INFO_STREAM("KF during loss:");
+                        for(auto pKF:loss_kf){
+                            ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
+                                                 <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
+                        }
+
+                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas);
+                        mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
+                        mpTracker->mpRosHandler->PublishLossKF(loss_kf);
+                        mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+                        // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
                     }
 					// auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
 //					mpDenseMapper->Update();

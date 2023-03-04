@@ -264,7 +264,8 @@ public:
 	// equation(44)
 	cv::Mat GetDeltaVelocity(const Bias &b_);
 	// equation(44)
-	cv::Mat GetDeltaPosition(const Bias &b_);
+	cv::Mat GetDVLPosition(const Bias &b_);
+    cv::Mat GetDeltaPosition(const Bias &b_);
 	cv::Mat GetDeltaPosition(const Bias &b, const cv::Mat &R_g_d);
 	cv::Mat GetUpdatedDeltaRotation();
 	cv::Mat GetUpdatedDeltaVelocity();
