@@ -39,18 +39,13 @@ namespace ORB_SLAM3 {
         friend class boost::serialization::access;
 
         template<class Archive>
-        void serialize(Archive& ar, const unsigned int version)
-        {
-            ar & mnId;
-            ar & mnType;
-            ar & mvParameters;
-        }
+        void serialize(Archive& ar, const unsigned int version);
 
 
     public:
         GeometricCamera() {}
         GeometricCamera(const std::vector<float> &_vParameters) : mvParameters(_vParameters) {}
-        ~GeometricCamera() {}
+        virtual ~GeometricCamera()  = default;
 
         virtual cv::Point2f project(const cv::Point3f &p3D) = 0;
         virtual cv::Point2f project(const cv::Mat& m3D) = 0;
@@ -101,6 +96,7 @@ namespace ORB_SLAM3 {
         unsigned int mnType;
     };
 }
-
+// BOOST_CLASS_EXPORT(ORB_SLAM3::GeometricCamera)
+BOOST_SERIALIZATION_ASSUME_ABSTRACT(ORB_SLAM3::GeometricCamera)
 
 #endif //CAMERAMODELS_GEOMETRICCAMERA_H

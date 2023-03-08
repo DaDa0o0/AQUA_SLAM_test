@@ -27,6 +27,7 @@
 #include <boost/serialization/base_object.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/assume_abstract.hpp>
+#include <boost/serialization/export.hpp>
 
 #include "GeometricCamera.h"
 
@@ -38,10 +39,8 @@ namespace ORB_SLAM3 {
     friend class boost::serialization::access;
 
     template<class Archive>
-    void serialize(Archive& ar, const unsigned int version)
-    {
-        ar & boost::serialization::base_object<GeometricCamera>(*this);
-    }
+    void serialize(Archive& ar, const unsigned int version);
+
 
     public:
         Pinhole() {
@@ -106,5 +105,6 @@ namespace ORB_SLAM3 {
 }
 
 //BOOST_CLASS_EXPORT_KEY(ORBSLAM2::Pinhole)
+BOOST_CLASS_EXPORT_KEY(ORB_SLAM3::Pinhole)
 
 #endif //CAMERAMODELS_PINHOLE_H

@@ -302,10 +302,10 @@ class Calib
 	template<class Archive>
 	void serialize(Archive &ar, const unsigned int version)
 	{
-		serializeMatrix(ar, Tcb, version);
-		serializeMatrix(ar, Tbc, version);
-		serializeMatrix(ar, Cov, version);
-		serializeMatrix(ar, CovWalk, version);
+		// serializeMatrix(ar, Tcb, version);
+		// serializeMatrix(ar, Tbc, version);
+		// serializeMatrix(ar, Cov, version);
+		// serializeMatrix(ar, CovWalk, version);
 		serializeMatrix(ar, mT_gyro_c, version);
 		serializeMatrix(ar, mT_c_gyro, version);
 		serializeMatrix(ar, mT_dvl_c, version);

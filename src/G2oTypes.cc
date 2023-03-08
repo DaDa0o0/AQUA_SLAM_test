@@ -19,9 +19,13 @@
 #include "G2oTypes.h"
 #include "ImuTypes.h"
 #include "Converter.h"
+#include "Pinhole.h"
 #include "sophus/geometry.hpp"
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/core/core.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
 namespace ORB_SLAM3
 {
 
@@ -671,7 +675,21 @@ VertexVelocity::VertexVelocity(Frame* pF)
     setEstimate(Converter::toVector3d(pF->mVw));
 }
 
-VertexGyroBias::VertexGyroBias(KeyFrame *pKF)
+bool VertexVelocity::read(istream &is)
+{
+    Eigen::Vector3d v;
+    is >> v[0] >> v[1] >> v[2];
+    return true;
+}
+
+bool VertexVelocity::write(ostream &os) const
+{
+    Eigen::Vector3d v = estimate();
+    os << v[0] << " " << v[1] << " " << v[2];
+    return true;
+}
+
+    VertexGyroBias::VertexGyroBias(KeyFrame *pKF)
 {
     setEstimate(Converter::toVector3d(pKF->GetGyroBias()));
 }
@@ -681,6 +699,20 @@ VertexGyroBias::VertexGyroBias(Frame *pF)
     Eigen::Vector3d bg;
     bg << pF->mImuBias.bwx, pF->mImuBias.bwy,pF->mImuBias.bwz;
     setEstimate(bg);
+}
+
+bool VertexGyroBias::read(istream &is)
+{
+    Eigen::Vector3d b;
+    is >> b[0] >> b[1] >> b[2];
+    return true;
+}
+
+bool VertexGyroBias::write(ostream &os) const
+{
+    Eigen::Vector3d b = estimate();
+    os << b[0] << " " << b[1] << " " << b[2];
+    return true;
 }
 
 VertexAccBias::VertexAccBias(KeyFrame *pKF)
@@ -695,9 +727,22 @@ VertexAccBias::VertexAccBias(Frame *pF)
     setEstimate(ba);
 }
 
+bool VertexAccBias::read(istream &is)
+{
+    Eigen::Vector3d b;
+    is >> b[0] >> b[1] >> b[2];
+    return true;
+}
+
+bool VertexAccBias::write(ostream &os) const
+{
+    Eigen::Vector3d b = estimate();
+    os << b[0] << " " << b[1] << " " << b[2];
+    return true;
+}
 
 
-EdgeInertial::EdgeInertial(IMU::Preintegrated *pInt):JRg(Converter::toMatrix3d(pInt->JRg)),
+    EdgeInertial::EdgeInertial(IMU::Preintegrated *pInt):JRg(Converter::toMatrix3d(pInt->JRg)),
     JVg(Converter::toMatrix3d(pInt->JVg)), JPg(Converter::toMatrix3d(pInt->JPg)), JVa(Converter::toMatrix3d(pInt->JVa)),
     JPa(Converter::toMatrix3d(pInt->JPa)), mpInt(pInt), dt(pInt->dT)
 {
@@ -1080,7 +1125,7 @@ Eigen::Matrix3d NormalizeRotation(const Eigen::Matrix3d &R)
     return svd.matrixU()*svd.matrixV();
 }
 
-GyroDvlCamPose::GyroDvlCamPose(Frame *pF)
+DvlImuCamPose::DvlImuCamPose(Frame *pF)
 {
 	// Load Gyro rotation and Dvl translation
 //	t_c0_gyro = Converter::toVector3d(pF->GetDvlPosition());
@@ -1152,7 +1197,7 @@ GyroDvlCamPose::GyroDvlCamPose(Frame *pF)
 //	DR.setIdentity();
 }
 
-GyroDvlCamPose::GyroDvlCamPose(KeyFrame *pKF)
+DvlImuCamPose::DvlImuCamPose(KeyFrame *pKF)
 {
 
 
@@ -1216,7 +1261,7 @@ GyroDvlCamPose::GyroDvlCamPose(KeyFrame *pKF)
 	}
 }
 
-void GyroDvlCamPose::Update(const double *pu)
+void DvlImuCamPose::Update(const double *pu)
 {
 //	Eigen::Vector3d ur, ut;
 //	ur << pu[0], pu[1], pu[2];
@@ -1254,14 +1299,14 @@ void GyroDvlCamPose::Update(const double *pu)
 
 }
 
-Eigen::Vector2d GyroDvlCamPose::Project(const Eigen::Vector3d &Xw, int cam_idx) const
+Eigen::Vector2d DvlImuCamPose::Project(const Eigen::Vector3d &Xw, int cam_idx) const
 {
 	Eigen::Vector3d Xc = Rcw[cam_idx]*Xw+tcw[cam_idx];
 
 	return pCamera[cam_idx]->project(Xc);
 }
 
-Eigen::Vector3d GyroDvlCamPose::ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx) const
+Eigen::Vector3d DvlImuCamPose::ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx) const
 {
 	Eigen::Vector3d Pc = Rcw[cam_idx]*Xw+tcw[cam_idx];
 	Eigen::Vector3d pc;
@@ -1271,14 +1316,226 @@ Eigen::Vector3d GyroDvlCamPose::ProjectStereo(const Eigen::Vector3d &Xw, int cam
 	return pc;
 }
 
+void DvlImuCamPose::write(ofstream &fout)
+{
+    boost::archive::text_oarchive oa(fout);
+    oa << pCamera[0] <<"\n";
+    // oa << pCamera[1] <<"\n";
+
+    fout << tcw[0] <<"\n";
+    fout << Rcw[0] <<"\n";
+
+    fout << Rwc <<"\n";
+    fout << twc <<"\n";
+
+    // t_c_gyro[0] = Converter::toVector3d(pKF->mImuCalib.mT_c_gyro.rowRange(0,3).col(3));
+    fout << t_c_gyro[0] <<"\n";
+    // R_c_gyro[0] = Converter::toMatrix3d(pKF->mImuCalib.mT_c_gyro.rowRange(0, 3).colRange(0, 3));
+    fout << R_c_gyro[0] <<"\n";
+    // t_gyro_c[0] = Converter::toVector3d(pKF->mImuCalib.mT_gyro_c.rowRange(0,3).col(3));
+    fout << t_gyro_c[0] <<"\n";
+    // R_gyro_c[0] = Converter::toMatrix3d(pKF->mImuCalib.mT_gyro_c.rowRange(0, 3).colRange(0, 3));
+    fout << R_gyro_c[0] <<"\n";
+
+    // t_c_dvl[0] = Converter::toVector3d(pKF->mImuCalib.mT_c_dvl.rowRange(0,3).col(3));
+    fout << t_c_dvl[0] <<"\n";
+    // R_c_dvl[0] = Converter::toMatrix3d(pKF->mImuCalib.mT_c_dvl.rowRange(0, 3).colRange(0, 3));
+    fout << R_c_dvl[0] <<"\n";
+    // t_dvl_c[0] = Converter::toVector3d(pKF->mImuCalib.mT_dvl_c.rowRange(0,3).col(3));
+    fout << t_dvl_c[0] <<"\n";
+    // R_dvl_c[0] = Converter::toMatrix3d(pKF->mImuCalib.mT_dvl_c.rowRange(0, 3).colRange(0, 3));
+    fout << R_dvl_c[0] <<"\n";
+
+
+    // bf = pKF->mbf;
+    fout << bf <<"\n";
+
+    // Right camera
+    {
+        // Eigen::Matrix4d Trl = Converter::toMatrix4d(pKF->mTrl);
+        // T_r_l.matrix() = Trl;
+        fout << T_r_l.matrix() <<"\n";
+        // Rcw[1] = Trl.block<3,3>(0,0)*Rcw[0];
+        fout << Rcw[1] <<"\n";
+        // tcw[1] = Trl.block<3,3>(0,0)*tcw[0]+Trl.block<3,1>(0,3);
+        fout << tcw[1] <<"\n";
+
+        // t_c_gyro[1] = Trl.block<3,3>(0,0)*t_c_gyro[0]+Trl.block<3,1>(0,3);
+        fout << t_c_gyro[1] <<"\n";
+        // R_c_gyro[1] = Trl.block<3,3>(0,0) * R_c_gyro[0];
+        fout << R_c_gyro[1] <<"\n";
+        // R_gyro_c[1] = R_c_gyro[1].transpose();
+        fout << R_gyro_c[1] <<"\n";
+        // t_gyro_c[1] = -R_gyro_c[1]*t_c_gyro[1];
+        fout << t_gyro_c[1] <<"\n";
+
+        // t_c_dvl[1] = Trl.block<3,3>(0,0)*t_c_dvl[1]+Trl.block<3,1>(0,3);
+        fout << t_c_dvl[1] <<"\n";
+        // R_c_dvl[1] = Trl.block<3,3>(0,0) * R_c_dvl[0];
+        fout << R_c_dvl[1] <<"\n";
+        // R_dvl_c[1] = R_c_dvl[1].transpose();
+        fout << R_dvl_c[1] <<"\n";
+        // t_dvl_c[1] = -R_dvl_c[1]*t_c_dvl[1];
+        fout << t_dvl_c[1] <<"\n";
+        // pCamera[1] = pKF->mpCamera2;
+
+    }
+
+}
+void ReadToEigen3D(ifstream &fin, Eigen::Matrix3d &mat)
+{
+    fin >> mat(0,0) >> mat(1,0) >> mat(2,0)
+        >> mat(0,1) >> mat(1,1) >> mat(2,1)
+        >> mat(0,2) >> mat(1,2) >> mat(2,2);
+}
+void ReadToEigen4D(ifstream &fin, Eigen::Matrix4d &mat)
+{
+    fin >> mat(0,0) >> mat(1,0) >> mat(2,0) >> mat(3,0)
+        >> mat(0,1) >> mat(1,1) >> mat(2,1) >> mat(3,1)
+        >> mat(0,2) >> mat(1,2) >> mat(2,2) >> mat(3,2)
+        >> mat(0,3) >> mat(1,3) >> mat(2,3) >> mat(3,3);
+}
+
+void ReadtoVector3D(ifstream &fin, Eigen::Vector3d &vec)
+{
+    for(int i=0; i<3; i++)
+    {
+        fin >> vec(i);
+    }
+}
+
+void DvlImuCamPose::read(ifstream &fin)
+{
+    // Load camera poses
+    int num_cams = 2;
+
+    tcw.resize(num_cams);
+    Rcw.resize(num_cams);
+    t_c_gyro.resize(num_cams);
+    R_c_gyro.resize(num_cams);
+    t_gyro_c.resize(num_cams);
+    R_gyro_c.resize(num_cams);
+    t_dvl_c.resize(num_cams);
+    R_dvl_c.resize(num_cams);
+    t_c_dvl.resize(num_cams);
+    R_c_dvl.resize(num_cams);
+    pCamera.resize(num_cams);
+
+    pCamera[0] = new Pinhole();
+    boost::archive::text_iarchive inputArchive{fin};
+    inputArchive >> pCamera[0];
+    pCamera[1] = new Pinhole(static_cast<Pinhole*>(pCamera[0]));
+
+    // fin >> tcw[0];
+    ReadtoVector3D(fin, tcw[0]);
+    // fin >> Rcw[0];
+    ReadToEigen3D(fin, Rcw[0]);
+
+    // fin >> Rwc;
+    ReadToEigen3D(fin, Rwc);
+    // fin >> twc;
+    ReadtoVector3D(fin, twc);
+
+    ReadtoVector3D(fin, t_c_gyro[0]);
+    ReadToEigen3D(fin, R_c_gyro[0]);
+    ReadtoVector3D(fin, t_gyro_c[0]);
+    ReadToEigen3D(fin, R_gyro_c[0]);
+
+
+    ReadtoVector3D(fin, t_c_dvl[0]);
+    ReadToEigen3D(fin, R_c_dvl[0]);
+    ReadtoVector3D(fin, t_dvl_c[0]);
+    ReadToEigen3D(fin, R_dvl_c[0]);
+
+
+
+    fin >> bf;
+
+    // Right camera
+    {
+        // Eigen::Matrix4d Trl = Converter::toMatrix4d(pKF->mTrl);
+        // T_r_l.matrix() = Trl;
+        ReadToEigen4D(fin, T_r_l.matrix());
+
+        ReadToEigen3D(fin, Rcw[1]);
+
+        ReadtoVector3D(fin, tcw[1]);
+
+        ReadtoVector3D(fin, t_c_gyro[1]);
+        ReadToEigen3D(fin, R_c_gyro[1]);
+        ReadToEigen3D(fin, R_gyro_c[1]);
+        ReadtoVector3D(fin, t_gyro_c[1]);
+        ReadtoVector3D(fin, t_c_dvl[1]);
+        ReadToEigen3D(fin, R_c_dvl[1]);
+        ReadToEigen3D(fin, R_dvl_c[1]);
+        ReadtoVector3D(fin, t_dvl_c[1]);
+    }
+}
+
+template<typename MatrixType, typename Archive>
+void serializeEigenMatrix(Archive &ar, MatrixType &m, const unsigned int version)
+{
+    int cols = m.cols();
+    int rows = m.rows();
+    ar & cols;
+    ar & rows;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            ar & m(i, j);
+        }
+    }
+}
+
+template<class Archive>
+void DvlImuCamPose::serialize(Archive &ar, const unsigned int version)
+{
+    int num_cams = 1;
+
+    tcw.resize(num_cams);
+    Rcw.resize(num_cams);
+    t_c_gyro.resize(num_cams);
+    R_c_gyro.resize(num_cams);
+    t_gyro_c.resize(num_cams);
+    R_gyro_c.resize(num_cams);
+    t_dvl_c.resize(num_cams);
+    R_dvl_c.resize(num_cams);
+    t_c_dvl.resize(num_cams);
+    R_c_dvl.resize(num_cams);
+    pCamera.resize(num_cams);
+    if(Archive::is_saving::value){
+        ar & pCamera[0];
+    }
+    else{
+        ar & pCamera[0];
+    }
+    ar & bf;
+
+    // Left camera
+    serializeEigenMatrix(ar,tcw[0], version);
+    serializeEigenMatrix(ar,Rcw[0], version);
+    Rwc = Rcw[0].transpose();
+    twc = - Rwc * tcw[0];
+
+    serializeEigenMatrix(ar,t_c_gyro[0], version);
+    serializeEigenMatrix(ar,R_c_gyro[0], version);
+    serializeEigenMatrix(ar,t_gyro_c[0], version);
+    serializeEigenMatrix(ar,R_gyro_c[0], version);
+
+    serializeEigenMatrix(ar,t_c_dvl[0], version);
+    serializeEigenMatrix(ar,R_c_dvl[0], version);
+    serializeEigenMatrix(ar,t_dvl_c[0], version);
+    serializeEigenMatrix(ar,R_dvl_c[0], version);
+
+}
+
 EdgeDvlGyroInit::EdgeDvlGyroInit(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
 {
 	resize(5);
 }
 void EdgeDvlGyroInit::computeError()
 {
-	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+	const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+	const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
 	const auto * V_bw = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
 	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[3]);
 	const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[4]);
@@ -1350,8 +1607,8 @@ EdgeDvlGyroInit2::EdgeDvlGyroInit2(DVLGroPreIntegration *pInt):mpInt(pInt), dt(p
 }
 void EdgeDvlGyroInit2::computeError()
 {
-	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+	const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+	const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
 	const auto * V_bw = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
 	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[3]);
 	const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[4]);
@@ -1419,8 +1676,8 @@ EdgeDvlGyroInit3::EdgeDvlGyroInit3(DVLGroPreIntegration *pInt):mpInt(pInt), dt(p
 }
 void EdgeDvlGyroInit3::computeError()
 {
-	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+	const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+	const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
 	const auto * V_bw = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
 	const auto * V_v = dynamic_cast<const VertexVelocity*>(_vertices[3]);
 	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[4]);
@@ -1476,8 +1733,8 @@ EdgeDvlIMUInitWithoutBias::EdgeDvlIMUInitWithoutBias(DVLGroPreIntegration *pInt)
 }
 void EdgeDvlIMUInitWithoutBias::computeError()
 {
-	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+	const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+	const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
     const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
@@ -1535,8 +1792,8 @@ EdgeDvlIMUInitRefineWithBias::EdgeDvlIMUInitRefineWithBias(DVLGroPreIntegration*
 
 void EdgeDvlIMUInitRefineWithBias::computeError()
 {
-    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
     const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
@@ -1594,8 +1851,8 @@ EdgeDvlIMUGravityRefine::EdgeDvlIMUGravityRefine(DVLGroPreIntegration* pInt):mpI
 
 void EdgeDvlIMUGravityRefine::computeError()
 {
-    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
     const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
@@ -1652,8 +1909,8 @@ EdgeDvlIMUGravityRefineWithBias::EdgeDvlIMUGravityRefineWithBias(DVLGroPreIntegr
 
 void EdgeDvlIMUGravityRefineWithBias::computeError()
 {
-    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
     const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
@@ -1727,8 +1984,8 @@ EdgeDvlIMUWithBias::EdgeDvlIMUWithBias(DVLGroPreIntegration* pInt):mpInt(pInt), 
 
 void EdgeDvlIMUWithBias::computeError()
 {
-    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
     const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
@@ -1803,8 +2060,8 @@ EdgeDvlIMU::EdgeDvlIMU(DVLGroPreIntegration* pInt):mpInt(pInt), dt(pInt->dT)
 
 void EdgeDvlIMU::computeError()
 {
-    const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-    const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+    const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+    const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
     const auto * VG = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
@@ -1871,15 +2128,37 @@ void EdgeDvlIMU::computeError()
     _error<<e_R, e_V, e_P;
 }
 
-EdgeDvlGyroBA::EdgeDvlGyroBA(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
+bool EdgeDvlIMU::read(istream &is)
+{
+    boost::archive::text_iarchive ia(is);
+    ia >> mpInt;
+    Eigen::Matrix<double, 9, 9> Info = Eigen::Matrix<double, 9, 9>::Identity();
+    for(int i=0; i<9; i++)
+        for(int j=0; j<9; j++)
+            is>>Info(i,j);
+    return true;
+}
+
+bool EdgeDvlIMU::write(ostream &os) const
+{
+    boost::archive::text_oarchive oa(os);
+    oa << mpInt;
+    Eigen::Matrix<double, 9, 9> Info = _information.matrix();
+    for(int i=0; i<9; i++)
+        for(int j=0; j<9; j++)
+            os<<Info(i,j);
+    return true;
+}
+
+    EdgeDvlGyroBA::EdgeDvlGyroBA(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
 {
 	resize(5);
 }
 
 void EdgeDvlGyroBA::computeError()
 {
-	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+	const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+	const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
 	const auto * V_bw = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
 	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[3]);
 	const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[4]);
@@ -1943,8 +2222,8 @@ void EdgeDvlGyroBA::computeError()
 
 void EdgeDvlGyroTrack::computeError()
 {
-	const auto * VP1 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[0]);
-	const auto * VP2 = dynamic_cast<const VertexPoseDvlGro*>(_vertices[1]);
+	const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+	const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
 	const auto * V_bw = dynamic_cast<const VertexGyroBias*>(_vertices[2]);
 	const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[3]);
 	const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[4]);
@@ -2010,6 +2289,70 @@ void EdgeDvlGyroTrack::computeError()
 //	<<"\nP_est: \n"<<t_est<<endl;
 
 }
+
+void EdgeSE3DVLIMU::computeError()
+{
+    const VertexPoseDvlIMU *VPi = static_cast<const VertexPoseDvlIMU *>(_vertices[0]);
+    const VertexPoseDvlIMU *VPj = static_cast<const VertexPoseDvlIMU *>(_vertices[1]);
+    Eigen::Matrix3d R_c0_ci = VPi->estimate().Rwc;
+    Eigen::Matrix3d R_c0_cj = VPj->estimate().Rwc;
+    Eigen::Vector3d t_c0_ci = VPi->estimate().twc;
+    Eigen::Vector3d t_c0_cj = VPj->estimate().twc;
+    Eigen::Isometry3d T_c0_ci = Eigen::Isometry3d::Identity();
+    Eigen::Isometry3d T_c0_cj = Eigen::Isometry3d::Identity();
+    T_c0_ci.linear() = R_c0_ci;
+    T_c0_ci.translation() = t_c0_ci;
+    T_c0_cj.linear() = R_c0_cj;
+    T_c0_cj.translation() = t_c0_cj;
+    Eigen::Isometry3d T_ci_cj = T_c0_ci.inverse() * T_c0_cj;
+    Eigen::Matrix3d R_ci_cj = T_ci_cj.linear();
+    Eigen::Vector3d t_ci_cj = T_ci_cj.translation();
+    Eigen::Vector3d e_R = LogSO3(R_ci_cj.transpose() * mT_ci_cj.rotation());
+    Eigen::Vector3d e_p = t_ci_cj - mT_ci_cj.translation();
+    _error << e_R, e_p;
 }
 
+bool VertexPoseDvlIMU::read(istream &is)
+{
+    boost::archive::text_iarchive ia(is);
+    ia >> _estimate;
+    return true;
+}
 
+bool VertexPoseDvlIMU::write(ostream &os) const
+{
+    boost::archive::text_oarchive oa(os);
+    oa << _estimate;
+    os.flush();
+    return true;
+}
+
+bool VertexGDir::read(istream &is)
+{
+    GDirection gdir = _estimate;
+    Eigen::Matrix3d Rb0w = gdir.Rwg;
+    return true;
+}
+
+bool VertexGDir::write(ostream &os) const
+{
+    Eigen::Matrix3d Rb0w = _estimate.Rwg;
+    for(int i = 0; i < 3; i++)
+    {
+        for(int j = 0; j < 3; j++)
+        {
+            os << Rb0w(i, j) << " ";
+        }
+    }
+    return true;
+}
+}
+
+BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::DvlImuCamPose)
+template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
+template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
+G2O_REGISTER_TYPE(VertexPoseDvlIMU, VertexPoseDvlIMU)
+G2O_REGISTER_TYPE(EdgeDvlIMU, EdgeDvlIMU)
+G2O_REGISTER_TYPE(VertexGyroBias, VertexGyroBias)
+G2O_REGISTER_TYPE(VertexAccBias, VertexAccBias)
+G2O_REGISTER_TYPE(VertexVelocity, VertexVelocity)

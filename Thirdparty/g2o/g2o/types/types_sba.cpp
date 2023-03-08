@@ -25,6 +25,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "types_sba.h"
+#include "g2o/core/factory.h"
 #include <iostream>
 
 namespace g2o {
@@ -52,5 +53,5 @@ namespace g2o {
     }
     return os.good();
   }
-
+  G2O_REGISTER_TYPE(VertexSBAPointXYZ, VertexSBAPointXYZ)
 } // end namespace

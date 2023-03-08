@@ -1157,7 +1157,7 @@ void LoopClosing::CorrectLoop()
 
     {
         // Get Map Mutex
-        unique_lock<timed_mutex> lock(pLoopMap->mMutexMapUpdate);
+        unique_lock<shared_timed_mutex> lock(pLoopMap->mMutexMapUpdate);
 
         const bool bImuInit = pLoopMap->isImuInitialized();
 
@@ -1395,6 +1395,24 @@ void LoopClosing::MergeLocal()
     // Later, the elements of the current map will be transform to the new active map reference, in order to keep real time tracking
     Map* pCurrentMap = mpCurrentKF->GetMap();
     Map* pMergeMap = mpMergeMatchedKF->GetMap();
+
+    unique_lock<shared_timed_mutex> currentLock
+            (pCurrentMap->mMutexMapUpdate, std::defer_lock); // We update the current map with the Merge information
+    while (!currentLock.try_lock_for(std::chrono::milliseconds(300))) {
+        if (mbResetActiveMapRequested) {
+            mpLocalMapper->Release();
+            return;
+        }
+    }
+    unique_lock<shared_timed_mutex>
+            mergeLock(pMergeMap->mMutexMapUpdate); // We remove the Kfs and MPs in the merged area from the old map
+
+    //stop if try to merge inactive map
+    if (pCurrentMap != mpAtlas->GetCurrentMap()) {
+        ROS_ERROR_STREAM("try to merge inactive map, stop");
+        mpLocalMapper->Release();
+        return;
+    }
 
     Verbose::PrintMess("MERGE-VISUAL: Initially there are " + to_string(pCurrentMap->KeyFramesInMap()) + " KFs and " + to_string(pCurrentMap->MapPointsInMap()) + " MPs in the active map ", Verbose::VERBOSITY_DEBUG);
     Verbose::PrintMess("MERGE-VISUAL: Initially there are " + to_string(pMergeMap->KeyFramesInMap()) + " KFs and " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the matched map ", Verbose::VERBOSITY_DEBUG);
@@ -1640,23 +1658,23 @@ void LoopClosing::MergeLocal()
     }
 
 	{
-		unique_lock<timed_mutex> currentLock
-			(pCurrentMap->mMutexMapUpdate, std::defer_lock); // We update the current map with the Merge information
-		while (!currentLock.try_lock_for(std::chrono::milliseconds(300))) {
-			if (mbResetActiveMapRequested) {
-				mpLocalMapper->Release();
-				return;
-			}
-		}
-		unique_lock<timed_mutex>
-			mergeLock(pMergeMap->mMutexMapUpdate); // We remove the Kfs and MPs in the merged area from the old map
-
-		//stop if try to merge inactive map
-		if (pCurrentMap != mpAtlas->GetCurrentMap()) {
-			ROS_ERROR_STREAM("try to merge inactive map, stop");
-			mpLocalMapper->Release();
-			return;
-		}
+		// unique_lock<shared_timed_mutex> currentLock
+		// 	(pCurrentMap->mMutexMapUpdate, std::defer_lock); // We update the current map with the Merge information
+		// while (!currentLock.try_lock_for(std::chrono::milliseconds(300))) {
+		// 	if (mbResetActiveMapRequested) {
+		// 		mpLocalMapper->Release();
+		// 		return;
+		// 	}
+		// }
+		// unique_lock<shared_timed_mutex>
+		// 	mergeLock(pMergeMap->mMutexMapUpdate); // We remove the Kfs and MPs in the merged area from the old map
+        //
+		// //stop if try to merge inactive map
+		// if (pCurrentMap != mpAtlas->GetCurrentMap()) {
+		// 	ROS_ERROR_STREAM("try to merge inactive map, stop");
+		// 	mpLocalMapper->Release();
+		// 	return;
+		// }
 		//check if there is bad data
         ROS_DEBUG_STREAM("check KF size: " << vCorrectedSim3.size());
 		for (auto it: vCorrectedSim3) {
@@ -1868,131 +1886,46 @@ void LoopClosing::MergeLocal()
         std::copy(spLocalWindowKFs.begin(), spLocalWindowKFs.end(), std::back_inserter(vpLocalCurrentWindowKFs));
         std::copy(spMergeConnectedKFs.begin(), spMergeConnectedKFs.end(), std::back_inserter(vpMergeConnectedKFs));
         Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, all_kf, all_mps, mpAtlas);
-	}
 
-    //CheckObservations(spLocalWindowKFs, spMergeConnectedKFs);
-
-    Verbose::PrintMess("MERGE-VISUAL: Finish to update connections in the welding area", Verbose::VERBOSITY_DEBUG);
-
-    bool bStop = false;
-    Verbose::PrintMess("MERGE-VISUAL: Start local BA ", Verbose::VERBOSITY_DEBUG);
-    // vpLocalCurrentWindowKFs.clear();
-    // vpMergeConnectedKFs.clear();
-    // std::copy(spLocalWindowKFs.begin(), spLocalWindowKFs.end(), std::back_inserter(vpLocalCurrentWindowKFs));
-    // std::copy(spMergeConnectedKFs.begin(), spMergeConnectedKFs.end(), std::back_inserter(vpMergeConnectedKFs));
-    if (mpTracker->mSensor==System::IMU_MONOCULAR || mpTracker->mSensor==System::IMU_STEREO)
-    {
-        Verbose::PrintMess("MERGE-VISUAL: Visual-Inertial", Verbose::VERBOSITY_DEBUG);
-        Optimizer::MergeInertialBA(mpLocalMapper->GetCurrKF(),mpMergeMatchedKF,&bStop, mpCurrentKF->GetMap(),vCorrectedSim3);
-    }
-    else
-    {
-        Verbose::PrintMess("MERGE-VISUAL: Visual", Verbose::VERBOSITY_DEBUG);
-        Verbose::PrintMess("MERGE-VISUAL: Local current window->" + to_string(vpLocalCurrentWindowKFs.size()) + "; Local merge window->" + to_string(vpMergeConnectedKFs.size()), Verbose::VERBOSITY_DEBUG);
-        Optimizer::LocalBundleAdjustment(mpCurrentKF, vpLocalCurrentWindowKFs, vpMergeConnectedKFs,&bStop);
-    }
-
-    // Loop closed. Release Local Mapping.
-    mpLocalMapper->Release();
-
-
-    //return;
-    Verbose::PrintMess("MERGE-VISUAL: Finish the LBA", Verbose::VERBOSITY_DEBUG);
-
-
-    ////
-    //Update the non critical area from the current map to the merged map
-    vector<KeyFrame*> vpCurrentMapKFs = pCurrentMap->GetAllKeyFrames();
-    vector<MapPoint*> vpCurrentMapMPs = pCurrentMap->GetAllMapPoints();
-
-    if(vpCurrentMapKFs.size() == 0)
-    {
-        Verbose::PrintMess("MERGE-VISUAL: There are not KFs outside of the welding area", Verbose::VERBOSITY_DEBUG);
-    }
-    else
-    {
-        mpLocalMapper->RequestStop();
-        // Wait until Local Mapping has effectively stopped
-        while(!mpLocalMapper->isStopped())
+        vector<KeyFrame*> vpCurrentMapKFs = pCurrentMap->GetAllKeyFrames();
+        vector<MapPoint*> vpCurrentMapMPs = pCurrentMap->GetAllMapPoints();
+        if(vpCurrentMapKFs.size() == 0)
         {
-            usleep(1000);
+            Verbose::PrintMess("MERGE-VISUAL: There are not KFs outside of the welding area", Verbose::VERBOSITY_DEBUG);
         }
-        unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
-        while(!currentLock.try_lock_for(std::chrono::milliseconds(30))){
-            if(mbResetActiveMapRequested){
-                break;
-            }
-
-        }
-        // ROS_INFO_STREAM("do GlobalVAPoseGraphOptimization!");
-        // Optimizer::GlobalVAPoseGraphOptimization(mpCurrentKF, vpMergeConnectedKFs, vpLocalCurrentWindowKFs, vpCurrentMapKFs, vpCurrentMapMPs, mpAtlas);
-
-        // Get Merge Map Mutex
-        // unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate,std::defer_lock); // We update the current map with the Merge information
-        // while(!currentLock.try_lock_for(std::chrono::milliseconds(30))){
-        // 	if(mbResetActiveMapRequested){
-        // 		break;
-        // 	}
-        // }
-        unique_lock<timed_mutex> mergeLock(pMergeMap->mMutexMapUpdate,std::defer_lock); // We remove the Kfs and MPs in the merged area from the old map
-        while(!mergeLock.try_lock_for(std::chrono::milliseconds(30))){
-            if(mbResetActiveMapRequested){
-                break;
-            }
-        }
-
-        Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->KeyFramesInMap()) + " KFs in the map", Verbose::VERBOSITY_DEBUG);
-        Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapKFs.size()) + " KFs in the map", Verbose::VERBOSITY_DEBUG);
-
-        for(KeyFrame* pKFi : vpCurrentMapKFs)
+        else
         {
-            if(!pKFi || pKFi->isBad() || pKFi->GetMap() != pCurrentMap)
+            for(KeyFrame* pKFi : vpCurrentMapKFs)
             {
-                continue;
+                if(!pKFi || pKFi->isBad() || pKFi->GetMap() != pCurrentMap)
+                {
+                    continue;
+                }
+
+                // Make sure connections are updated
+                pKFi->UpdateMap(pMergeMap);
+                pMergeMap->AddKeyFrame(pKFi);
+                pCurrentMap->EraseKeyFrame(pKFi);
             }
+            ROS_DEBUG_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
+            ROS_DEBUG_STREAM("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map");
+            //            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
+            //            Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
 
-            // Make sure connections are updated
-            pKFi->UpdateMap(pMergeMap);
-            pMergeMap->AddKeyFrame(pKFi);
-            pCurrentMap->EraseKeyFrame(pKFi);
+            for(MapPoint* pMPi : vpCurrentMapMPs)
+            {
+                if(!pMPi || pMPi->isBad())
+                    continue;
+
+                pMPi->UpdateMap(pMergeMap);
+                pMergeMap->AddMapPoint(pMPi);
+                pCurrentMap->EraseMapPoint(pMPi);
+            }
+            ROS_DEBUG_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
+            mpAtlas->SetMapBad(pCurrentMap);
         }
-        ROS_DEBUG_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
-        ROS_DEBUG_STREAM("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map");
-        //            Verbose::PrintMess("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
-        //            Verbose::PrintMess("MERGE-VISUAL: It will be inserted " + to_string(vpCurrentMapMPs.size()) + " MPs in the map", Verbose::VERBOSITY_DEBUG);
-
-        for(MapPoint* pMPi : vpCurrentMapMPs)
-        {
-            if(!pMPi || pMPi->isBad())
-                continue;
-
-            pMPi->UpdateMap(pMergeMap);
-            pMergeMap->AddMapPoint(pMPi);
-            pCurrentMap->EraseMapPoint(pMPi);
-        }
-        ROS_DEBUG_STREAM("MERGE-VISUAL: There are " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the map");
-        mpAtlas->SetMapBad(pCurrentMap);
-
-        Verbose::PrintMess("MERGE-VISUAL: Optimaze the essential graph", Verbose::VERBOSITY_DEBUG);
-    }
-
-
-
+	}
     mpLocalMapper->Release();
-
-
-    Verbose::PrintMess("MERGE-VISUAL: Finally there are " + to_string(pMergeMap->KeyFramesInMap()) + "KFs and " + to_string(pMergeMap->MapPointsInMap()) + " MPs in the complete map ", Verbose::VERBOSITY_DEBUG);
-    Verbose::PrintMess("MERGE-VISUAL:Completed!!!!!", Verbose::VERBOSITY_DEBUG);
-
-    if(bRelaunchBA && (!pCurrentMap->isImuInitialized() || (pCurrentMap->KeyFramesInMap()<200 && mpAtlas->CountMaps()==1)))
-    {
-        // Launch a new thread to perform Global Bundle Adjustment
-        Verbose::PrintMess("Relaunch Global BA", Verbose::VERBOSITY_DEBUG);
-        mbRunningGBA = true;
-        mbFinishedGBA = false;
-        mbStopGBA = false;
-        mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment,this, pMergeMap, mpCurrentKF->mnId);
-    }
 
     mpMergeMatchedKF->AddMergeEdge(mpCurrentKF);
     mpCurrentKF->AddMergeEdge(mpMergeMatchedKF);
@@ -2001,6 +1934,8 @@ void LoopClosing::MergeLocal()
     pMergeMap->IncreaseChangeIndex();
 
     mpAtlas->RemoveBadMaps();
+    mpRosHandler->UpdateMap(mpAtlas);
+    mpRosHandler->PublishIntegration(mpAtlas);
 
 }
 
@@ -2060,7 +1995,7 @@ void LoopClosing::MergeLocal2()
         cv::Mat R_on = Converter::toCvMat(mSold_new.rotation().toRotationMatrix());
         cv::Mat t_on = Converter::toCvMat(mSold_new.translation());
 
-        unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+        unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
 
         cout << "KFs before empty: " << mpAtlas->GetCurrentMap()->KeyFramesInMap() << endl;
         mpLocalMapper->EmptyQueue();
@@ -2088,7 +2023,7 @@ void LoopClosing::MergeLocal2()
         ba << 0., 0., 0.;
         Optimizer::InertialOptimization(pCurrentMap,bg,ba);
         IMU::Bias b (ba[0],ba[1],ba[2],bg[0],bg[1],bg[2]);
-        unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+        unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
         mpTracker->UpdateFrameIMU(1.0f,b,mpTracker->GetLastKeyFrame());
 
         // Set map initialized
@@ -2105,8 +2040,8 @@ void LoopClosing::MergeLocal2()
     cout << "updating current map" << endl;
     {
         // Get Merge Map Mutex (This section stops tracking!!)
-        unique_lock<timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate); // We update the current map with the Merge information
-        unique_lock<timed_mutex> mergeLock(pMergeMap->mMutexMapUpdate); // We remove the Kfs and MPs in the merged area from the old map
+        unique_lock<shared_timed_mutex> currentLock(pCurrentMap->mMutexMapUpdate); // We update the current map with the Merge information
+        unique_lock<shared_timed_mutex> mergeLock(pMergeMap->mMutexMapUpdate); // We remove the Kfs and MPs in the merged area from the old map
 
 
         vector<KeyFrame*> vpMergeMapKFs = pMergeMap->GetAllKeyFrames();
@@ -2424,7 +2359,7 @@ void LoopClosing::SearchAndFuse(const vector<KeyFrame*> &vConectedKFs, vector<Ma
         matcher.Fuse(pKF,cvScw,vpMapPoints,4,vpReplacePoints);
 
         // Get Map Mutex
-        unique_lock<timed_mutex> lock(pMap->mMutexMapUpdate);
+        unique_lock<shared_timed_mutex> lock(pMap->mMutexMapUpdate);
         const int nLP = vpMapPoints.size();
         for(int i=0; i<nLP;i++)
         {
@@ -2543,7 +2478,7 @@ void LoopClosing::RunGlobalBundleAdjustment(Map* pActiveMap, unsigned long nLoop
             }
 
             // Get Map Mutex
-            unique_lock<timed_mutex> lock(pActiveMap->mMutexMapUpdate);
+            unique_lock<shared_timed_mutex> lock(pActiveMap->mMutexMapUpdate);
             // cout << "LC: Update Map Mutex adquired" << endl;
 
             //pActiveMap->PrintEssentialGraph();

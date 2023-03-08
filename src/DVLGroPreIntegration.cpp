@@ -6,6 +6,11 @@
 #include<iostream>
 #include <opencv2/core/eigen.hpp>
 #include <ros/ros.h>
+#include <boost/serialization/export.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 using namespace std;
 
@@ -865,3 +870,53 @@ void DVLGroPreIntegration::SetDVLDebugVelocity(const cv::Point3d &v_dk)
     Eigen::Vector3d V_di = R_g_d.inverse() * R_gi_gk * R_g_d * V_dk;
     v_di_dvl = V_di;
 }
+
+template<class Archive>
+void DVLGroPreIntegration::serialize(Archive &ar, const unsigned int version)
+{
+    ar & dT;
+    // serializeMatrix(ar, C, version);
+    // serializeMatrix(ar, Info, version);
+    // serializeMatrix(ar, Nga, version);
+    // serializeMatrix(ar, NgaWalk, version);
+    ar & mb;
+    ar & mCalib;
+    serializeMatrix(ar, dR, version);
+    serializeMatrix(ar, dV, version);
+    serializeMatrix(ar, dP_dvl, version);
+    serializeMatrix(ar, mVelocity, version);
+    serializeMatrix(ar, dP_acc, version);
+    serializeMatrix(ar, dDeltaV, version);
+    serializeMatrix(ar, mR_g_d, version);
+    serializePoint3d(ar, mAngV, version);
+    serializeEigenMatrix(ar, mAlpha, version);
+    serializeEigenMatrix(ar, mBeta, version);
+    serializeEigenMatrix(ar, mE, version);
+    serializeEigenMatrix(ar, mETEInv, version);
+    serializeMatrix(ar, JRg, version);
+    serializeMatrix(ar, JVg, version);
+    serializeMatrix(ar, JVa, version);
+    serializeMatrix(ar, JPg, version);
+    serializeMatrix(ar, JPa, version);
+    // serializeMatrix(ar, avgA, version);
+    // serializeMatrix(ar, avgW, version);
+
+    ar & bDVL;
+    ar & mVelocityThreshold;
+    serializePoint3d(ar, v_dk_dvl, version);
+    serializeEigenMatrix(ar, v_di_dvl, version);
+    serializeEigenMatrix(ar, v_dk_visual, version);
+    //		serializeEigenV3d(ar, v_dk_visual, version);
+    ar & mBeams;
+
+
+    ar & bu;
+    serializeMatrix(ar, db, version);
+    ar & mvMeasurements;
+    ar & mvMeasurements2;
+}
+BOOST_CLASS_EXPORT_IMPLEMENT(DVLGroPreIntegration)
+template void DVLGroPreIntegration::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
+template void DVLGroPreIntegration::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
+template void DVLGroPreIntegration::serialize(boost::archive::binary_oarchive & ar, const unsigned int version);
+template void DVLGroPreIntegration::serialize(boost::archive::binary_iarchive & ar, const unsigned int version);

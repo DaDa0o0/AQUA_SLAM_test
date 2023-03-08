@@ -65,7 +65,7 @@ public:
 	int static PoseOptimizationWithBA_and_EKF2(Frame *pFrame,Frame *pLastFrame, double lamda_visual=1, double lamda_DVL=1);
 	void static PoseOptimizationWithEKF(Frame *pFrame,Frame *pLastFrame);
     void static PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas);
-    void static OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas);
+    void static OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas, double lamda_DVL);
     void static PoseOptimizationDVLIMUBiasOnly(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas, bool fix_pose = true);
 
     int static PoseInertialOptimizationLastKeyFrame(Frame* pFrame, bool bRecInit = false);
@@ -168,7 +168,6 @@ public:
 
     void static DvlIMURefineOptimization(Atlas *pAtlas);
 
-    void static DvlIMUMiltiMapOptimization(Atlas *pAtlas);
 
 	void static DvlBeamOptimization(Map *pMap);
 	void static DvlBeamOptimization_dvl(Map *pMap);

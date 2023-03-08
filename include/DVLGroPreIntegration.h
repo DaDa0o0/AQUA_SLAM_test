@@ -12,76 +12,21 @@ using namespace IMU;
 
 class DVLGroPreIntegration
 {
-	template<class Archive>
-	void serializeEigenV4d(Archive &ar, Eigen::Vector4d &v, const unsigned int version)
-	{
-		double x, y, z, w;
-		if (Archive::is_saving::value) {
-			x = v.x();
-			y = v.y();
-			z = v.z();
-			w = v.w();
-			ar & x;
-			ar & y;
-			ar & z;
-			ar & w;
-		}
-		else if (Archive::is_loading::value) {
-			ar & x;
-			ar & y;
-			ar & z;
-			ar & w;
-			v = Eigen::Vector4d(x, y, z, w);
-		}
-	}
 
-	template<class Archive>
-	void serializeEigenV3d(Archive &ar, Eigen::Matrix<double, 3, 1> &m, const unsigned int version)
-	{
-//		double x, y, z, w;
-		int cols, rows;
-		cols = m.cols();
-		rows = m.rows();
-		ar & cols;
-		ar & rows;
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < cols; j++) {
-				ar & m(i, j);
-			}
-		}
-	}
 
-	template<class Archive>
-	void serializeEigenM33d(Archive &ar, Eigen::Matrix<double, 3, 3> &m, const unsigned int version)
-	{
-//		double x, y, z, w;
-		int cols, rows;
-		cols = m.cols();
-		rows = m.rows();
-		ar & cols;
-		ar & rows;
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < cols; j++) {
-				ar & m(i, j);
-			}
-		}
-	}
-
-	template<class Archive>
-	void serializeEigenM43d(Archive &ar, Eigen::Matrix<double, 4, 3> &m, const unsigned int version)
-	{
-//		double x, y, z, w;
-		int cols, rows;
-		cols = m.cols();
-		rows = m.rows();
-		ar & cols;
-		ar & rows;
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < cols; j++) {
-				ar & m(i, j);
-			}
-		}
-	}
+    template<typename MatrixType, typename Archive>
+    void serializeEigenMatrix(Archive &ar, MatrixType &m, const unsigned int version)
+    {
+        int cols = m.cols();
+        int rows = m.rows();
+        ar & cols;
+        ar & rows;
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                ar & m(i, j);
+            }
+        }
+    }
 
 	template<class Archive>
 	void serializePoint3f(Archive &ar, cv::Point3f &p, const unsigned int version)
@@ -155,45 +100,7 @@ class DVLGroPreIntegration
 
 	friend class boost::serialization::access;
 	template<class Archive>
-	void serialize(Archive &ar, const unsigned int version)
-	{
-		ar & dT;
-		serializeMatrix(ar, C, version);
-		serializeMatrix(ar, Info, version);
-		serializeMatrix(ar, Nga, version);
-		serializeMatrix(ar, NgaWalk, version);
-		ar & mb;
-		serializeMatrix(ar, dR, version);
-		serializeMatrix(ar, dV, version);
-		serializeMatrix(ar, dP_dvl, version);
-		serializeMatrix(ar, mVelocity, version);
-		serializeMatrix(ar, mR_g_d, version);
-		serializePoint3d(ar, mAngV, version);
-		serializeEigenV4d(ar, mAlpha, version);
-		serializeEigenV4d(ar, mBeta, version);
-		serializeEigenM43d(ar, mE, version);
-		serializeEigenM33d(ar, mETEInv, version);
-		serializeMatrix(ar, JRg, version);
-		serializeMatrix(ar, JVg, version);
-		serializeMatrix(ar, JVa, version);
-		serializeMatrix(ar, JPg, version);
-		serializeMatrix(ar, JPa, version);
-		serializeMatrix(ar, avgA, version);
-		serializeMatrix(ar, avgW, version);
-
-		ar & bDVL;
-		ar & mVelocityThreshold;
-		serializePoint3d(ar, v_dk_dvl, version);
-		serializeEigenV3d(ar, v_di_dvl, version);
-//		serializeEigenV3d(ar, v_dk_visual, version);
-		ar & mBeams;
-
-
-		ar & bu;
-		serializeMatrix(ar, db, version);
-		ar & mvMeasurements;
-		ar & mvMeasurements2;
-	}
+	void serialize(Archive &ar, const unsigned int version);
 public:
 	DVLGroPreIntegration(const Bias &b_, const Calib &calib, bool bDVL = false);
 	DVLGroPreIntegration(const Bias &b_, const Calib &calib, const cv::Point3d &v_di, bool bDVL = false);
@@ -297,7 +204,6 @@ public:
 	 * dDeltaV: Delta_V_bi_bj = R_bi_w * (V_w_bj - V_w_bi - g_w * delta_t_i_j)
 	 */
 	cv::Mat dR, dV, dP_dvl, dDeltaV, dP_acc;
-    cv::Mat dR_C2D, dR_D2C;
 	// mVelocity: V_dk velocity reading in DVL frame at time k
 	// mAngV: angular_v last angular v, this is used for DVL inegration
 	cv::Mat mVelocity, mR_g_d;
@@ -340,28 +246,19 @@ private:
 
 	struct integrable
 	{
-		template<class Archive>
-		void serializeEigenV4d(Archive &ar, Eigen::Vector4d &v, const unsigned int version)
-		{
-			double x, y, z, w;
-			if (Archive::is_saving::value) {
-				x = v.x();
-				y = v.y();
-				z = v.z();
-				w = v.w();
-				ar & x;
-				ar & y;
-				ar & z;
-				ar & w;
-			}
-			else if (Archive::is_loading::value) {
-				ar & x;
-				ar & y;
-				ar & z;
-				ar & w;
-				v = Eigen::Vector4d(x, y, z, w);
-			}
-		}
+        template<typename MatrixType, typename Archive>
+        void serializeEigenMatrix(Archive &ar, MatrixType &m, const unsigned int version)
+        {
+            int cols = m.cols();
+            int rows = m.rows();
+            ar & cols;
+            ar & rows;
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    ar & m(i, j);
+                }
+            }
+        }
 
 		template<class Archive>
 		void serializePoint3d(Archive &ar, cv::Point3d &p, const unsigned int version)
@@ -390,7 +287,7 @@ private:
 			serializePoint3d(ar, a, version);
 			serializePoint3d(ar, w, version);
 			serializePoint3d(ar, v, version);
-			serializeEigenV4d(ar, v_beam, version);
+			serializeEigenMatrix(ar, v_beam, version);
 			ar & t;
 		}
 		integrable()

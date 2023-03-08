@@ -668,23 +668,23 @@ void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 //	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "IMU recieved! time:" << imu_msg->header.stamp.toSec();
 //	cout<<"IMU recieved! time:"<<imu_msg->header.stamp.toNSec()<<endl;
 	mBufMutex.lock();
-	Eigen::AngleAxisd r_x(1,
-	                      Eigen::Vector3d(imu_msg->angular_velocity.x,
-	                                      imu_msg->angular_velocity.y,
-	                                      imu_msg->angular_velocity.z));
+	// Eigen::AngleAxisd r_x(1,
+	//                       Eigen::Vector3d(imu_msg->angular_velocity.x,
+	//                                       imu_msg->angular_velocity.y,
+	//                                       imu_msg->angular_velocity.z));
 
 	sensor_msgs::ImuPtr p_new_msg(new sensor_msgs::Imu());
 	p_new_msg->header = imu_msg->header;
 	p_new_msg->angular_velocity = imu_msg->angular_velocity;
 	p_new_msg->linear_acceleration = imu_msg->linear_acceleration;
-    // p_new_msg->linear_acceleration.x = -p_new_msg->linear_acceleration.x;
+    // p_new_msg->linear_acceleration.z = -p_new_msg->linear_acceleration.z;
 //	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
 //	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
 //	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
 
 
-	Eigen::Quaterniond q_r(1, 0, 0, 0);
-	q_r = q_r * r_x;
+	// Eigen::Quaterniond q_r(1, 0, 0, 0);
+	// q_r = q_r * r_x;
 //	imuBuf.push(imu_msg);
 	imuBuf.push(p_new_msg);
 	mBufMutex.unlock();

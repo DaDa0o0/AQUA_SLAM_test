@@ -17,6 +17,8 @@
 */
 
 #include "Pinhole.h"
+#include "GeometricCamera.h"
+
 
 #include <boost/serialization/export.hpp>
 
@@ -26,6 +28,14 @@ namespace ORB_SLAM3 {
 //BOOST_CLASS_EXPORT_GUID(Pinhole, "Pinhole")
 
     long unsigned int GeometricCamera::nNextId=0;
+
+    template<class Archive>
+    void GeometricCamera::serialize(Archive &ar, const unsigned int version)
+    {
+        ar & mnId;
+        ar & mnType;
+        ar & mvParameters;
+    }
 
     cv::Point2f Pinhole::project(const cv::Point3f &p3D) {
         return cv::Point2f(mvParameters[0] * p3D.x / p3D.z + mvParameters[2],
@@ -165,4 +175,25 @@ namespace ORB_SLAM3 {
                 v.at<float>(2),               0,-v.at<float>(0),
                 -v.at<float>(1),  v.at<float>(0),              0);
     }
+
+    template<class Archive>
+    void Pinhole::serialize(Archive &ar, const unsigned int version)
+    {
+        ar & boost::serialization::base_object<GeometricCamera>(*this);
+    }
+    // BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::Pinhole)
 }
+BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::GeometricCamera)
+BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::Pinhole)
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+template void ORB_SLAM3::GeometricCamera::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
+template void ORB_SLAM3::GeometricCamera::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
+template void ORB_SLAM3::GeometricCamera::serialize(boost::archive::binary_oarchive & ar, const unsigned int version);
+template void ORB_SLAM3::GeometricCamera::serialize(boost::archive::binary_iarchive & ar, const unsigned int version);
+template void ORB_SLAM3::Pinhole::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
+template void ORB_SLAM3::Pinhole::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
+template void ORB_SLAM3::Pinhole::serialize(boost::archive::binary_oarchive & ar, const unsigned int version);
+template void ORB_SLAM3::Pinhole::serialize(boost::archive::binary_iarchive & ar, const unsigned int version);

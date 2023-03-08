@@ -24,6 +24,7 @@
 #include "Thirdparty/g2o/g2o/types/types_sba.h"
 #include "Thirdparty/g2o/g2o/core/base_multi_edge.h"
 #include "Thirdparty/g2o/g2o/core/base_unary_edge.h"
+#include "Thirdparty/g2o/g2o/core/factory.h"
 
 #include <opencv2/core/core.hpp>
 
@@ -117,14 +118,18 @@ public:
 	int its;
 };
 
-class GyroDvlCamPose
+class DvlImuCamPose
 {
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int version);
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	GyroDvlCamPose()
+	DvlImuCamPose()
 	{}
-	GyroDvlCamPose(KeyFrame *pKF);
-	GyroDvlCamPose(Frame *pF);
+	DvlImuCamPose(KeyFrame *pKF);
+	DvlImuCamPose(Frame *pF);
 //		GyroDvlCamPose(Eigen::Matrix3d &_Rwc, Eigen::Vector3d &_twc, KeyFrame *pKF);
 
 //		void SetParam(const std::vector<Eigen::Matrix3d> &_Rcw, const std::vector<Eigen::Vector3d> &_tcw, const std::vector<Eigen::Matrix3d> &_Rbc,
@@ -135,6 +140,8 @@ public:
 	Eigen::Vector2d Project(const Eigen::Vector3d &Xw, int cam_idx = 0) const;       // Mono
 	Eigen::Vector3d ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx = 0) const; // Stereo
 //		bool isDepthPositive(const Eigen::Vector3d &Xw, int cam_idx = 0) const;
+    void write(std::ofstream &fout);
+    void read(std::ifstream &fin);
 
 public:
 	// for pose update
@@ -209,25 +216,23 @@ public:
 	}
 };
 
-class VertexPoseDvlGro: public g2o::BaseVertex<6, GyroDvlCamPose>
+class VertexPoseDvlIMU: public g2o::BaseVertex<6, DvlImuCamPose>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	VertexPoseDvlGro()
+	VertexPoseDvlIMU()
 	{}
-	VertexPoseDvlGro(KeyFrame *pKF)
+	VertexPoseDvlIMU(KeyFrame *pKF)
 	{
-		setEstimate(GyroDvlCamPose(pKF));
+		setEstimate(DvlImuCamPose(pKF));
 	}
-	VertexPoseDvlGro(Frame *pF)
+	VertexPoseDvlIMU(Frame *pF)
 	{
-		setEstimate(GyroDvlCamPose(pF));
+		setEstimate(DvlImuCamPose(pF));
 	}
 
-	virtual bool read(std::istream &is)
-	{}
-	virtual bool write(std::ostream &os) const
-	{}
+    virtual bool read(std::istream &is);
+    virtual bool write(std::ostream &os) const;
 
 	virtual void setToOriginImpl()
 	{
@@ -293,10 +298,8 @@ public:
 	VertexVelocity(KeyFrame *pKF);
 	VertexVelocity(Frame *pF);
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	virtual void setToOriginImpl()
 	{
@@ -320,10 +323,8 @@ public:
 	VertexGyroBias(KeyFrame *pKF);
 	VertexGyroBias(Frame *pF);
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	virtual void setToOriginImpl()
 	{
@@ -348,10 +349,8 @@ public:
 	VertexAccBias(KeyFrame *pKF);
 	VertexAccBias(Frame *pF);
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	virtual void setToOriginImpl()
 	{
@@ -409,15 +408,16 @@ public:
 	GDirection(Eigen::Matrix3d pRwg)
 		: Rwg(pRwg)
 	{}
+    GDirection(const GDirection &pGDir)
+        : Rwg(pGDir.Rwg){}
+
 
 	void Update(const double *pu)
 	{
 		Rwg = Rwg * ExpSO3(pu[0], pu[1], 0.0);
 	}
 
-	Eigen::Matrix3d Rwg, Rgw;
-
-	int its;
+	Eigen::Matrix3d Rwg;
 };
 
 class VertexGDir: public g2o::BaseVertex<2, GDirection>
@@ -425,16 +425,14 @@ class VertexGDir: public g2o::BaseVertex<2, GDirection>
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	VertexGDir()
-	{}
+	{setEstimate(GDirection(Eigen::Matrix3d::Identity()));}
 	VertexGDir(Eigen::Matrix3d pRwg)
 	{
 		setEstimate(GDirection(pRwg));
 	}
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	virtual void setToOriginImpl()
 	{
@@ -599,7 +597,7 @@ public:
 	const Eigen::Vector3d Xw;
 	const int cam_idx;
 };
-class EdgeMonoOnlyPose_DvlGyros: public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPoseDvlGro>
+class EdgeMonoOnlyPose_DvlGyros: public g2o::BaseUnaryEdge<2, Eigen::Vector2d, VertexPoseDvlIMU>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -616,9 +614,9 @@ public:
 
 	void computeError()
 	{
-		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
+		const VertexPoseDvlIMU *VPose = static_cast<const VertexPoseDvlIMU *>(_vertices[0]);
 		Eigen::Matrix<double, 2, 1> obs(_measurement);
-		debug_pose = static_cast<const GyroDvlCamPose *>(&(VPose->estimate()));
+		debug_pose = static_cast<const DvlImuCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().Project(Xw, cam_idx);
 	}
 
@@ -639,10 +637,10 @@ public:
 public:
 	const Eigen::Vector3d Xw;
 	const int cam_idx;
-	const GyroDvlCamPose *debug_pose;
+	const DvlImuCamPose *debug_pose;
 };
 
-class EdgeMonoBA_DvlGyros: public g2o::BaseBinaryEdge<2, Eigen::Vector2d, VertexPoseDvlGro, g2o::VertexSBAPointXYZ>
+class EdgeMonoBA_DvlGyros: public g2o::BaseBinaryEdge<2, Eigen::Vector2d, VertexPoseDvlIMU, g2o::VertexSBAPointXYZ>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -658,10 +656,10 @@ public:
 
 	void computeError()
 	{
-		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
+		const VertexPoseDvlIMU *VPose = static_cast<const VertexPoseDvlIMU *>(_vertices[0]);
 		const g2o::VertexSBAPointXYZ *Vmp = static_cast<const g2o::VertexSBAPointXYZ *>(_vertices[1]);
 		Eigen::Matrix<double, 2, 1> obs(_measurement);
-		debug_pose = static_cast<const GyroDvlCamPose *>(&(VPose->estimate()));
+		debug_pose = static_cast<const DvlImuCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().Project(Vmp->estimate(), cam_idx);
 	}
 
@@ -681,10 +679,10 @@ public:
 
 public:
 	const int cam_idx;
-	const GyroDvlCamPose *debug_pose;
+	const DvlImuCamPose *debug_pose;
 };
 
-class EdgeStereoBA_DvlGyros: public g2o::BaseBinaryEdge<3, Eigen::Vector3d, VertexPoseDvlGro, g2o::VertexSBAPointXYZ>
+class EdgeStereoBA_DvlGyros: public g2o::BaseBinaryEdge<3, Eigen::Vector3d, VertexPoseDvlIMU, g2o::VertexSBAPointXYZ>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -700,10 +698,10 @@ public:
 
 	void computeError()
 	{
-		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
+		const VertexPoseDvlIMU *VPose = static_cast<const VertexPoseDvlIMU *>(_vertices[0]);
 		const g2o::VertexSBAPointXYZ *Vmp = static_cast<const g2o::VertexSBAPointXYZ *>(_vertices[1]);
 		Eigen::Matrix<double, 3, 1> obs(_measurement);
-		debug_pose = static_cast<const GyroDvlCamPose *>(&(VPose->estimate()));
+		debug_pose = static_cast<const DvlImuCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().ProjectStereo(Vmp->estimate(), cam_idx);
 	}
 //	virtual void linearizeOplus();
@@ -722,7 +720,7 @@ public:
 
 public:
 	const int cam_idx;
-	const GyroDvlCamPose *debug_pose;
+	const DvlImuCamPose *debug_pose;
 };
 
 class EdgeStereo: public g2o::BaseBinaryEdge<3, Eigen::Vector3d, g2o::VertexSBAPointXYZ, VertexPose>
@@ -805,7 +803,7 @@ public:
 	const int cam_idx;
 };
 
-class EdgeStereoOnlyPose_DvlGyros: public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexPoseDvlGro>
+class EdgeStereoOnlyPose_DvlGyros: public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexPoseDvlIMU>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -821,7 +819,7 @@ public:
 
 	void computeError()
 	{
-		const VertexPoseDvlGro *VPose = static_cast<const VertexPoseDvlGro *>(_vertices[0]);
+		const VertexPoseDvlIMU *VPose = static_cast<const VertexPoseDvlIMU *>(_vertices[0]);
 		const Eigen::Vector3d obs(_measurement);
 		_error = obs - VPose->estimate().ProjectStereo(Xw, cam_idx);
 	}
@@ -1314,6 +1312,29 @@ protected:
 	Eigen::Vector3d mP_c0;
 };
 
+class EdgeSE3DVLIMU: public g2o::BaseBinaryEdge<6, double, VertexPoseDvlIMU, VertexPoseDvlIMU>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    EdgeSE3DVLIMU()
+    {
+        mT_ci_cj = Eigen::Isometry3d::Identity();
+    }
+    EdgeSE3DVLIMU(Eigen::Isometry3d T_ci_cj):mT_ci_cj(T_ci_cj)
+    {}
+
+
+    virtual void computeError();
+
+    virtual bool read(std::istream &in)
+    {}
+    virtual bool write(std::ostream &out) const
+    {}
+
+protected:
+    Eigen::Isometry3d mT_ci_cj;
+};
+
 class EdgeSE3DVLPoseOnly2: public g2o::BaseUnaryEdge<6, double, g2o::VertexSE3Expmap>
 {
 public:
@@ -1664,17 +1685,48 @@ public:
 
 };
 
+class EdgeDvlVelocity: public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexVelocity>
+{
+public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    EdgeDvlVelocity(const Eigen::Vector3d &v)
+            : mV(v){}
+
+    virtual bool read(std::istream &is)
+    { return false; }
+    virtual bool write(std::ostream &os) const
+    { return false; }
+
+    void computeError()
+    {
+        const VertexVelocity *VG = static_cast<const VertexVelocity *>(_vertices[0]);
+        _error = mV - VG->estimate();
+    }
+    virtual void linearizeOplus()
+    {
+        _jacobianOplusXi.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
+    }
+
+    Eigen::Matrix<double, 3, 3> GetHessian()
+    {
+        linearizeOplus();
+        return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
+    }
+
+    const Eigen::Vector3d mV;
+};
+
 class EdgeDvlIMU: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+    EdgeDvlIMU(): dt(0.0),mpInt(NULL) {}
 	EdgeDvlIMU(DVLGroPreIntegration *pInt);
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	void computeError();
 	//	virtual void linearizeOplus();

@@ -92,6 +92,7 @@ void LocalMapping::Run()
 	mbFinished = false;
     int new_KF = 0;
     int current_KF_num = 0;
+    int pose_graph_kf_num =0;
 	while (1) {
 		// Tracking will see that Local Mapping is busy
 		SetAcceptKeyFrames(false);
@@ -147,12 +148,19 @@ void LocalMapping::Run()
                         // 											   mpCurrentKeyFrame->GetMap(),
                         // 											   num_FixedKF_BA,
                         // 											   mpTracker->mlamda_DVL);
+                        // if(mpAtlas->GetAllKeyFramesinAllMap().size()-pose_graph_kf_num>100){
+                        //     DvlGyroOptimizer::LocalDVLIMUPoseGraph(mpAtlas,
+                        //                                            mpCurrentKeyFrame,
+                        //                                            mpCurrentKeyFrame->GetMap());
+                        //     pose_graph_kf_num = mpAtlas->GetAllKeyFramesinAllMap().size();
+                        // }
                         DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpAtlas,
                                                                       mpCurrentKeyFrame,
                                                                       &mbAbortBA,
                                                                       mpCurrentKeyFrame->GetMap(),
                                                                       num_FixedKF_BA,
-                                                                      mpTracker->mlamda_DVL);
+                                                                      mpTracker->mlamda_DVL,
+                                                                      mpTracker->mlamda_visual);
 						mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
 
                     }
@@ -164,7 +172,7 @@ void LocalMapping::Run()
                                                  <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
                         }
 
-                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas);
+                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas,mpTracker->mlamda_DVL);
                         mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
                         mpTracker->mpRosHandler->PublishLossKF(loss_kf);
                         mpTracker->mpRosHandler->UpdateMap(mpAtlas);
@@ -1319,7 +1327,7 @@ void LocalMapping::InitializeIMU(float priorG, float priorA, bool bFIBA)
 
 	// Before this line we are not changing the map
 
-	unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+	// unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
 	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 	if ((fabs(mScale - 1.f) > 0.00001) || !mbMonocular) {
 		mpAtlas->GetCurrentMap()->ApplyScaledRotation(Converter::toCvMat(mRwg).t(), mScale, true);
@@ -1431,7 +1439,7 @@ void LocalMapping::ScaleRefinement()
 	}
 
 	// Before this line we are not changing the map
-	unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+	// unique_lock<timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
 	std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
 	if ((fabs(mScale - 1.f) > 0.00001) || !mbMonocular) {
 		mpAtlas->GetCurrentMap()->ApplyScaledRotation(Converter::toCvMat(mRwg).t(), mScale, true);
