@@ -649,10 +649,8 @@ public:
 		: cam_idx(cam_idx_)
 	{}
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	void computeError()
 	{
@@ -691,10 +689,8 @@ public:
 		: cam_idx(cam_idx_)
 	{}
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	void computeError()
 	{
@@ -1161,15 +1157,13 @@ class EdgePriorAcc: public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexAccBias>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
+    EdgePriorAcc():bprior(Eigen::Vector3d::Zero()){}
 	EdgePriorAcc(const cv::Mat &bprior_)
 		: bprior(Converter::toVector3d(bprior_))
 	{}
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	void computeError()
 	{
@@ -1184,22 +1178,20 @@ public:
 		return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
 	}
 
-	const Eigen::Vector3d bprior;
+	Eigen::Vector3d bprior;
 };
 
 class EdgePriorGyro: public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexGyroBias>
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
+    EdgePriorGyro():bprior(Eigen::Vector3d::Zero()){}
 	EdgePriorGyro(const cv::Mat &bprior_)
 		: bprior(Converter::toVector3d(bprior_))
 	{}
 
-	virtual bool read(std::istream &is)
-	{ return false; }
-	virtual bool write(std::ostream &os) const
-	{ return false; }
+	virtual bool read(std::istream &is);
+	virtual bool write(std::ostream &os) const;
 
 	void computeError()
 	{
@@ -1214,7 +1206,7 @@ public:
 		return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
 	}
 
-	const Eigen::Vector3d bprior;
+    Eigen::Vector3d bprior;
 };
 
 class Edge4DoF: public g2o::BaseBinaryEdge<6, Vector6d, VertexPose4DoF, VertexPose4DoF>
@@ -1689,14 +1681,12 @@ class EdgeDvlVelocity: public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexVeloc
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
+    EdgeDvlVelocity():mV(Eigen::Vector3d::Zero()){}
     EdgeDvlVelocity(const Eigen::Vector3d &v)
             : mV(v){}
 
-    virtual bool read(std::istream &is)
-    { return false; }
-    virtual bool write(std::ostream &os) const
-    { return false; }
+    virtual bool read(std::istream &is);
+    virtual bool write(std::ostream &os) const;
 
     void computeError()
     {
@@ -1714,7 +1704,7 @@ public:
         return _jacobianOplusXi.transpose() * information() * _jacobianOplusXi;
     }
 
-    const Eigen::Vector3d mV;
+    Eigen::Vector3d mV;
 };
 
 class EdgeDvlIMU: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>

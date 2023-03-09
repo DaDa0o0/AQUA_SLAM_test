@@ -1025,11 +1025,71 @@ void EdgePriorAcc::linearizeOplus()
 
 }
 
+bool EdgePriorAcc::read(istream &is)
+{
+    Eigen::Vector3d prior;
+    is >> prior[0] >> prior[1] >> prior[2];
+    bprior = prior;
+    Eigen::Matrix3d info;
+    for (int i=0; i<3; i++)
+        for (int j=i; j<3; j++)
+        {
+            is >> info(i,j);
+            if (i!=j)
+                info(j,i)=info(i,j);
+        }
+    setInformation(info);
+    return true;
+}
+
+bool EdgePriorAcc::write(ostream &os) const
+{
+    Eigen::Vector3d prior = bprior;
+    os << prior[0] << " " << prior[1] << " " << prior[2] << " ";
+    Eigen::Matrix3d info = information();
+    for (int i=0; i<3; i++)
+        for (int j=i; j<3; j++)
+        {
+            os << info(i,j) << " ";
+        }
+    return true;
+}
+
 void EdgePriorGyro::linearizeOplus()
 {
     // Jacobian wrt bias
     _jacobianOplusXi.block<3,3>(0,0) = Eigen::Matrix3d::Identity();
 
+}
+
+bool EdgePriorGyro::read(istream &is)
+{
+    Eigen::Vector3d prior;
+    is >> prior[0] >> prior[1] >> prior[2];
+    bprior = prior;
+    Eigen::Matrix3d info;
+    for (int i=0; i<3; i++)
+        for (int j=i; j<3; j++)
+        {
+            is >> info(i,j);
+            if (i!=j)
+                info(j,i)=info(i,j);
+        }
+    setInformation(info);
+    return true;
+}
+
+bool EdgePriorGyro::write(ostream &os) const
+{
+    Eigen::Vector3d prior = bprior;
+    os << prior[0] << " " << prior[1] << " " << prior[2] << " ";
+    Eigen::Matrix3d info = information();
+    for (int i=0; i<3; i++)
+        for (int j=i; j<3; j++)
+        {
+            os << info(i,j) << " ";
+        }
+    return true;
 }
 
 // SO3 FUNCTIONS
@@ -2346,13 +2406,114 @@ bool VertexGDir::write(ostream &os) const
     }
     return true;
 }
+
+bool EdgeMonoBA_DvlGyros::read(istream &is)
+{
+    Eigen::Vector2d obs;
+    is>>obs[0]>>obs[1];
+    setMeasurement(obs);
+    for(int i=0; i<2; i++)
+    {
+        for(int j=i; j<2; j++)
+        {
+            double info;
+            is>>info;
+            _information(i,j)=info;
+        }
+    }
+    return true;
+}
+
+bool EdgeMonoBA_DvlGyros::write(ostream &os) const
+{
+    Eigen::Vector2d obs = _measurement;
+    os<<obs[0]<<" "<<obs[1]<<" ";
+    for(int i=0; i<2; i++)
+    {
+        for(int j=i; j<2; j++)
+        {
+            double info = _information(i,j);
+            os<<info<<" ";
+        }
+    }
+    return true;
+}
+
+bool EdgeStereoBA_DvlGyros::read(istream &is)
+{
+    Eigen::Vector3d obs;
+    is>>obs[0]>>obs[1]>>obs[2];
+    setMeasurement(obs);
+    for(int i=0; i<3; i++)
+    {
+        for(int j=i; j<3; j++)
+        {
+            double info;
+            is>>info;
+            _information(i,j)=info;
+        }
+    }
+    return true;
+}
+
+bool EdgeStereoBA_DvlGyros::write(ostream &os) const
+{
+    Eigen::Vector3d obs = _measurement;
+    os<<obs[0]<<" "<<obs[1]<<" "<<obs[2]<<" ";
+    for(int i=0; i<3; i++)
+    {
+        for(int j=i; j<3; j++)
+        {
+            double info = _information(i,j);
+            os<<info<<" ";
+        }
+    }
+    return true;
+}
+
+bool EdgeDvlVelocity::read(istream &is)
+{
+    Eigen::Vector3d obs;
+    is>>obs[0]>>obs[1]>>obs[2];
+    mV = obs;
+    for(int i=0; i<3; i++)
+    {
+        for(int j=i; j<3; j++)
+        {
+            double info;
+            is>>info;
+            _information(i,j)=info;
+        }
+    }
+    return true;
+}
+
+bool EdgeDvlVelocity::write(ostream &os) const
+{
+    Eigen::Vector3d obs = mV;
+    os<<obs[0]<<" "<<obs[1]<<" "<<obs[2]<<" ";
+    for(int i=0; i<3; i++)
+    {
+        for(int j=i; j<3; j++)
+        {
+            double info = _information(i,j);
+            os<<info<<" ";
+        }
+    }
+    return true;
+}
 }
 
 BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::DvlImuCamPose)
 template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
 template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
 G2O_REGISTER_TYPE(VertexPoseDvlIMU, VertexPoseDvlIMU)
-G2O_REGISTER_TYPE(EdgeDvlIMU, EdgeDvlIMU)
 G2O_REGISTER_TYPE(VertexGyroBias, VertexGyroBias)
 G2O_REGISTER_TYPE(VertexAccBias, VertexAccBias)
 G2O_REGISTER_TYPE(VertexVelocity, VertexVelocity)
+G2O_REGISTER_TYPE(EdgeDvlIMU, EdgeDvlIMU)
+G2O_REGISTER_TYPE(EdgeMonoBA_DvlGyros,EdgeMonoBA_DvlGyros)
+G2O_REGISTER_TYPE(EdgeStereoBA_DvlGyros,EdgeStereoBA_DvlGyros)
+G2O_REGISTER_TYPE(EdgePriorAcc,EdgePriorAcc)
+G2O_REGISTER_TYPE(EdgePriorGyro,EdgePriorGyro)
+G2O_REGISTER_TYPE(EdgeDvlVelocity,EdgeDvlVelocity)

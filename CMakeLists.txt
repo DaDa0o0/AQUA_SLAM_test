@@ -291,6 +291,86 @@ target_link_libraries(${PROJECT_NAME}
         -lboost_iostreams
         -lcrypto
         )
+add_library(g2o_type SHARED
+        ${PROJECT_SOURCE_DIR}/include/G2oTypes.h
+        ${PROJECT_SOURCE_DIR}/include/ImuTypes.h
+        ${PROJECT_SOURCE_DIR}/include/DVLGroPreIntegration.h
+        ${PROJECT_SOURCE_DIR}/include/OptimizableTypes.h
+        ${PROJECT_SOURCE_DIR}/src/G2oTypes.cc
+        ${PROJECT_SOURCE_DIR}/src/ImuTypes.cc
+        ${PROJECT_SOURCE_DIR}/src/DVLGroPreIntegration.cpp
+        ${PROJECT_SOURCE_DIR}/src/OptimizableTypes.cpp
+        ${PROJECT_SOURCE_DIR}/include/G2oTypes.h
+        ${PROJECT_SOURCE_DIR}/src/G2oTypes.cc
+
+        ${PROJECT_SOURCE_DIR}/include/System.h
+        ${PROJECT_SOURCE_DIR}/include/Tracking.h
+        ${PROJECT_SOURCE_DIR}/include/LocalMapping.h
+        ${PROJECT_SOURCE_DIR}/include/LoopClosing.h
+        ${PROJECT_SOURCE_DIR}/include/ORBextractor.h
+        ${PROJECT_SOURCE_DIR}/include/ORBmatcher.h
+        ${PROJECT_SOURCE_DIR}/include/FrameDrawer.h
+        ${PROJECT_SOURCE_DIR}/include/Converter.h
+        ${PROJECT_SOURCE_DIR}/include/MapPoint.h
+        ${PROJECT_SOURCE_DIR}/include/KeyFrame.h
+        ${PROJECT_SOURCE_DIR}/include/Atlas.h
+        ${PROJECT_SOURCE_DIR}/include/Map.h
+        #        ${PROJECT_SOURCE_DIR}/include/MapDrawer.h
+        ${PROJECT_SOURCE_DIR}/include/PnPsolver.h
+        ${PROJECT_SOURCE_DIR}/include/Frame.h
+        ${PROJECT_SOURCE_DIR}/include/KeyFrameDatabase.h
+        ${PROJECT_SOURCE_DIR}/include/Sim3Solver.h
+        ${PROJECT_SOURCE_DIR}/include/Initializer.h
+        #        ${PROJECT_SOURCE_DIR}/include/Viewer.h
+        ${PROJECT_SOURCE_DIR}/include/CameraModels/GeometricCamera.h
+        ${PROJECT_SOURCE_DIR}/include/CameraModels/Pinhole.h
+        ${PROJECT_SOURCE_DIR}/include/CameraModels/KannalaBrandt8.h
+        ${PROJECT_SOURCE_DIR}/include/MLPnPsolver.h
+        ${PROJECT_SOURCE_DIR}/include/TwoViewReconstruction.h
+        ${PROJECT_SOURCE_DIR}/include/RosHandling.h
+        ${PROJECT_SOURCE_DIR}/include/DenseMapper.h
+        ${PROJECT_SOURCE_DIR}/include/LKTracker.h
+        ${PROJECT_SOURCE_DIR}/src/System.cc
+        ${PROJECT_SOURCE_DIR}/src/Tracking.cc
+        ${PROJECT_SOURCE_DIR}/src/LocalMapping.cc
+        ${PROJECT_SOURCE_DIR}/src/LoopClosing.cc
+        ${PROJECT_SOURCE_DIR}/src/ORBextractor.cc
+        ${PROJECT_SOURCE_DIR}/src/ORBmatcher.cc
+        ${PROJECT_SOURCE_DIR}/src/FrameDrawer.cc
+        ${PROJECT_SOURCE_DIR}/src/Converter.cc
+        ${PROJECT_SOURCE_DIR}/src/MapPoint.cc
+        ${PROJECT_SOURCE_DIR}/src/KeyFrame.cc
+        ${PROJECT_SOURCE_DIR}/src/Atlas.cc
+        ${PROJECT_SOURCE_DIR}/src/Map.cc
+        ${PROJECT_SOURCE_DIR}/src/DvlGyroOptimizer.cpp
+        ${PROJECT_SOURCE_DIR}/src/PnPsolver.cc
+        ${PROJECT_SOURCE_DIR}/src/Frame.cc
+        ${PROJECT_SOURCE_DIR}/src/KeyFrameDatabase.cc
+        ${PROJECT_SOURCE_DIR}/src/Sim3Solver.cc
+        ${PROJECT_SOURCE_DIR}/src/Initializer.cc
+        ${PROJECT_SOURCE_DIR}/src/CameraModels/Pinhole.cpp
+        ${PROJECT_SOURCE_DIR}/src/CameraModels/KannalaBrandt8.cpp
+        ${PROJECT_SOURCE_DIR}/src/MLPnPsolver.cpp
+        ${PROJECT_SOURCE_DIR}/src/TwoViewReconstruction.cc
+        ${PROJECT_SOURCE_DIR}/src/RosHandling.cpp
+        ${PROJECT_SOURCE_DIR}/src/DenseMapper.cpp
+        ${PROJECT_SOURCE_DIR}/src/cv_bridge.cpp
+        ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp)
+target_link_libraries(g2o_type
+        ${OpenCV_LIBS}
+        ${EIGEN3_LIBS}
+        ${Boost_LIBRARIES}
+        ${PCL_LIBRARIES}
+        fmt::fmt-header-only
+        DBoW2
+        g2o
+        octomap
+        ${catkin_LIBRARIES}
+        -lboost_serialization
+        -lboost_system
+        -lboost_filesystem
+        -lboost_iostreams
+        -lcrypto)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
@@ -303,12 +383,12 @@ add_executable(stereo_dvl2 ${PROJECT_SOURCE_DIR}/src/ros_stereo_DVL_tighly.cc)
 target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
 add_dependencies(stereo_dvl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-add_executable(boost_test ${PROJECT_SOURCE_DIR}/src/test/boost_test.cpp)
-target_link_libraries(boost_test -lboost_serialization
-        -lboost_system)
-
-add_executable(tf_test ${PROJECT_SOURCE_DIR}/src/test/tf_test.cpp)
+#
+#add_executable(boost_test ${PROJECT_SOURCE_DIR}/src/test/boost_test.cpp)
+#target_link_libraries(boost_test -lboost_serialization
+#        -lboost_system)
+#
+#add_executable(tf_test ${PROJECT_SOURCE_DIR}/src/test/tf_test.cpp)
 
 #add_executable(lk_tracker ${PROJECT_SOURCE_DIR}/src/lkTracker.cpp)
 ##target_link_libraries(lk_tracker ${OpenCV_LIBS} ${catkin_LIBRARIES})

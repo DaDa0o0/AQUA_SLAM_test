@@ -407,5 +407,5 @@ void EdgeStereoSE3ProjectXYZOnlyPose::linearizeOplus() {
   _jacobianOplusXi(2,5) = _jacobianOplusXi(0,5)-bf*invz_2;
 }
 
-G2O_REGISTER_TYPE(VertexSE3Expmap, VertexSE3Expmap)
+// G2O_REGISTER_TYPE(VertexSE3Expmap, VertexSE3Expmap)
 } // end namespace

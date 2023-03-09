@@ -1531,7 +1531,8 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     }
     ROS_INFO_STREAM("before optimization dvlimu error: "<<dvlimu_chi2<<" visual error: "<<visula_chi2);
     optimizer.initializeOptimization(0);
-    // optimizer.save("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/test.g2o",0);
+    optimizer.save("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/test.g2o",0);
+    optimizer.setVerbose(true);
     optimizer.optimize(5);
     dvlimu_chi2 = 0;
     visula_chi2 = 0;
@@ -1687,7 +1688,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     for (int i = 0; i < N_map_points; i++) {
         MapPoint *pMP = LocalMapPoints[i];
         g2o::VertexSBAPointXYZ
-                *vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex((maxKFid + 1)*5 + i));
+                *vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex((maxKFid + 1) * 5 + i));
         pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
         pMP->UpdateNormalAndDepth();
     }
