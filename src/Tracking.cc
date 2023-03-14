@@ -31,6 +31,7 @@
 #include"G2oTypes.h"
 #include"Optimizer.h"
 #include"PnPsolver.h"
+#include "Pinhole.h"
 // #include"Viewer.h"
 #include"FrameDrawer.h"
 #include"Atlas.h"
@@ -49,6 +50,8 @@
 #include <include/CameraModels/KannalaBrandt8.h>
 #include <include/MLPnPsolver.h>
 #include <RosHandling.h>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 
 using namespace std;
@@ -5466,6 +5469,66 @@ void Tracking::CreateNewKeyFrame()
 	mnLastKeyFrameId = mCurrentFrame.mnId;
 	mpLastKeyFrame = pKF;
 	//cout  << "end creating new KF" << endl;
+    // if(mpLastKeyFrame->mnId>2){
+    //     std::ofstream o_file1("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/1.txt", std::ios::out);
+    //     std::ifstream i_file1("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/1.txt");
+    //     std::ofstream o_file2("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/2.txt", std::ios::out);
+    //     std::ifstream i_file2("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/2.txt");
+    //
+    //     // DvlImuCamPose pose_test(pKFi);
+    //     DVLGroPreIntegration *pDVLGroPreIntegration = mpLastKeyFrame->mpDvlPreintegrationKeyFrame;
+    //     boost::archive::text_oarchive oa1(o_file1);
+    //     oa1 << pDVLGroPreIntegration;
+    //     o_file1.close();
+    //     DVLGroPreIntegration* pDVLGroPreIntegration2 = new DVLGroPreIntegration();
+    //     boost::archive::text_iarchive ia1(i_file1);
+    //     ia1 >> pDVLGroPreIntegration2;
+    //     ROS_INFO_STREAM("pInt1 dR: \n"<<pDVLGroPreIntegration->GetDeltaRotation(pDVLGroPreIntegration->mb));
+    //     ROS_INFO_STREAM("pInt2 dR: \n"<<pDVLGroPreIntegration2->GetDeltaRotation(pDVLGroPreIntegration2->mb));
+    //     ROS_INFO_STREAM("pInt1 dV: \n"<<pDVLGroPreIntegration->GetDeltaVelocity(pDVLGroPreIntegration->mb));
+    //     ROS_INFO_STREAM("pInt2 dV: \n"<<pDVLGroPreIntegration2->GetDeltaVelocity(pDVLGroPreIntegration2->mb));
+    //     ROS_INFO_STREAM("pInt1 dP_dvl: \n"<<pDVLGroPreIntegration->GetDVLPosition(pDVLGroPreIntegration->mb));
+    //     ROS_INFO_STREAM("pInt2 dP_dvl: \n"<<pDVLGroPreIntegration2->GetDVLPosition(pDVLGroPreIntegration2->mb));
+    //     ROS_INFO_STREAM("pInt1 dP_imu: \n"<<pDVLGroPreIntegration->GetDeltaPosition(pDVLGroPreIntegration->mb));
+    //     ROS_INFO_STREAM("pInt2 dP_imu: \n"<<pDVLGroPreIntegration2->GetDeltaPosition(pDVLGroPreIntegration2->mb));
+    //
+    //     DvlImuCamPose pose_test(mpLastKeyFrame);
+    //     boost::archive::text_oarchive oa3(o_file2);
+    //     oa3 << pose_test;
+    //     o_file2.close();
+    //     DvlImuCamPose pose_test2;
+    //     boost::archive::text_iarchive ia2(i_file2);
+    //     ia2 >> pose_test2;
+    //     ROS_INFO_STREAM("Pose1 Rwc: \n"<<pose_test.Rwc);
+    //     ROS_INFO_STREAM("Pose2 Rwc: \n"<<pose_test2.Rwc);
+    //     ROS_INFO_STREAM("Pose1 twc: \n"<<pose_test.twc);
+    //     ROS_INFO_STREAM("Pose2 twc: \n"<<pose_test2.twc);
+    //     ROS_INFO_STREAM("Pose1 Rcw: \n"<<pose_test.Rcw[0]);
+    //     ROS_INFO_STREAM("Pose2 Rcw: \n"<<pose_test2.Rcw[0]);
+    //     ROS_INFO_STREAM("Pose1 tcw: \n"<<pose_test.tcw[0]);
+    //     ROS_INFO_STREAM("Pose2 tcw: \n"<<pose_test2.tcw[0]);
+    //     ROS_INFO_STREAM("Pose1 Rgc: \n"<<pose_test.R_gyro_c[0]);
+    //     ROS_INFO_STREAM("Pose2 Rgc: \n"<<pose_test2.R_gyro_c[0]);
+    //     ROS_INFO_STREAM("Pose1 tgc: \n"<<pose_test.t_gyro_c[0]);
+    //     ROS_INFO_STREAM("Pose2 tgc: \n"<<pose_test2.t_gyro_c[0]);
+    //     ROS_INFO_STREAM("Pose1 Rdc: \n"<<pose_test.R_dvl_c[0]);
+    //     ROS_INFO_STREAM("Pose2 Rdc: \n"<<pose_test2.R_dvl_c[0]);
+    //     ROS_INFO_STREAM("Pose1 tdc: \n"<<pose_test.t_dvl_c[0]);
+    //     ROS_INFO_STREAM("Pose2 tdc: \n"<<pose_test2.t_dvl_c[0]);
+    //     ROS_INFO_STREAM("Pose1 Rcd: \n"<<pose_test.R_c_dvl[0]);
+    //     ROS_INFO_STREAM("Pose2 Rcd: \n"<<pose_test2.R_c_dvl[0]);
+    //     ROS_INFO_STREAM("Pose1 tcd: \n"<<pose_test.t_c_dvl[0]);
+    //     ROS_INFO_STREAM("Pose2 tcd: \n"<<pose_test2.t_c_dvl[0]);
+    //     ROS_INFO_STREAM("Pose1 Rcg: \n"<<pose_test.R_c_gyro[0]);
+    //     ROS_INFO_STREAM("Pose2 Rcg: \n"<<pose_test2.R_c_gyro[0]);
+    //     ROS_INFO_STREAM("Pose1 tcg: \n"<<pose_test.t_c_gyro[0]);
+    //     ROS_INFO_STREAM("Pose2 tcg: \n"<<pose_test2.t_c_gyro[0]);
+    //     auto pc1 = static_cast<Pinhole*>(pose_test.pCamera[0]);
+    //     auto pc2 = static_cast<Pinhole*>(pose_test2.pCamera[0]);
+    //     ROS_INFO_STREAM("Pose1 camera: param"<<pc1->mvParameters[0]<<","<<pc1->mvParameters[1]<<","<<pc1->mvParameters[2]<<","<<pc1->mvParameters[3]<<", type:"<<pc1->mnType<<", ID:"<<pc1->mnId);
+    //     ROS_INFO_STREAM("Pose2 camera: param"<<pc2->mvParameters[0]<<","<<pc2->mvParameters[1]<<","<<pc2->mvParameters[2]<<","<<pc2->mvParameters[3]<<", type:"<<pc2->mnType<<", ID:"<<pc2->mnId);
+    //
+    // }
 }
 
 void Tracking::CreateNewKeyFrameKLT()

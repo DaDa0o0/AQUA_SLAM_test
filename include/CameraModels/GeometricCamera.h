@@ -88,12 +88,14 @@ namespace ORB_SLAM3 {
 
         static long unsigned int nNextId;
 
-    protected:
         std::vector<float> mvParameters;
 
         unsigned int mnId;
 
         unsigned int mnType;
+
+    protected:
+
     };
 }
 // BOOST_CLASS_EXPORT(ORB_SLAM3::GeometricCamera)

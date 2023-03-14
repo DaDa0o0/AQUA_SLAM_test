@@ -55,6 +55,8 @@
   <exec_depend>tf</exec_depend>
   <exec_depend>vehicle_interface</exec_depend>
   <exec_depend>waterlinked_a50_ros_driver</exec_depend>
+  <build_depend>message_generation</build_depend>
+  <exec_depend>message_runtime</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

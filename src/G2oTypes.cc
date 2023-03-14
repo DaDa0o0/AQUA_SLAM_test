@@ -25,6 +25,9 @@
 #include <opencv2/core/core.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/algorithm/string.hpp>
 #include "Thirdparty/g2o/g2o/types/types_six_dof_expmap.h"
 namespace ORB_SLAM3
 {
@@ -679,6 +682,7 @@ bool VertexVelocity::read(istream &is)
 {
     Eigen::Vector3d v;
     is >> v[0] >> v[1] >> v[2];
+    setEstimate(v);
     return true;
 }
 
@@ -705,6 +709,7 @@ bool VertexGyroBias::read(istream &is)
 {
     Eigen::Vector3d b;
     is >> b[0] >> b[1] >> b[2];
+    setEstimate(b);
     return true;
 }
 
@@ -731,6 +736,7 @@ bool VertexAccBias::read(istream &is)
 {
     Eigen::Vector3d b;
     is >> b[0] >> b[1] >> b[2];
+    setEstimate(b);
     return true;
 }
 
@@ -1032,11 +1038,9 @@ bool EdgePriorAcc::read(istream &is)
     bprior = prior;
     Eigen::Matrix3d info;
     for (int i=0; i<3; i++)
-        for (int j=i; j<3; j++)
+        for (int j=0; j<3; j++)
         {
             is >> info(i,j);
-            if (i!=j)
-                info(j,i)=info(i,j);
         }
     setInformation(info);
     return true;
@@ -1048,7 +1052,7 @@ bool EdgePriorAcc::write(ostream &os) const
     os << prior[0] << " " << prior[1] << " " << prior[2] << " ";
     Eigen::Matrix3d info = information();
     for (int i=0; i<3; i++)
-        for (int j=i; j<3; j++)
+        for (int j=0; j<3; j++)
         {
             os << info(i,j) << " ";
         }
@@ -1069,11 +1073,9 @@ bool EdgePriorGyro::read(istream &is)
     bprior = prior;
     Eigen::Matrix3d info;
     for (int i=0; i<3; i++)
-        for (int j=i; j<3; j++)
+        for (int j=0; j<3; j++)
         {
             is >> info(i,j);
-            if (i!=j)
-                info(j,i)=info(i,j);
         }
     setInformation(info);
     return true;
@@ -1085,7 +1087,7 @@ bool EdgePriorGyro::write(ostream &os) const
     os << prior[0] << " " << prior[1] << " " << prior[2] << " ";
     Eigen::Matrix3d info = information();
     for (int i=0; i<3; i++)
-        for (int j=i; j<3; j++)
+        for (int j=0; j<3; j++)
         {
             os << info(i,j) << " ";
         }
@@ -1268,6 +1270,7 @@ DvlImuCamPose::DvlImuCamPose(KeyFrame *pKF)
 		num_cams=2;
 	else
 		num_cams=1;
+    mCamNum = num_cams;
 
 	tcw.resize(num_cams);
 	Rcw.resize(num_cams);
@@ -1532,7 +1535,25 @@ void DvlImuCamPose::read(ifstream &fin)
     }
 }
 
-template<typename MatrixType, typename Archive>
+void DvlImuCamPose::Reset()
+{
+    // Load camera poses
+    int num_cams = 2;
+
+    tcw.resize(num_cams);
+    Rcw.resize(num_cams);
+
+
+    tcw[0] = Eigen::Vector3d::Zero();
+    Rcw[0] = Eigen::Matrix3d::Identity();
+    tcw[1] = Eigen::Vector3d::Zero();
+    Rcw[1] = Eigen::Matrix3d::Identity();
+    Rwc = Eigen::Matrix3d::Identity();
+    twc = Eigen::Vector3d::Zero();
+
+}
+
+    template<typename MatrixType, typename Archive>
 void serializeEigenMatrix(Archive &ar, MatrixType &m, const unsigned int version)
 {
     int cols = m.cols();
@@ -1549,42 +1570,45 @@ void serializeEigenMatrix(Archive &ar, MatrixType &m, const unsigned int version
 template<class Archive>
 void DvlImuCamPose::serialize(Archive &ar, const unsigned int version)
 {
-    int num_cams = 1;
+    ar & mCamNum;
 
-    tcw.resize(num_cams);
-    Rcw.resize(num_cams);
-    t_c_gyro.resize(num_cams);
-    R_c_gyro.resize(num_cams);
-    t_gyro_c.resize(num_cams);
-    R_gyro_c.resize(num_cams);
-    t_dvl_c.resize(num_cams);
-    R_dvl_c.resize(num_cams);
-    t_c_dvl.resize(num_cams);
-    R_c_dvl.resize(num_cams);
-    pCamera.resize(num_cams);
-    if(Archive::is_saving::value){
-        ar & pCamera[0];
-    }
-    else{
-        ar & pCamera[0];
-    }
+    tcw.resize(mCamNum);
+    Rcw.resize(mCamNum);
+    t_c_gyro.resize(mCamNum);
+    R_c_gyro.resize(mCamNum);
+    t_gyro_c.resize(mCamNum);
+    R_gyro_c.resize(mCamNum);
+    t_dvl_c.resize(mCamNum);
+    R_dvl_c.resize(mCamNum);
+    t_c_dvl.resize(mCamNum);
+    R_c_dvl.resize(mCamNum);
+    pCamera.resize(mCamNum);
+
     ar & bf;
 
+    for(int i=0; i<mCamNum; i++)
+    {
+        ar & pCamera[i];
+        serializeEigenMatrix(ar,tcw[i], version);
+        serializeEigenMatrix(ar,Rcw[i], version);
+        serializeEigenMatrix(ar,t_c_gyro[i], version);
+        serializeEigenMatrix(ar,R_c_gyro[i], version);
+        serializeEigenMatrix(ar,t_gyro_c[i], version);
+        serializeEigenMatrix(ar,R_gyro_c[i], version);
+
+        serializeEigenMatrix(ar,t_c_dvl[i], version);
+        serializeEigenMatrix(ar,R_c_dvl[i], version);
+        serializeEigenMatrix(ar,t_dvl_c[i], version);
+        serializeEigenMatrix(ar,R_dvl_c[i], version);
+    }
     // Left camera
-    serializeEigenMatrix(ar,tcw[0], version);
-    serializeEigenMatrix(ar,Rcw[0], version);
+
     Rwc = Rcw[0].transpose();
     twc = - Rwc * tcw[0];
-
-    serializeEigenMatrix(ar,t_c_gyro[0], version);
-    serializeEigenMatrix(ar,R_c_gyro[0], version);
-    serializeEigenMatrix(ar,t_gyro_c[0], version);
-    serializeEigenMatrix(ar,R_gyro_c[0], version);
-
-    serializeEigenMatrix(ar,t_c_dvl[0], version);
-    serializeEigenMatrix(ar,R_c_dvl[0], version);
-    serializeEigenMatrix(ar,t_dvl_c[0], version);
-    serializeEigenMatrix(ar,R_dvl_c[0], version);
+    if (mCamNum == 2)
+    {
+        serializeEigenMatrix(ar,T_r_l.matrix(), version);
+    }
 
 }
 
@@ -2190,23 +2214,38 @@ void EdgeDvlIMU::computeError()
 
 bool EdgeDvlIMU::read(istream &is)
 {
-    boost::archive::text_iarchive ia(is);
-    ia >> mpInt;
-    Eigen::Matrix<double, 9, 9> Info = Eigen::Matrix<double, 9, 9>::Identity();
+    //get information matrix
+    Eigen::Matrix<double, 9, 9> info;
     for(int i=0; i<9; i++)
         for(int j=0; j<9; j++)
-            is>>Info(i,j);
+            is>>info(i,j);
+    setInformation(info);
+    //get preintegration
+    is.get();
+    std::string str;
+    getline(is, str);
+    boost::replace_all(str, "*newline*", "\n");
+    stringstream ss(str);
+    boost::archive::text_iarchive ia(ss);
+    mpInt = new DVLGroPreIntegration();
+    ia >> mpInt;
+    dt = mpInt->dT;
     return true;
 }
 
 bool EdgeDvlIMU::write(ostream &os) const
 {
-    boost::archive::text_oarchive oa(os);
-    oa << mpInt;
-    Eigen::Matrix<double, 9, 9> Info = _information.matrix();
+    //save information matrix
     for(int i=0; i<9; i++)
         for(int j=0; j<9; j++)
-            os<<Info(i,j);
+            os<<_information(i,j)<<" ";
+    //save preintegration
+    stringstream ss;
+    boost::archive::text_oarchive oa2(ss);
+    oa2 << mpInt;
+    std::string str = ss.str();
+    boost::replace_all(str, "\n", "*newline*");
+    os << str<<" ";
     return true;
 }
 
@@ -2374,23 +2413,41 @@ void EdgeSE3DVLIMU::computeError()
 
 bool VertexPoseDvlIMU::read(istream &is)
 {
-    boost::archive::text_iarchive ia(is);
+    is.get();
+    std::string str;
+    getline(is, str);
+    boost::replace_all(str, "*newline*", "\n");
+    stringstream ss(str);
+    boost::archive::text_iarchive ia(ss);
     ia >> _estimate;
     return true;
 }
 
 bool VertexPoseDvlIMU::write(ostream &os) const
 {
-    boost::archive::text_oarchive oa(os);
-    oa << _estimate;
-    os.flush();
+    // boost::archive::binary_oarchive oa(os);
+    // oa << _estimate;
+    stringstream ss;
+    boost::archive::text_oarchive oa2(ss);
+    oa2 << _estimate;
+    std::string str = ss.str();
+    boost::replace_all(str, "\n", "*newline*");
+    os << str;
     return true;
 }
 
 bool VertexGDir::read(istream &is)
 {
-    GDirection gdir = _estimate;
-    Eigen::Matrix3d Rb0w = gdir.Rwg;
+    Eigen::Matrix3d Rb0w;
+    for(int i = 0; i < 3; i++)
+    {
+        for(int j = 0; j < 3; j++)
+        {
+            is >> Rb0w(i, j);
+        }
+    }
+    _estimate.Rwg = Rb0w;
+
     return true;
 }
 
@@ -2414,7 +2471,7 @@ bool EdgeMonoBA_DvlGyros::read(istream &is)
     setMeasurement(obs);
     for(int i=0; i<2; i++)
     {
-        for(int j=i; j<2; j++)
+        for(int j=0; j<2; j++)
         {
             double info;
             is>>info;
@@ -2430,7 +2487,7 @@ bool EdgeMonoBA_DvlGyros::write(ostream &os) const
     os<<obs[0]<<" "<<obs[1]<<" ";
     for(int i=0; i<2; i++)
     {
-        for(int j=i; j<2; j++)
+        for(int j=0; j<2; j++)
         {
             double info = _information(i,j);
             os<<info<<" ";
@@ -2446,7 +2503,7 @@ bool EdgeStereoBA_DvlGyros::read(istream &is)
     setMeasurement(obs);
     for(int i=0; i<3; i++)
     {
-        for(int j=i; j<3; j++)
+        for(int j=0; j<3; j++)
         {
             double info;
             is>>info;
@@ -2462,7 +2519,7 @@ bool EdgeStereoBA_DvlGyros::write(ostream &os) const
     os<<obs[0]<<" "<<obs[1]<<" "<<obs[2]<<" ";
     for(int i=0; i<3; i++)
     {
-        for(int j=i; j<3; j++)
+        for(int j=0; j<3; j++)
         {
             double info = _information(i,j);
             os<<info<<" ";
@@ -2478,7 +2535,7 @@ bool EdgeDvlVelocity::read(istream &is)
     mV = obs;
     for(int i=0; i<3; i++)
     {
-        for(int j=i; j<3; j++)
+        for(int j=0; j<3; j++)
         {
             double info;
             is>>info;
@@ -2494,7 +2551,7 @@ bool EdgeDvlVelocity::write(ostream &os) const
     os<<obs[0]<<" "<<obs[1]<<" "<<obs[2]<<" ";
     for(int i=0; i<3; i++)
     {
-        for(int j=i; j<3; j++)
+        for(int j=0; j<3; j++)
         {
             double info = _information(i,j);
             os<<info<<" ";
@@ -2507,10 +2564,13 @@ bool EdgeDvlVelocity::write(ostream &os) const
 BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::DvlImuCamPose)
 template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::text_oarchive & ar, const unsigned int version);
 template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::text_iarchive & ar, const unsigned int version);
+template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::binary_oarchive & ar, const unsigned int version);
+template void ORB_SLAM3::DvlImuCamPose::serialize(boost::archive::binary_iarchive & ar, const unsigned int version);
 G2O_REGISTER_TYPE(VertexPoseDvlIMU, VertexPoseDvlIMU)
 G2O_REGISTER_TYPE(VertexGyroBias, VertexGyroBias)
 G2O_REGISTER_TYPE(VertexAccBias, VertexAccBias)
 G2O_REGISTER_TYPE(VertexVelocity, VertexVelocity)
+G2O_REGISTER_TYPE(VertexGDir,VertexGDir)
 G2O_REGISTER_TYPE(EdgeDvlIMU, EdgeDvlIMU)
 G2O_REGISTER_TYPE(EdgeMonoBA_DvlGyros,EdgeMonoBA_DvlGyros)
 G2O_REGISTER_TYPE(EdgeStereoBA_DvlGyros,EdgeStereoBA_DvlGyros)

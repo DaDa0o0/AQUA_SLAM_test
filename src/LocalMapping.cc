@@ -148,12 +148,19 @@ void LocalMapping::Run()
                         // 											   mpCurrentKeyFrame->GetMap(),
                         // 											   num_FixedKF_BA,
                         // 											   mpTracker->mlamda_DVL);
-                        // if(mpAtlas->GetAllKeyFramesinAllMap().size()-pose_graph_kf_num>100){
-                        //     DvlGyroOptimizer::LocalDVLIMUPoseGraph(mpAtlas,
-                        //                                            mpCurrentKeyFrame,
-                        //                                            mpCurrentKeyFrame->GetMap());
-                        //     pose_graph_kf_num = mpAtlas->GetAllKeyFramesinAllMap().size();
-                        // }
+                        if(mpAtlas->GetAllKeyFramesinAllMap().size()-pose_graph_kf_num>100){
+                            // DvlGyroOptimizer::LocalDVLIMUPoseGraph(mpAtlas,
+                            //                                        mpCurrentKeyFrame,
+                            //                                        mpCurrentKeyFrame->GetMap());
+                            DvlGyroOptimizer::FullDVLIMUBundleAdjustment(mpAtlas,
+                                                                          mpCurrentKeyFrame,
+                                                                          &mbAbortBA,
+                                                                          mpCurrentKeyFrame->GetMap(),
+                                                                          num_FixedKF_BA,
+                                                                          mpTracker->mlamda_DVL,
+                                                                          mpTracker->mlamda_visual);
+                            pose_graph_kf_num = mpAtlas->GetAllKeyFramesinAllMap().size();
+                        }
                         DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpAtlas,
                                                                       mpCurrentKeyFrame,
                                                                       &mbAbortBA,

@@ -136,6 +136,7 @@ public:
 //					  const std::vector<Eigen::Vector3d> &_tbc, const double &_bf);
 
 	void Update(const double *pu);                                                   // update in the imu reference
+    void Reset();
 //		void UpdateW(const double *pu);                                                  // update in the world reference
 	Eigen::Vector2d Project(const Eigen::Vector3d &Xw, int cam_idx = 0) const;       // Mono
 	Eigen::Vector3d ProjectStereo(const Eigen::Vector3d &Xw, int cam_idx = 0) const; // Stereo
@@ -166,6 +167,8 @@ public:
 //		Eigen::Matrix3d DR;
 
 	int its;
+
+    int mCamNum;
 };
 
 class InvDepthPoint
@@ -236,6 +239,7 @@ public:
 
 	virtual void setToOriginImpl()
 	{
+        _estimate.Reset();
 	}
 
 	virtual void oplusImpl(const double *update_)
@@ -697,7 +701,7 @@ public:
 		const VertexPoseDvlIMU *VPose = static_cast<const VertexPoseDvlIMU *>(_vertices[0]);
 		const g2o::VertexSBAPointXYZ *Vmp = static_cast<const g2o::VertexSBAPointXYZ *>(_vertices[1]);
 		Eigen::Matrix<double, 3, 1> obs(_measurement);
-		debug_pose = static_cast<const DvlImuCamPose *>(&(VPose->estimate()));
+		// debug_pose = static_cast<const DvlImuCamPose *>(&(VPose->estimate()));
 		_error = obs - VPose->estimate().ProjectStereo(Vmp->estimate(), cam_idx);
 	}
 //	virtual void linearizeOplus();
@@ -1712,7 +1716,7 @@ class EdgeDvlIMU: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    EdgeDvlIMU(): dt(0.0),mpInt(NULL) {}
+    EdgeDvlIMU(): dt(0.0),mpInt(NULL) {resize(9);}
 	EdgeDvlIMU(DVLGroPreIntegration *pInt);
 
 	virtual bool read(std::istream &is);
@@ -1724,7 +1728,7 @@ public:
 	//	const Eigen::Matrix3d JRg, JVg, JPg;
 	//	const Eigen::Matrix3d JVa, JPa;
 	DVLGroPreIntegration *mpInt;
-	const double dt;
+	double dt;
 
 };
 

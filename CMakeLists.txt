@@ -35,6 +35,9 @@ find_package(catkin REQUIRED COMPONENTS
         sensor_msgs
         tf
         vehicle_interface
+        message_generation
+        rospy
+        std_msgs
         )
 
 find_package(Pangolin REQUIRED)
@@ -87,11 +90,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+ add_service_files(
+   FILES
+   SetInfof.srv
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -101,10 +103,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   octomap_msgs#   pose_graph_msgs#   sensor_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -138,7 +140,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES lib
-        CATKIN_DEPENDS geometry_msgs image_transport message_filters nav_msgs octomap_msgs pose_graph_msgs roscpp sensor_msgs tf vehicle_interface
+        CATKIN_DEPENDS geometry_msgs image_transport message_filters nav_msgs octomap_msgs pose_graph_msgs roscpp sensor_msgs tf vehicle_interface message_runtime
         #          DEPENDS system_lib
 )
 
@@ -291,86 +293,8 @@ target_link_libraries(${PROJECT_NAME}
         -lboost_iostreams
         -lcrypto
         )
-add_library(g2o_type SHARED
-        ${PROJECT_SOURCE_DIR}/include/G2oTypes.h
-        ${PROJECT_SOURCE_DIR}/include/ImuTypes.h
-        ${PROJECT_SOURCE_DIR}/include/DVLGroPreIntegration.h
-        ${PROJECT_SOURCE_DIR}/include/OptimizableTypes.h
-        ${PROJECT_SOURCE_DIR}/src/G2oTypes.cc
-        ${PROJECT_SOURCE_DIR}/src/ImuTypes.cc
-        ${PROJECT_SOURCE_DIR}/src/DVLGroPreIntegration.cpp
-        ${PROJECT_SOURCE_DIR}/src/OptimizableTypes.cpp
-        ${PROJECT_SOURCE_DIR}/include/G2oTypes.h
-        ${PROJECT_SOURCE_DIR}/src/G2oTypes.cc
-
-        ${PROJECT_SOURCE_DIR}/include/System.h
-        ${PROJECT_SOURCE_DIR}/include/Tracking.h
-        ${PROJECT_SOURCE_DIR}/include/LocalMapping.h
-        ${PROJECT_SOURCE_DIR}/include/LoopClosing.h
-        ${PROJECT_SOURCE_DIR}/include/ORBextractor.h
-        ${PROJECT_SOURCE_DIR}/include/ORBmatcher.h
-        ${PROJECT_SOURCE_DIR}/include/FrameDrawer.h
-        ${PROJECT_SOURCE_DIR}/include/Converter.h
-        ${PROJECT_SOURCE_DIR}/include/MapPoint.h
-        ${PROJECT_SOURCE_DIR}/include/KeyFrame.h
-        ${PROJECT_SOURCE_DIR}/include/Atlas.h
-        ${PROJECT_SOURCE_DIR}/include/Map.h
-        #        ${PROJECT_SOURCE_DIR}/include/MapDrawer.h
-        ${PROJECT_SOURCE_DIR}/include/PnPsolver.h
-        ${PROJECT_SOURCE_DIR}/include/Frame.h
-        ${PROJECT_SOURCE_DIR}/include/KeyFrameDatabase.h
-        ${PROJECT_SOURCE_DIR}/include/Sim3Solver.h
-        ${PROJECT_SOURCE_DIR}/include/Initializer.h
-        #        ${PROJECT_SOURCE_DIR}/include/Viewer.h
-        ${PROJECT_SOURCE_DIR}/include/CameraModels/GeometricCamera.h
-        ${PROJECT_SOURCE_DIR}/include/CameraModels/Pinhole.h
-        ${PROJECT_SOURCE_DIR}/include/CameraModels/KannalaBrandt8.h
-        ${PROJECT_SOURCE_DIR}/include/MLPnPsolver.h
-        ${PROJECT_SOURCE_DIR}/include/TwoViewReconstruction.h
-        ${PROJECT_SOURCE_DIR}/include/RosHandling.h
-        ${PROJECT_SOURCE_DIR}/include/DenseMapper.h
-        ${PROJECT_SOURCE_DIR}/include/LKTracker.h
-        ${PROJECT_SOURCE_DIR}/src/System.cc
-        ${PROJECT_SOURCE_DIR}/src/Tracking.cc
-        ${PROJECT_SOURCE_DIR}/src/LocalMapping.cc
-        ${PROJECT_SOURCE_DIR}/src/LoopClosing.cc
-        ${PROJECT_SOURCE_DIR}/src/ORBextractor.cc
-        ${PROJECT_SOURCE_DIR}/src/ORBmatcher.cc
-        ${PROJECT_SOURCE_DIR}/src/FrameDrawer.cc
-        ${PROJECT_SOURCE_DIR}/src/Converter.cc
-        ${PROJECT_SOURCE_DIR}/src/MapPoint.cc
-        ${PROJECT_SOURCE_DIR}/src/KeyFrame.cc
-        ${PROJECT_SOURCE_DIR}/src/Atlas.cc
-        ${PROJECT_SOURCE_DIR}/src/Map.cc
-        ${PROJECT_SOURCE_DIR}/src/DvlGyroOptimizer.cpp
-        ${PROJECT_SOURCE_DIR}/src/PnPsolver.cc
-        ${PROJECT_SOURCE_DIR}/src/Frame.cc
-        ${PROJECT_SOURCE_DIR}/src/KeyFrameDatabase.cc
-        ${PROJECT_SOURCE_DIR}/src/Sim3Solver.cc
-        ${PROJECT_SOURCE_DIR}/src/Initializer.cc
-        ${PROJECT_SOURCE_DIR}/src/CameraModels/Pinhole.cpp
-        ${PROJECT_SOURCE_DIR}/src/CameraModels/KannalaBrandt8.cpp
-        ${PROJECT_SOURCE_DIR}/src/MLPnPsolver.cpp
-        ${PROJECT_SOURCE_DIR}/src/TwoViewReconstruction.cc
-        ${PROJECT_SOURCE_DIR}/src/RosHandling.cpp
-        ${PROJECT_SOURCE_DIR}/src/DenseMapper.cpp
-        ${PROJECT_SOURCE_DIR}/src/cv_bridge.cpp
-        ${PROJECT_SOURCE_DIR}/src/rgb_colors.cpp)
-target_link_libraries(g2o_type
-        ${OpenCV_LIBS}
-        ${EIGEN3_LIBS}
-        ${Boost_LIBRARIES}
-        ${PCL_LIBRARIES}
-        fmt::fmt-header-only
-        DBoW2
-        g2o
-        octomap
-        ${catkin_LIBRARIES}
-        -lboost_serialization
-        -lboost_system
-        -lboost_filesystem
-        -lboost_iostreams
-        -lcrypto)
+add_executable(g2o_BA src/g2o_BA.cpp)
+target_link_libraries(g2o_BA ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 

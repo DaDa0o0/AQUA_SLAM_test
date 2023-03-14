@@ -53,5 +53,5 @@ namespace g2o {
     }
     return os.good();
   }
-  // G2O_REGISTER_TYPE(VertexSBAPointXYZ, VertexSBAPointXYZ)
+  G2O_REGISTER_TYPE(VertexSBAPointXYZ, VertexSBAPointXYZ)
 } // end namespace
