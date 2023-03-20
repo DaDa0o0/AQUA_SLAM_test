@@ -5029,6 +5029,10 @@ bool Tracking::TrackLocalMap()
 	// Decide if the tracking was succesful
 	// More restrictive if there was a relocalization recently
 	mpLocalMapper->mnMatchesInliers = mnMatchesInliers;
+    if(mnMatchesInliers < mpORBextractorLeft->nfeatures * 0.2){
+        mCurrentFrame.mPoorVision = true;
+    }
+    ROS_INFO_STREAM("Matching Inliers: "<<mnMatchesInliers);
 	if (mCurrentFrame.mnId < mnLastRelocFrameId + mMaxFrames && mnMatchesInliers < 50) {
 		return false;
 	}

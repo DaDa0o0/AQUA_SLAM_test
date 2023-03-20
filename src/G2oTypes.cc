@@ -1189,6 +1189,8 @@ Eigen::Matrix3d NormalizeRotation(const Eigen::Matrix3d &R)
 
 DvlImuCamPose::DvlImuCamPose(Frame *pF)
 {
+    mTimestamp = pF->mTimeStamp;
+    mPoorVision = pF->mPoorVision;
 	// Load Gyro rotation and Dvl translation
 //	t_c0_gyro = Converter::toVector3d(pF->GetDvlPosition());
 //	R_c0_gyro = Converter::toMatrix3d(pF->GetGyroRotation());
@@ -1261,9 +1263,8 @@ DvlImuCamPose::DvlImuCamPose(Frame *pF)
 
 DvlImuCamPose::DvlImuCamPose(KeyFrame *pKF)
 {
-
-
-
+    mTimestamp = pKF->mTimeStamp;
+    mPoorVision = pKF->mPoorVision;
 	// Load camera poses
 	int num_cams;
 	if(pKF->mpCamera2)
@@ -1571,6 +1572,8 @@ template<class Archive>
 void DvlImuCamPose::serialize(Archive &ar, const unsigned int version)
 {
     ar & mCamNum;
+    ar & mTimestamp;
+    ar & mPoorVision;
 
     tcw.resize(mCamNum);
     Rcw.resize(mCamNum);
@@ -2411,6 +2414,35 @@ void EdgeSE3DVLIMU::computeError()
     _error << e_R, e_p;
 }
 
+bool EdgeSE3DVLIMU::read(istream &in)
+{
+    //get information matrix
+    Eigen::Matrix<double, 6, 6> info;
+    for(int i=0; i<6; i++)
+        for(int j=0; j<6; j++)
+            in>>info(i,j);
+    setInformation(info);
+    //get measurement
+    for(int i=0;i<4;i++)
+        for(int j=0;j<4;j++)
+            in>>mT_ci_cj.matrix()(i,j);
+    return true;
+}
+
+bool EdgeSE3DVLIMU::write(ostream &out) const
+{
+    //write information matrix
+    Eigen::Matrix<double, 6, 6> info=information();
+    for(int i=0; i<6; i++)
+        for(int j=0; j<6; j++)
+            out<<info(i,j)<<" ";
+    //write measurement
+    for(int i=0;i<4;i++)
+        for(int j=0;j<4;j++)
+            out<<mT_ci_cj.matrix()(i,j)<<" ";
+    return true;
+}
+
 bool VertexPoseDvlIMU::read(istream &is)
 {
     is.get();
@@ -2577,3 +2609,4 @@ G2O_REGISTER_TYPE(EdgeStereoBA_DvlGyros,EdgeStereoBA_DvlGyros)
 G2O_REGISTER_TYPE(EdgePriorAcc,EdgePriorAcc)
 G2O_REGISTER_TYPE(EdgePriorGyro,EdgePriorGyro)
 G2O_REGISTER_TYPE(EdgeDvlVelocity,EdgeDvlVelocity)
+G2O_REGISTER_TYPE(EdgeSE3DVLIMU, EdgeSE3DVLIMU)

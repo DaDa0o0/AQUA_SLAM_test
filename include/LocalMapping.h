@@ -171,6 +171,7 @@ protected:
 	void InitializeDvlIMU();
     void RefineGravityDvlIMU();
     void ScaleRefinement();
+    void FullBA();
 
     bool bInitializing;
 

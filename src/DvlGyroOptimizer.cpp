@@ -1108,6 +1108,28 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         FixedKFs.push_back(OptKFs.back());
         OptKFs.pop_back();
     }
+    // add more Fixed but connected KF
+    auto connectedKF = FixedKFs.back()->GetConnectedKeyFrames();
+    for(auto pKFi:connectedKF){
+        // check whether pKFi is in OptKFS or FixedKFs
+        bool inOptKFs = false;
+        bool inFixedKFs = false;
+        for(auto pOptKF:OptKFs){
+            if(pKFi->mnId == pOptKF->mnId){
+                inOptKFs = true;
+                break;
+            }
+        }
+        for(auto pFixedKF:FixedKFs){
+            if(pKFi->mnId == pFixedKF->mnId){
+                inFixedKFs = true;
+                break;
+            }
+        }
+        if(!inOptKFs&&!inFixedKFs){
+            FixedKFs.push_back(pKFi);
+        }
+    }
 
 
     vector<MapPoint *> LocalMapPoints;
@@ -1126,6 +1148,22 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                         //						cout<<"add local map point to optimize: "<<endl;
                     }
                 }
+            }
+        }
+    }
+    vector<MapPoint *> LocalFixedMapPoints;
+    for(auto pKFi:FixedKFs){
+        auto Mps = pKFi->GetMapPointMatches();
+        for(auto pMP:Mps){
+            if(!pMP||pMP->isBad()){
+                continue;
+            }
+            if (pMP->mnBALocalForKF != pKF->mnId) {
+                //						cout<<"find local map point with correct BALocalForKF"<<endl;
+                LocalFixedMapPoints.push_back(pMP);
+                LocalMapPoints.push_back(pMP);
+                pMP->mnBALocalForKF = pKF->mnId;
+                //						cout<<"add local map point to optimize: "<<endl;
             }
         }
     }
@@ -1179,7 +1217,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         VP->setId(pKFi->mnId);
         VP->setFixed(false);
         optimizer.addVertex(VP);
-        ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
+        // ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
 
         // DVLGroPreIntegration *pDVLGroPreIntegration2 = new DVLGroPreIntegration();
         // boost::archive::text_iarchive ia1(i_file1);
@@ -1197,7 +1235,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         VP->setId(pKFi->mnId);
         VP->setFixed(true);
         optimizer.addVertex(VP);
-        ROS_INFO_STREAM("fixed KF: "<<pKFi->mnId);
+        // ROS_INFO_STREAM("fixed KF: "<<pKFi->mnId);
     }
 
     // Biases
@@ -1274,6 +1312,12 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                 int id = pMP->mnId + maxKFid + 1;
                 vPoint->setId((maxKFid + 1)*5 + i);
                 vPoint->setMarginalized(true);
+                //check whther pMP is in LocalFixedMapPoints
+                if (find(LocalFixedMapPoints.begin(), LocalFixedMapPoints.end(), pMP) != LocalFixedMapPoints.end()) {
+                    vPoint->setFixed(true);
+                } else {
+                    vPoint->setFixed(false);
+                }
                 optimizer.addVertex(vPoint);
 
                 const map<KeyFrame *, tuple<int, int>> observations = pMP->GetObservations();
@@ -1530,7 +1574,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     ROS_INFO_STREAM("before optimization dvlimu error: "<<dvlimu_chi2<<" visual error: "<<visula_chi2);
     optimizer.initializeOptimization(0);
     optimizer.save("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/LocalBA.g2o",0);
-    optimizer.setVerbose(true);
+    // optimizer.setVerbose(true);
     optimizer.optimize(5);
     dvlimu_chi2 = 0;
     visula_chi2 = 0;
@@ -1694,7 +1738,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
 }
 
 void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool* pbStopFlag, Map* pMap,
-                                                  int &num_fixedKF, double lamda_DVL, double lamda_visual)
+                                                  const int &num_fixedKF, double lamda_DVL, double lamda_visual)
 {
     Map *pCurrentMap = pKF->GetMap();
     int Nd = pCurrentMap->KeyFramesInMap();// number of keyframes in current map
@@ -1729,7 +1773,7 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
     }
 
 
-    vector<MapPoint *> LocalMapPoints;
+    set<MapPoint *> LocalMapPoints;
     for (int i = 0; i < N; i++) {
         vector<MapPoint *> vpMPs = OptKFs[i]->GetMapPointMatches();
         for (vector<MapPoint *>::iterator it = vpMPs.begin(); it != vpMPs.end(); it++) {
@@ -1737,38 +1781,13 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
             if (pMP) {
                 //				cout<<"find local map point"<<endl;
                 if (!pMP->isBad()) {
-                    //					cout<<"find local good map point"<<endl;
-                    if (pMP->mnBALocalForKF != pKF->mnId) {
-                        //						cout<<"find local map point with correct BALocalForKF"<<endl;
-                        LocalMapPoints.push_back(pMP);
-                        pMP->mnBALocalForKF = pKF->mnId;
-                        //						cout<<"add local map point to optimize: "<<endl;
-                    }
+                    LocalMapPoints.insert(pMP);
+
                 }
             }
         }
     }
     int N_map_points = LocalMapPoints.size();
-    //	cout << "map point to optimize: " << N_map_points << endl;
-
-    // const int maxFixedKF = 30;
-    // for (vector<MapPoint *>::iterator it = LocalMapPoints.begin(); it != LocalMapPoints.end(); it++) {
-    //     map<KeyFrame *, tuple<int, int>> observations = (*it)->GetObservations();
-    //     for (map<KeyFrame *, tuple<int, int>>::iterator it_ob = observations.begin(); it_ob != observations.end();
-    //          it_ob++) {
-    //         KeyFrame *pKFi = it_ob->first;
-    //         if (pKFi->mnBALocalForKF != pKF->mnId && pKFi->mnBAFixedForKF != pKF->mnId) {
-    //             pKFi->mnBAFixedForKF = pKF->mnId;
-    //             if (!pKFi->isBad()) {
-    //                 FixedKFs.push_back(pKFi);
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     if (FixedKFs.size() >= maxFixedKF) {
-    //         break;
-    //     }
-    // }
     int N_fixed = FixedKFs.size();
 
 
@@ -1800,11 +1819,6 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
         optimizer.addVertex(VP);
         ROS_INFO_STREAM("FULL BA: opt KF: "<<pKFi->mnId);
 
-        // DVLGroPreIntegration *pDVLGroPreIntegration2 = new DVLGroPreIntegration();
-        // boost::archive::text_iarchive ia1(i_file1);
-        // ia1 >> pDVLGroPreIntegration2;
-        // oa2 << pDVLGroPreIntegration2;
-        // o_file2.close();
 
     }
     for (int i = 0; i < FixedKFs.size(); i++) {
@@ -1834,7 +1848,7 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
         VertexAccBias *VA = new VertexAccBias(pKFi);
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
         VA->setFixed(true);
-        VA->setEstimate(Eigen::Vector3d(0,0,0));
+        // VA->setEstimate(Eigen::Vector3d(0,0,0));
         optimizer.addVertex(VA);
 
         VertexVelocity *VV = new VertexVelocity(pKFi);
@@ -1886,13 +1900,13 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
     {
         unique_lock<mutex> lock(MapPoint::mGlobalMutex);
 
-        for (int i = 0; i < N_map_points; i++) {
-            MapPoint *pMP = LocalMapPoints[i];
+        for(auto pMP:LocalMapPoints)
+        {
             if (pMP) {
                 g2o::VertexSBAPointXYZ *vPoint = new g2o::VertexSBAPointXYZ();
                 vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos()));
                 int id = pMP->mnId + maxKFid + 1;
-                vPoint->setId((maxKFid + 1)*5 + i);
+                vPoint->setId((maxKFid + 1)*5 + pMP->mnId);
                 vPoint->setMarginalized(true);
                 optimizer.addVertex(vPoint);
 
@@ -2097,6 +2111,26 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
             // eG->setId(maxKFid+1 + pKFi->mnId);
             dvlimu_edges.push_back(eG);
             optimizer.addEdge(eG);
+
+            Eigen::Matrix3d R_c0_ci = VP1->estimate().Rwc;
+            Eigen::Matrix3d R_c0_cj = VP2->estimate().Rwc;
+            Eigen::Vector3d t_c0_ci = VP1->estimate().twc;
+            Eigen::Vector3d t_c0_cj = VP2->estimate().twc;
+            Eigen::Isometry3d T_c0_ci = Eigen::Isometry3d::Identity();
+            T_c0_ci.rotate(R_c0_ci);
+            T_c0_ci.pretranslate(t_c0_ci);
+            Eigen::Isometry3d T_c0_cj = Eigen::Isometry3d::Identity();
+            T_c0_cj.rotate(R_c0_cj);
+            T_c0_cj.pretranslate(t_c0_cj);
+            Eigen::Isometry3d T_ci_cj = T_c0_ci.inverse() * T_c0_cj;
+
+            EdgeSE3DVLIMU *e_se3 = new EdgeSE3DVLIMU(T_ci_cj);
+            e_se3->setVertex(0,VP1);
+            e_se3->setVertex(1,VP2);
+            e_se3->setLevel(0);
+            e_se3->setInformation(Eigen::Matrix<double,6,6>::Identity()* lamda_DVL * (stereo_edges.size()+mono_edges.size()));
+            e_se3->setId(optimizer.edges().size());
+            optimizer.addEdge(e_se3);
 
             // eG1->setId(maxKFid+1 + pKFi->mnId);
             // only add first 5 KF for bias optimization
@@ -2303,10 +2337,9 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
     }
     // ROS_INFO_STREAM(ss.str());
 
-    for (int i = 0; i < N_map_points; i++) {
-        MapPoint *pMP = LocalMapPoints[i];
+    for(auto pMP:LocalMapPoints) {
         g2o::VertexSBAPointXYZ
-                *vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex((maxKFid + 1) * 5 + i));
+                *vPoint = static_cast<g2o::VertexSBAPointXYZ *>(optimizer.vertex((maxKFid + 1) * 5 + pMP->mnId));
         pMP->SetWorldPos(Converter::toCvMat(vPoint->estimate()));
         pMP->UpdateNormalAndDepth();
     }

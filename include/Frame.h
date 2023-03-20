@@ -285,6 +285,7 @@ public:
     // tighly coupled DVL
     bool mbDVL=false;
 	Eigen::Isometry3d mT_c0_cj_dvl;
+    bool mPoorVision = false;
 
 
 private:

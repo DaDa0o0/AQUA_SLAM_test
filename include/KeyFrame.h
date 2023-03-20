@@ -694,6 +694,7 @@ public:
 	DVLGroPreIntegration *mpDvlPreintegrationKeyFrame;
     DVLGroPreIntegration *mpDvlPreintegrationLossRefKF=nullptr;
     KeyFrame* mpLossRefKF = nullptr;
+    bool mPoorVision;
 
 	void IntegrateDVL(KeyFrame* kp_i);
 

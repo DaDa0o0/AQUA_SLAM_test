@@ -103,8 +103,10 @@ RosHandling::RosHandling(System *pSys, LocalMapping *pLocal)
 	ros::ServiceServer calib_srv = nh_.advertiseService("/ORBSLAM3_tightly/calibrate", &RosHandling::CalibrateDVLGyro, this);
 	m_calib_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(calib_srv));
 
-    mT_w_c0.setIdentity();
+    ros::ServiceServer fullBA_srv = nh_.advertiseService("/ORBSLAM3_tightly/fullBA", &RosHandling::FullBA, this);
+    m_fullBA_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(fullBA_srv));
 
+    mT_w_c0.setIdentity();
 }
 
 
@@ -907,4 +909,10 @@ bool RosHandling::CalibrateDVLGyro(std_srvs::EmptyRequest &req, std_srvs::EmptyR
 {
 	mp_LocalMapping->InitializeDvlIMU();
 	return true;
+}
+
+bool RosHandling::FullBA(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+    mp_LocalMapping->FullBA();
+    return true;
 }

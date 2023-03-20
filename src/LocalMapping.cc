@@ -148,19 +148,6 @@ void LocalMapping::Run()
                         // 											   mpCurrentKeyFrame->GetMap(),
                         // 											   num_FixedKF_BA,
                         // 											   mpTracker->mlamda_DVL);
-                        if(mpAtlas->GetAllKeyFramesinAllMap().size()-pose_graph_kf_num>100){
-                            // DvlGyroOptimizer::LocalDVLIMUPoseGraph(mpAtlas,
-                            //                                        mpCurrentKeyFrame,
-                            //                                        mpCurrentKeyFrame->GetMap());
-                            DvlGyroOptimizer::FullDVLIMUBundleAdjustment(mpAtlas,
-                                                                          mpCurrentKeyFrame,
-                                                                          &mbAbortBA,
-                                                                          mpCurrentKeyFrame->GetMap(),
-                                                                          num_FixedKF_BA,
-                                                                          mpTracker->mlamda_DVL,
-                                                                          mpTracker->mlamda_visual);
-                            pose_graph_kf_num = mpAtlas->GetAllKeyFramesinAllMap().size();
-                        }
                         DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(mpAtlas,
                                                                       mpCurrentKeyFrame,
                                                                       &mbAbortBA,
@@ -1705,5 +1692,16 @@ void LocalMapping::RefineGravityDvlIMU()
 
     mpTracker->mpRosHandler->UpdateMap(mpAtlas);
     mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+}
+
+void LocalMapping::FullBA()
+{
+    DvlGyroOptimizer::FullDVLIMUBundleAdjustment(mpAtlas,
+                                                 mpCurrentKeyFrame,
+                                                 &mbAbortBA,
+                                                 mpCurrentKeyFrame->GetMap(),
+                                                 10,
+                                                 mpTracker->mlamda_DVL,
+                                                 mpTracker->mlamda_visual);
 }
 } //namespace ORB_SLAM

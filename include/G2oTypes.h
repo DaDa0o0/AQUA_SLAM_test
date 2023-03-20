@@ -169,6 +169,8 @@ public:
 	int its;
 
     int mCamNum;
+    double mTimestamp;
+    bool mPoorVision;
 };
 
 class InvDepthPoint
@@ -1322,10 +1324,8 @@ public:
 
     virtual void computeError();
 
-    virtual bool read(std::istream &in)
-    {}
-    virtual bool write(std::ostream &out) const
-    {}
+    virtual bool read(std::istream &in);
+    virtual bool write(std::ostream &out) const;
 
 protected:
     Eigen::Isometry3d mT_ci_cj;

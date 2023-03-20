@@ -904,7 +904,7 @@ void DVLGroPreIntegration::serialize(Archive &ar, const unsigned int version)
     ar & bDVL;
     ar & mVelocityThreshold;
     serializePoint3d(ar, v_dk_dvl, version);
-    serializeEigenMatrix(ar, v_di_dvl, version);
+    // serializeEigenMatrix(ar, v_di_dvl, version);
     // serializeEigenMatrix(ar, v_dk_visual, version);
     //		serializeEigenV3d(ar, v_dk_visual, version);
     ar & mBeams;
