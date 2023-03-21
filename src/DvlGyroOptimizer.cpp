@@ -1609,43 +1609,43 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     }
 
     /************************first pose graph optimization************************/
-    for (auto e: mono_edges) {
-        e->setLevel(1);
-    }
-    for (auto e: stereo_edges) {
-        e->setLevel(1);
-    }
-    for (auto e: dvlimu_edges) {
-        e->setLevel(0);
-        VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[0]);
-        VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[1]);
-        if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
-            e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * 1000);
-        }
-        else{
-            e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL);
-        }
-
-    }
-    for (auto e:se3_edges){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_visual * 10);
-    }
-    for (auto e:acc_edge){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
-    }
-    for(auto e:gyro_edge){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
-    }
-    for(auto e:velocity_edge){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
-    }
-    for(auto v:vpab){
-        v->setFixed(true);
-    }
+    // for (auto e: mono_edges) {
+    //     e->setLevel(1);
+    // }
+    // for (auto e: stereo_edges) {
+    //     e->setLevel(1);
+    // }
+    // for (auto e: dvlimu_edges) {
+    //     e->setLevel(0);
+    //     VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[0]);
+    //     VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[1]);
+    //     if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
+    //         e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * 1000);
+    //     }
+    //     else{
+    //         e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL);
+    //     }
+    //
+    // }
+    // for (auto e:se3_edges){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_visual * 10);
+    // }
+    // for (auto e:acc_edge){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
+    // }
+    // for(auto e:gyro_edge){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
+    // }
+    // for(auto e:velocity_edge){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * 100);
+    // }
+    // for(auto v:vpab){
+    //     v->setFixed(true);
+    // }
 
     optimizer.initializeOptimization(0);
     optimizer.save("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/LocalBA_PoseGraph.g2o",0);
@@ -1653,66 +1653,66 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     optimizer.optimize(5);
 
 
-    for (auto mp_kf: map_point_observation) {
-        if (map_pose_original.find(mp_kf.second) != map_pose_original.end()) {
-            Eigen::Isometry3d T_c0_cj = map_pose_original[mp_kf.second];
-            Eigen::Isometry3d T_c0_cjnew = Eigen::Isometry3d::Identity();
-            T_c0_cjnew.rotate(mp_kf.second->estimate().Rwc);
-            T_c0_cjnew.pretranslate(mp_kf.second->estimate().twc);
-            Eigen::Isometry3d T_cjnew_cj = T_c0_cjnew.inverse() * T_c0_cj;
-            Eigen::Vector3d mp_pos = mp_kf.first->estimate();
-            Eigen::Vector3d mp_pos_new = T_c0_cjnew * T_c0_cj.inverse() * mp_pos;
-            mp_kf.first->setEstimate(mp_pos_new);
-        }
-    }
-    /************************second filter out map point************************/
-    for (auto e: mono_edges) {
-        e->computeError();
-        e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
-        if (e->chi2() > 5.991) {
-            e->setLevel(1);
-        }
-        else {
-            e->setLevel(0);
-            // e->setInformation(Eigen::Matrix2d::Identity() * 1);
-        }
-
-    }
-    for (auto e: stereo_edges) {
-        e->computeError();
-        e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
-        if (e->chi2() > 7.8) {
-            e->setLevel(1);
-        }
-        else {
-            e->setLevel(0);
-        }
-    }
-    /************************third LocalAcousticInertialBA************************/
-    for (auto e: dvlimu_edges) {
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
-    }
-    for(auto e:se3_edges){
-        e->setLevel(1);
-    }
-    for (auto e:acc_edge){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
-    }
-    for(auto e:gyro_edge){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
-    }
-    for(auto e:velocity_edge){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
-    }
-    // for(auto v:vpab){
-    //     v->setFixed(false);
+    // for (auto mp_kf: map_point_observation) {
+    //     if (map_pose_original.find(mp_kf.second) != map_pose_original.end()) {
+    //         Eigen::Isometry3d T_c0_cj = map_pose_original[mp_kf.second];
+    //         Eigen::Isometry3d T_c0_cjnew = Eigen::Isometry3d::Identity();
+    //         T_c0_cjnew.rotate(mp_kf.second->estimate().Rwc);
+    //         T_c0_cjnew.pretranslate(mp_kf.second->estimate().twc);
+    //         Eigen::Isometry3d T_cjnew_cj = T_c0_cjnew.inverse() * T_c0_cj;
+    //         Eigen::Vector3d mp_pos = mp_kf.first->estimate();
+    //         Eigen::Vector3d mp_pos_new = T_c0_cjnew * T_c0_cj.inverse() * mp_pos;
+    //         mp_kf.first->setEstimate(mp_pos_new);
+    //     }
     // }
-    optimizer.initializeOptimization(0);
-    optimizer.optimize(5);
+    // /************************second filter out map point************************/
+    // for (auto e: mono_edges) {
+    //     e->computeError();
+    //     e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
+    //     if (e->chi2() > 5.991) {
+    //         e->setLevel(1);
+    //     }
+    //     else {
+    //         e->setLevel(0);
+    //         // e->setInformation(Eigen::Matrix2d::Identity() * 1);
+    //     }
+    //
+    // }
+    // for (auto e: stereo_edges) {
+    //     e->computeError();
+    //     e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
+    //     if (e->chi2() > 7.8) {
+    //         e->setLevel(1);
+    //     }
+    //     else {
+    //         e->setLevel(0);
+    //     }
+    // }
+    // /************************third LocalAcousticInertialBA************************/
+    // for (auto e: dvlimu_edges) {
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
+    // }
+    // for(auto e:se3_edges){
+    //     e->setLevel(1);
+    // }
+    // for (auto e:acc_edge){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
+    // }
+    // for(auto e:gyro_edge){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
+    // }
+    // for(auto e:velocity_edge){
+    //     e->setLevel(0);
+    //     e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_DVL *(mono_edges.size()+stereo_edges.size()));
+    // }
+    // // for(auto v:vpab){
+    // //     v->setFixed(false);
+    // // }
+    // optimizer.initializeOptimization(0);
+    // optimizer.optimize(5);
 
 
     // Recover optimized data

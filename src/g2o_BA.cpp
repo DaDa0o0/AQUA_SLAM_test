@@ -230,22 +230,108 @@ bool OptimizeBA(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
     for (auto a: vertex_pose_Fixed) {
         a->setFixed(true);
     }
+    for(auto v:vertex_acc_bias){
+        v->setFixed(false);
+    }
     // get error before optimization
     double visual_chi2 = 0, dvl_chi2 = 0;
     for (auto e: edge_mono) {
         e->computeError();
         e->setLevel(0);
+        e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_stereo) {
         e->computeError();
         e->setLevel(0);
+        e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_dvl_imu) {
         e->computeError();
         e->setLevel(0);
+        e->setInformation(Eigen::Matrix<double,9,9>::Identity()*dvl_imu_weight*(edge_mono.size()+edge_stereo.size()));
         dvl_chi2 += e->chi2();
+    }
+    for(auto e:edge_se3){
+        e->setLevel(1);
+    }
+    ROS_INFO_STREAM("Before optimization, visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
+    //optimize the graph
+
+
+    optimizer->setVerbose(true);
+    for (int i = 0; i < 3; i++) {
+        optimizer->initializeOptimization(0);
+        optimizer->optimize(20);
+        PublishGraph();
+    }
+
+    // get error after optimization
+    visual_chi2 = 0, dvl_chi2 = 0;
+    for (auto e: edge_mono) {
+        e->computeError();
+        visual_chi2 += e->chi2();
+    }
+    for (auto e: edge_stereo) {
+        e->computeError();
+        visual_chi2 += e->chi2();
+    }
+    for (auto e: edge_dvl_imu) {
+        e->computeError();
+        dvl_chi2 += e->chi2();
+    }
+    for(auto v:vertex_acc_bias){
+        ROS_INFO_STREAM(
+    }
+    ROS_INFO_STREAM("After optimization " << " visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
+
+    return true;
+}
+
+bool OptimizeBAWithoutBias(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+    if (!optimizer) {
+        ROS_ERROR_STREAM("Optimizer is not initialized.");
+        return false;
+    }
+    for (auto v: vertex_pose) {
+        v->setFixed(false);
+    }
+    for (auto v: vertex_point) {
+        v->setFixed(false);
+    }
+    for (auto a: vertex_point_Fixed) {
+        a->setFixed(true);
+    }
+    for (auto a: vertex_pose_Fixed) {
+        a->setFixed(true);
+    }
+    for(auto v:vertex_acc_bias){
+        v->setFixed(true);
+    }
+    // get error before optimization
+    double visual_chi2 = 0, dvl_chi2 = 0;
+    for (auto e: edge_mono) {
+        e->computeError();
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
+        visual_chi2 += e->chi2();
+    }
+    for (auto e: edge_stereo) {
+        e->computeError();
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
+        visual_chi2 += e->chi2();
+    }
+    for (auto e: edge_dvl_imu) {
+        e->computeError();
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix<double,9,9>::Identity()*dvl_imu_weight*(edge_mono.size()+edge_stereo.size()));
+        dvl_chi2 += e->chi2();
+    }
+    for(auto e:edge_se3){
+        e->setLevel(1);
     }
     ROS_INFO_STREAM("Before optimization, visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
     //optimize the graph
@@ -299,6 +385,10 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
         e->setLevel(0);
         e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight);
     }
+    for(auto e:edge_prior_acc){
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix3d::Identity()*10000);
+    }
     map_pose_original.clear();
     for (auto v: vertex_pose) {
         v->setFixed(false);
@@ -308,6 +398,186 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
         map_pose_original.insert(std::pair<VertexPoseDvlIMU*, Eigen::Isometry3d>(v, T_c0_cj));
     }
     for (auto v: vertex_pose_Fixed) {
+        v->setFixed(true);
+    }
+    for(auto v:vertex_acc_bias) {
+        v->setFixed(false);
+    }
+    optimizer->setVerbose(false);
+    for (int i = 0; i < 5; i++) {
+        optimizer->initializeOptimization(0);
+        optimizer->optimize(10);
+        PublishGraph();
+    }
+    //update map point position
+    for (auto kf_pose: map_pose_original) {
+        for (auto mp_kf: map_point_observation) {
+            if (mp_kf.second == kf_pose.first) {
+                Eigen::Isometry3d T_c0_cj = kf_pose.second;
+                Eigen::Isometry3d T_c0_cjnew = Eigen::Isometry3d::Identity();
+                T_c0_cjnew.rotate(kf_pose.first->estimate().Rwc);
+                T_c0_cjnew.pretranslate(kf_pose.first->estimate().twc);
+                Eigen::Isometry3d T_cjnew_cj = T_c0_cjnew.inverse() * T_c0_cj;
+                Eigen::Vector3d mp_pos = mp_kf.first->estimate();
+                Eigen::Vector3d mp_pos_new = T_c0_cjnew * T_c0_cj.inverse() * mp_pos;
+                mp_kf.first->setEstimate(mp_pos_new);
+            }
+        }
+    }
+    PublishGraph();
+    // sleep this thread for 1 second
+    auto now1 = std::chrono::system_clock::now();
+    auto later1 = now1 + std::chrono::seconds(1);
+    std::this_thread::sleep_until(later1);
+
+    /************************second map point optimization************************/
+    for (auto e: edge_mono) {
+        e->setLevel(0);
+    }
+    for (auto e: edge_stereo) {
+        e->setLevel(0);
+    }
+    for (auto e: edge_dvl_imu) {
+        e->setLevel(0);
+    }
+    for (auto v: vertex_pose) {
+        v->setFixed(true);
+    }
+    for (auto v: vertex_point) {
+        v->setFixed(false);
+    }
+    for (auto a: vertex_point_Fixed) {
+        a->setFixed(true);
+    }
+    for (auto e: edge_mono) {
+        e->computeError();
+        e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
+        if (e->chi2() > 10) {
+            // std::remove(edge_mono.begin(), edge_mono.end(), e);
+            // g2o::VertexSBAPointXYZ* v = dynamic_cast<g2o::VertexSBAPointXYZ*>(e->vertices()[1]);
+            // vertex_point.erase(v);
+            // vertex_point_Fixed.erase(v);
+            // optimizer->vertices().erase(v->id());
+            // optimizer->edges().erase(e);
+            // e->setInformation(Eigen::Matrix2d::Identity() * 0.0001);
+            e->setLevel(1);
+            e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
+        }
+        else {
+            e->setLevel(0);
+            // e->setInformation(Eigen::Matrix2d::Identity() * 1);
+        }
+
+    }
+    for (auto e: edge_stereo) {
+        e->computeError();
+        e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
+        if (e->chi2() > 10) {
+            // std::remove(edge_stereo.begin(), edge_stereo.end(), e);
+            // g2o::VertexSBAPointXYZ* v = dynamic_cast<g2o::VertexSBAPointXYZ*>(e->vertices()[1]);
+            // vertex_point.erase(v);
+            // vertex_point_Fixed.erase(v);
+            // optimizer->vertices().erase(v->id());
+            // optimizer->edges().erase(e);
+            // e->setInformation(Eigen::Matrix3d::Identity() * 0.0001);
+            e->setLevel(1);
+            e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
+        }
+        else {
+            e->setLevel(0);
+        }
+    }
+    // optimizer->setVerbose(true);
+    // for (int i = 0; i < 10; i++) {
+    //     optimizer->initializeOptimization(0);
+    //     optimizer->optimize(20);
+    //     PublishGraph();
+    //
+    //
+    // }
+    // // sleep this thread for 1 second
+    // // DeleteGraphRviz();
+    // auto now2 = std::chrono::system_clock::now();
+    // auto later2 = now2 + std::chrono::seconds(1);
+    // std::this_thread::sleep_until(later2);
+
+
+    /************************third BA optimization************************/
+    // DeleteGraphRviz();
+
+    // get error after optimization
+    visual_chi2 = 0, dvl_chi2 = 0;
+    // for (auto e: edge_mono) {
+    //     e->computeError();
+    //     e->setLevel(0);
+    //     visual_chi2 += e->chi2();
+    // }
+    // for (auto e: edge_stereo) {
+    //     e->computeError();
+    //     e->setLevel(0);
+    //     visual_chi2 += e->chi2();
+    // }
+    for (auto e: edge_dvl_imu) {
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *(edge_mono.size()+edge_stereo.size()));
+    }
+    for(auto e:edge_se3){
+        e->setLevel(1);
+        // e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight *(edge_mono.size()+edge_stereo.size()));
+    }
+    for (auto v: vertex_pose) {
+        v->setFixed(false);
+    }
+    for (auto v: vertex_point) {
+        v->setFixed(false);
+    }
+    for (auto a: vertex_point_Fixed) {
+        a->setFixed(true);
+    }
+    for (auto a: vertex_pose_Fixed) {
+        a->setFixed(true);
+    }
+    optimizer->initializeOptimization(0);
+    optimizer->optimize(50);
+    PublishGraph();
+
+    return true;
+}
+
+bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
+{
+    if (!optimizer) {
+        ROS_ERROR_STREAM("Optimizer is not initialized.");
+        return false;
+    }
+    /************************first pose graph optimization************************/
+    double visual_chi2 = 0, dvl_chi2 = 0;
+    for (auto e: edge_mono) {
+        e->setLevel(1);
+    }
+    for (auto e: edge_stereo) {
+        e->setLevel(1);
+    }
+    for (auto e: edge_dvl_imu) {
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight);
+    }
+    for (auto e:edge_se3){
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight);
+    }
+    map_pose_original.clear();
+    for (auto v: vertex_pose) {
+        v->setFixed(false);
+        Eigen::Isometry3d T_c0_cj = Eigen::Isometry3d::Identity();
+        T_c0_cj.rotate(v->estimate().Rwc);
+        T_c0_cj.pretranslate(v->estimate().twc);
+        map_pose_original.insert(std::pair<VertexPoseDvlIMU*, Eigen::Isometry3d>(v, T_c0_cj));
+    }
+    for (auto v: vertex_pose_Fixed) {
+        v->setFixed(true);
+    }
+    for(auto v:vertex_acc_bias) {
         v->setFixed(true);
     }
     optimizer->setVerbose(false);
@@ -368,6 +638,7 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
             // optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix2d::Identity() * 0.0001);
             e->setLevel(1);
+            e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
         }
         else {
             e->setLevel(0);
@@ -387,24 +658,25 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
             // optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix3d::Identity() * 0.0001);
             e->setLevel(1);
+            e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
         }
         else {
             e->setLevel(0);
         }
     }
-    optimizer->setVerbose(true);
-    for (int i = 0; i < 10; i++) {
-        optimizer->initializeOptimization(0);
-        optimizer->optimize(20);
-        PublishGraph();
-
-
-    }
-    // sleep this thread for 1 second
-    // DeleteGraphRviz();
-    auto now2 = std::chrono::system_clock::now();
-    auto later2 = now2 + std::chrono::seconds(1);
-    std::this_thread::sleep_until(later2);
+    // optimizer->setVerbose(true);
+    // for (int i = 0; i < 10; i++) {
+    //     optimizer->initializeOptimization(0);
+    //     optimizer->optimize(20);
+    //     PublishGraph();
+    //
+    //
+    // }
+    // // sleep this thread for 1 second
+    // // DeleteGraphRviz();
+    // auto now2 = std::chrono::system_clock::now();
+    // auto later2 = now2 + std::chrono::seconds(1);
+    // std::this_thread::sleep_until(later2);
 
 
     /************************third BA optimization************************/
@@ -427,8 +699,8 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
         e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *(edge_mono.size()+edge_stereo.size()));
     }
     for(auto e:edge_se3){
-        e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * dvl_imu_weight *(edge_mono.size()+edge_stereo.size()));
+        e->setLevel(1);
+        // e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight *(edge_mono.size()+edge_stereo.size()));
     }
     for (auto v: vertex_pose) {
         v->setFixed(false);
@@ -684,6 +956,8 @@ int main(int argc, char** argv)
     ros::ServiceServer service4 = nh.advertiseService("/g2oGraph/OptimizePose", OptimizePoseGraph);
     ros::ServiceServer service5 = nh.advertiseService("/g2oGraph/OptimizeExtrinsicAndG", OptimizeExtrinsic);
     ros::ServiceServer service6 = nh.advertiseService("/g2oGraph/saveResult", SaveResult);
+    ros::ServiceServer service7 = nh.advertiseService("/g2oGraph/OptimizeBAWithoutBias", OptimizeBAWithoutBias);
+    ros::ServiceServer service8 = nh.advertiseService("/g2oGraph/OptimizePoseGraphWithout", OptimizePoseGraphWithout);
     ros::Publisher markers_pub = nh.advertise<visualization_msgs::MarkerArray>("/g2oGraph/GraphMarker", 10);
     p_markers_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(markers_pub));
 
