@@ -2679,7 +2679,7 @@ void Tracking::TrackDVLGyro()
 
 		if (mState != OK) // If rightly initialized, mState=OK
 		{
-            topicPublishDVLOnly();
+            // topicPublishDVLOnly();
 			mLastFrame = Frame(mCurrentFrame);
             ROS_INFO_STREAM(fixed<<setprecision(6)<<"fail to initialize, Frame["<<mCurrentFrame.mnId<<"], "<<mCurrentFrame.mTimeStamp);
 			return;
