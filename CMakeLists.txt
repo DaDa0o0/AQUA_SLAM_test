@@ -4,12 +4,13 @@ project(ORB_DVL2)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -w")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-#SET(ROS_BUILD_TYPE RelWithDebInfo)
-#SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+SET(ROS_BUILD_TYPE RelWithDebInfo)
+SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -ferror-limit=1000")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DCOMPILEDWITHC11)
+set(CMAKE_CXX_STANDARD 17)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)

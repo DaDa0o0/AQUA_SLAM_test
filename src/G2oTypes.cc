@@ -2207,10 +2207,11 @@ void EdgeDvlIMU::computeError()
 
     //	mpInt->ReintegrateWithVelocity(v_gt );
 
-    const Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
+    Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
+    e_R[0]=e_R[0]*10000;
 
-    const Eigen::Vector3d e_V = VDelta_est - dDelta_V;
-    const Eigen::Vector3d e_P = P_acc_est - dP_acc;
+    const Eigen::Vector3d e_V = 5 * (VDelta_est - dDelta_V);
+    const Eigen::Vector3d e_P = 1 * (P_acc_est - dP_acc);
 
     _error<<e_R, e_V, e_P;
 }

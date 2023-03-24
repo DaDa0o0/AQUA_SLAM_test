@@ -295,9 +295,9 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 		}
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud, free_cloud;
         cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
-        cloud->reserve(5000);
+        cloud->reserve(50000);
         free_cloud = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
-        free_cloud->reserve(10000);
+        free_cloud->reserve(100000);
 //		glPointSize(mPointSize);
 //		glBegin(GL_POINTS);
 //		glColor3f(color[0],color[1],color[2]);

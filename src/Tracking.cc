@@ -1754,7 +1754,7 @@ bool Tracking::PredictStateDvlGro()
             ROS_INFO_STREAM("t_c0_c1_acc_v:" << T_c0_c1_acc_v.translation().transpose());
             // ROS_INFO_STREAM("Dt_bf_b1: " << Dt_bf_b1.transpose());
             cv::Mat T_c1_c0_cv(4,4,CV_32F);
-            cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
+            cv::eigen2cv(T_c0_c1_dvl.inverse().matrix(),T_c1_c0_cv);
             T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
             mCurrentFrame.SetPose(T_c1_c0_cv);
 
@@ -1817,7 +1817,7 @@ bool Tracking::PredictStateDvlGro()
         cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_di_di_dj);
         Eigen::Matrix3d R_di_dj = T_g_d.rotation().inverse() * R_gi_gj * T_g_d.rotation();
         Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
-        // T_di_dj.pretranslate(t_di_di_dj);
+        T_di_dj.pretranslate(t_di_di_dj);
         T_di_dj.rotate(R_di_dj);
         Eigen::Isometry3d T_c0_cj = T_c0_ci * T_d_c.inverse() * T_di_dj * T_d_c;
         cv::Mat T_cj_c0_cv(4, 4, CV_32F);
@@ -2724,16 +2724,22 @@ void Tracking::TrackDVLGyro()
 				}
 
 				if (!bOK) {
-					cout << "Fail to track with motion model!" << endl;
+                    PredictStateDvlGro();
+					// cout << "Fail to track with motion model!" << endl;
+                    if(pCurrentMap->KeyFramesInMap() >= mKFThresholdForMap){
+                        bOK = true;
+                    }
+                    else{
+                        mState = LOST;
+                    }
+
+
 				}
 
+
 			}
 
 
-			if (!bOK) {
-                mState = LOST;
-                PredictStateDvlGro();
-			}
 		}
 		else {
             Verbose::PrintMess("A new map is started...", Verbose::VERBOSITY_NORMAL);
@@ -5029,43 +5035,35 @@ bool Tracking::TrackLocalMap()
 	// Decide if the tracking was succesful
 	// More restrictive if there was a relocalization recently
 	mpLocalMapper->mnMatchesInliers = mnMatchesInliers;
-    if(mnMatchesInliers < mpORBextractorLeft->nfeatures * 0.2){
+    if(mnMatchesInliers < mpORBextractorLeft->nfeatures * 0.15){
         mCurrentFrame.mPoorVision = true;
     }
-    ROS_INFO_STREAM("Matching Inliers: "<<mnMatchesInliers);
-	if (mCurrentFrame.mnId < mnLastRelocFrameId + mMaxFrames && mnMatchesInliers < 50) {
-		return false;
-	}
+    // ROS_INFO_STREAM("Matching Inliers: "<<mnMatchesInliers);
+	// if (mCurrentFrame.mnId < mnLastRelocFrameId + mMaxFrames && mnMatchesInliers < 50) {
+	// 	return false;
+	// }
 
 //	if ((mnMatchesInliers > 10) && (mState == RECENTLY_LOST)) {
 //		return true;
 //	}
 
 
-	if (mSensor == System::IMU_MONOCULAR) {
-		if (mnMatchesInliers < 15) {
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
-	else if (mSensor == System::IMU_STEREO) {
-		if (mnMatchesInliers < 15) {
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
-	else {
-		if (mnMatchesInliers < 30) {
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
+    if (mnMatchesInliers < 30) {
+        if(mLossFNum<30){
+            mLossFNum++;
+            PredictStateDvlGro();
+            return true;
+        }
+        else{
+            mLossFNum = 0;
+            PredictStateDvlGro();
+            return false;
+        }
+
+    }
+    else {
+        return true;
+    }
 }
 bool Tracking::TrackLocalMapWithDvlGyro()
 {
@@ -5249,14 +5247,14 @@ bool Tracking::NeedNewKeyFrame()
 	bNeedToInsertClose = (nTrackedClose < 100) && (nNonTrackedClose > 70);
 
 	// Thresholds
-	float thRefRatio = 0.6f;
+	float thRefRatio = 0.75f;
 
 	// Condition 1a: More than "MaxFrames" have passed from last keyframe insertion
 	const bool c1a = mCurrentFrame.mnId >= mnLastKeyFrameId + mMaxFrames;
 	// Condition 1b: More than "MinFrames" have passed and Local Mapping is idle
 	const bool c1b = ((mCurrentFrame.mnId >= mnLastKeyFrameId + mMinFrames) && bLocalMappingIdle);
 	//Condition 1c: tracking is weak
-	const bool c1c = mSensor != System::DVL_STEREO && (mnMatchesInliers < nRefMatches * 0.25 || bNeedToInsertClose);
+	const bool c1c = mnMatchesInliers < nRefMatches * 0.25 || bNeedToInsertClose;
 	// Condition 2: Few tracked points compared to reference keyframe. Lots of visual odometry compared to map matches.
 	const bool c2 = (((mnMatchesInliers < nRefMatches * thRefRatio || bNeedToInsertClose)) && mnMatchesInliers > 15);
 
@@ -5270,17 +5268,12 @@ bool Tracking::NeedNewKeyFrame()
 		}
 		else {
 			mpLocalMapper->InterruptBA();
-			if (mSensor != System::DVL_STEREO) {
-				if (mpLocalMapper->KeyframesInQueue() < 2) {
-					return true;
-				}
-				else {
-					return false;
-				}
-			}
-			else {
-				return false;
-			}
+            if (mpLocalMapper->KeyframesInQueue() < 5) {
+                return true;
+            }
+            else {
+                return false;
+            }
 		}
 	}
 	else {

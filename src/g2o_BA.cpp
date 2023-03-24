@@ -230,7 +230,7 @@ bool OptimizeBA(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
     for (auto a: vertex_pose_Fixed) {
         a->setFixed(true);
     }
-    for(auto v:vertex_acc_bias){
+    for (auto v: vertex_acc_bias) {
         v->setFixed(false);
     }
     // get error before optimization
@@ -238,22 +238,23 @@ bool OptimizeBA(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
     for (auto e: edge_mono) {
         e->computeError();
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
+        e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_stereo) {
         e->computeError();
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
+        e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_dvl_imu) {
         e->computeError();
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double,9,9>::Identity()*dvl_imu_weight*(edge_mono.size()+edge_stereo.size()));
+        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *
+                          (edge_mono.size() + edge_stereo.size()));
         dvl_chi2 += e->chi2();
     }
-    for(auto e:edge_se3){
+    for (auto e: edge_se3) {
         e->setLevel(1);
     }
     ROS_INFO_STREAM("Before optimization, visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
@@ -281,8 +282,9 @@ bool OptimizeBA(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
         e->computeError();
         dvl_chi2 += e->chi2();
     }
-    for(auto v:vertex_acc_bias){
-        ROS_INFO_STREAM(
+    for (auto v: vertex_acc_bias) {
+        ROS_INFO_STREAM("acc bias: " << v->estimate().transpose());
+
     }
     ROS_INFO_STREAM("After optimization " << " visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
 
@@ -307,7 +309,7 @@ bool OptimizeBAWithoutBias(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse 
     for (auto a: vertex_pose_Fixed) {
         a->setFixed(true);
     }
-    for(auto v:vertex_acc_bias){
+    for (auto v: vertex_acc_bias) {
         v->setFixed(true);
     }
     // get error before optimization
@@ -315,22 +317,23 @@ bool OptimizeBAWithoutBias(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse 
     for (auto e: edge_mono) {
         e->computeError();
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
+        e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_stereo) {
         e->computeError();
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
+        e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_dvl_imu) {
         e->computeError();
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double,9,9>::Identity()*dvl_imu_weight*(edge_mono.size()+edge_stereo.size()));
+        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *
+                          (edge_mono.size() + edge_stereo.size()));
         dvl_chi2 += e->chi2();
     }
-    for(auto e:edge_se3){
+    for (auto e: edge_se3) {
         e->setLevel(1);
     }
     ROS_INFO_STREAM("Before optimization, visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
@@ -385,9 +388,18 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
         e->setLevel(0);
         e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight);
     }
-    for(auto e:edge_prior_acc){
+    for (auto e: edge_prior_acc) {
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix3d::Identity()*10000);
+        e->setInformation(Eigen::Matrix3d::Identity() * 1000);
+        e->bprior=Eigen::Vector3d::Zero();
+        VertexAccBias* va = dynamic_cast<VertexAccBias*>(e->vertices()[0]);
+        va->setEstimate(Eigen::Vector3d::Zero());
+        ROS_INFO_STREAM("initial acc [" <<va->id()<< "]: " << va->estimate().transpose());
+        ROS_INFO_STREAM("prior acc: " << e->bprior.transpose());
+    }
+    for(auto e: edge_dvl_velocity){
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix3d::Identity()*1000);
     }
     map_pose_original.clear();
     for (auto v: vertex_pose) {
@@ -400,13 +412,13 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
     for (auto v: vertex_pose_Fixed) {
         v->setFixed(true);
     }
-    for(auto v:vertex_acc_bias) {
+    for (auto v: vertex_acc_bias) {
         v->setFixed(false);
     }
     optimizer->setVerbose(false);
     for (int i = 0; i < 5; i++) {
         optimizer->initializeOptimization(0);
-        optimizer->optimize(10);
+        optimizer->optimize(50);
         PublishGraph();
     }
     //update map point position
@@ -425,6 +437,10 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
         }
     }
     PublishGraph();
+    for (auto v: vertex_acc_bias) {
+        ROS_INFO_STREAM("acc bias: " << v->estimate().transpose());
+
+    }
     // sleep this thread for 1 second
     auto now1 = std::chrono::system_clock::now();
     auto later1 = now1 + std::chrono::seconds(1);
@@ -461,7 +477,7 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
             // optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix2d::Identity() * 0.0001);
             e->setLevel(1);
-            e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
+            e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
         }
         else {
             e->setLevel(0);
@@ -481,7 +497,7 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
             // optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix3d::Identity() * 0.0001);
             e->setLevel(1);
-            e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
+            e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
         }
         else {
             e->setLevel(0);
@@ -519,9 +535,10 @@ bool OptimizePoseGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res
     // }
     for (auto e: edge_dvl_imu) {
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *(edge_mono.size()+edge_stereo.size()));
+        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *
+                          (edge_mono.size() + edge_stereo.size()));
     }
-    for(auto e:edge_se3){
+    for (auto e: edge_se3) {
         e->setLevel(1);
         // e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight *(edge_mono.size()+edge_stereo.size()));
     }
@@ -562,9 +579,18 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
         e->setLevel(0);
         e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight);
     }
-    for (auto e:edge_se3){
+    for (auto e: edge_se3) {
         e->setLevel(0);
         e->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * visual_weight);
+    }
+    for (auto e: edge_prior_acc) {
+        e->setLevel(0);
+        e->setInformation(Eigen::Matrix3d::Identity() * 1000);
+        e->bprior=Eigen::Vector3d::Zero();
+        VertexAccBias* va = dynamic_cast<VertexAccBias*>(e->vertices()[0]);
+        va->setEstimate(Eigen::Vector3d::Zero());
+        ROS_INFO_STREAM("initial acc [" <<va->id()<< "]: " << va->estimate().transpose());
+        ROS_INFO_STREAM("prior acc: " << e->bprior.transpose());
     }
     map_pose_original.clear();
     for (auto v: vertex_pose) {
@@ -577,7 +603,7 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
     for (auto v: vertex_pose_Fixed) {
         v->setFixed(true);
     }
-    for(auto v:vertex_acc_bias) {
+    for (auto v: vertex_acc_bias) {
         v->setFixed(true);
     }
     optimizer->setVerbose(false);
@@ -638,7 +664,7 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
             // optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix2d::Identity() * 0.0001);
             e->setLevel(1);
-            e->setInformation(Eigen::Matrix2d::Identity()*visual_weight);
+            e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
         }
         else {
             e->setLevel(0);
@@ -658,7 +684,7 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
             // optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix3d::Identity() * 0.0001);
             e->setLevel(1);
-            e->setInformation(Eigen::Matrix3d::Identity()*visual_weight);
+            e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
         }
         else {
             e->setLevel(0);
@@ -696,7 +722,8 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
     // }
     for (auto e: edge_dvl_imu) {
         e->setLevel(0);
-        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *(edge_mono.size()+edge_stereo.size()));
+        e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *
+                          (edge_mono.size() + edge_stereo.size()));
     }
     for(auto e:edge_se3){
         e->setLevel(1);
@@ -714,8 +741,15 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
     for (auto a: vertex_pose_Fixed) {
         a->setFixed(true);
     }
+    for (auto v: vertex_acc_bias) {
+        v->setFixed(false);
+    }
     optimizer->initializeOptimization(0);
     optimizer->optimize(50);
+    for (auto v: vertex_acc_bias) {
+        ROS_INFO_STREAM("acc bias: " << v->estimate().transpose());
+
+    }
     PublishGraph();
 
     return true;
@@ -864,12 +898,12 @@ bool ReloadGraph(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
             v_Tdc = dynamic_cast<g2o::VertexSE3Expmap*>(all_verteices[6]);
             v_Tbd = dynamic_cast<g2o::VertexSE3Expmap*>(all_verteices[7]);
         }
-        if(EdgeSE3DVLIMU* e_se3 = dynamic_cast<EdgeSE3DVLIMU*>(e)){
+        if (EdgeSE3DVLIMU* e_se3 = dynamic_cast<EdgeSE3DVLIMU*>(e)) {
             // e_se3->computeError();
             e_se3->setLevel(0);
             edge_se3.push_back(e_se3);
             e_se3->setId(edge_id++);
-            ROS_INFO_STREAM("add EdgeSE3DVLIMU ID:"<<e_se3->id()<<", error:"<<e_se3->chi2());
+            ROS_INFO_STREAM("add EdgeSE3DVLIMU ID:" << e_se3->id() << ", error:" << e_se3->chi2());
         }
     }
 
@@ -911,14 +945,14 @@ bool SaveResult(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
     //save to a local file
     std::ofstream fout("/home/da/project/ros/orb_dvl2_ws/src/dvl2/data/g2o/stamped_traj_estimate.txt");
     fout << "# timestamp tx ty tz qx qy qz qw\n";
-    std::set<VertexPoseDvlIMU*,vertex_time_cmp> all_pose;
-    all_pose.insert(vertex_pose.begin(),vertex_pose.end());
+    std::set<VertexPoseDvlIMU*, vertex_time_cmp> all_pose;
+    all_pose.insert(vertex_pose.begin(), vertex_pose.end());
     for (auto v: all_pose) {
         stringstream ss;
         Eigen::Vector3d t = v->estimate().twc;
         Eigen::Quaterniond q(v->estimate().Rwc);
-        fout <<std::fixed<<std::setprecision(12) << v->estimate().mTimestamp << " " << t.x() << " " << t.y() << " " << t.z() << " " << q.x() << " "
-             << q.y() << " " << q.z() << " " << q.w() << endl;
+        fout << std::fixed << std::setprecision(12) << v->estimate().mTimestamp << " " << t.x() << " " << t.y()
+             << " " << t.z() << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << endl;
     }
     fout.close();
     ROS_INFO_STREAM("Save result done");
@@ -957,7 +991,8 @@ int main(int argc, char** argv)
     ros::ServiceServer service5 = nh.advertiseService("/g2oGraph/OptimizeExtrinsicAndG", OptimizeExtrinsic);
     ros::ServiceServer service6 = nh.advertiseService("/g2oGraph/saveResult", SaveResult);
     ros::ServiceServer service7 = nh.advertiseService("/g2oGraph/OptimizeBAWithoutBias", OptimizeBAWithoutBias);
-    ros::ServiceServer service8 = nh.advertiseService("/g2oGraph/OptimizePoseGraphWithout", OptimizePoseGraphWithout);
+    ros::ServiceServer service8 = nh.advertiseService("/g2oGraph/OptimizePoseGraphWithout",
+                                                      OptimizePoseGraphWithout);
     ros::Publisher markers_pub = nh.advertise<visualization_msgs::MarkerArray>("/g2oGraph/GraphMarker", 10);
     p_markers_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(markers_pub));
 

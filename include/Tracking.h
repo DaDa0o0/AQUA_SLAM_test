@@ -502,6 +502,8 @@ public:
     //store all KF during camera loss
     std::shared_mutex mLossKFMutex;
     protected: set<KeyFrame*,KFComparator> mvpLossKF;
+
+    int mLossFNum = 0;
 public:
     set<KeyFrame*, KFComparator> getMvpLossKf();
 };

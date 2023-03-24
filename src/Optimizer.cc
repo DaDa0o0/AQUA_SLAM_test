@@ -1326,7 +1326,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
         VA->setFixed(true);
         if (pKFi->mnId == (*loss_kfs.rbegin())->mnId) {
             vpab.push_back(VA);
-            VA->setFixed(false);
+            VA->setFixed(true);
             ROS_DEBUG_STREAM("optimizable bias: " << pKFi->mnId);
         }
         optimizer.addVertex(VA);
@@ -1602,13 +1602,13 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
 
         VertexAccBias *VA = new VertexAccBias(pKFi);
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
-        VA->setFixed(false);
+        VA->setFixed(true);
         optimizer.addVertex(VA);
 
 
         VertexVelocity *VV = new VertexVelocity(pKFi);
         VV->setId((maxKFid + 1)*3 + pKFi->mnId);
-        VV->setFixed(false);
+        VV->setFixed(true);
         optimizer.addVertex(VV);
     }
 
@@ -1800,10 +1800,10 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
             ev->setLevel(0);
             ev->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
             if(pKFi->mbDVL){
-                ev->setInformation(Eigen::Matrix3d::Identity()*lamda_DVL * (stereo_edges.size()+mono_edges.size()));
+                ev->setInformation(Eigen::Matrix3d::Identity()*100);
             }
             else{
-                ev->setInformation(Eigen::Matrix3d::Identity()*lamda_DVL * 0.01 * (stereo_edges.size()+mono_edges.size()));
+                ev->setInformation(Eigen::Matrix3d::Identity()*0.1);
             }
             optimizer.addEdge(ev);
             // add edge for v2
@@ -1811,10 +1811,10 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
             ev2->setLevel(0);
             ev2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
             if (pKFi->mbDVL) {
-                ev2->setInformation(Eigen::Matrix3d::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
+                ev2->setInformation(Eigen::Matrix3d::Identity() * 100);
             }
             else {
-                ev2->setInformation(Eigen::Matrix3d::Identity()*lamda_DVL * 0.01 * (stereo_edges.size()+mono_edges.size()));
+                ev2->setInformation(Eigen::Matrix3d::Identity()*0.1);
             }
             optimizer.addEdge(ev2);
 
@@ -1852,7 +1852,7 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
             eG->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
             eG->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() *100);
+            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() *1000);
             eG->setId((maxKFid+1)*2 + pKFi->mnId);
             optimizer.addEdge(eG);
             fixed_bias_edge = eG;
