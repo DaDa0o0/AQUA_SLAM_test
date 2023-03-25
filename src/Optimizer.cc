@@ -1386,7 +1386,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
     //	vppUsedKF.reserve(OptKFs.size() + FixedKFs.size());
     //	std::cout << "build optimization graph" << std::endl;
     EdgeDvlIMUInitRefineWithBias *bias_edge = NULL;
-    EdgeDvlIMU *fixed_bias_edge = NULL;
+    EdgeDvlIMU2 *fixed_bias_edge = NULL;
     for(auto pKFi:loss_kfs) {
         if (pKFi->mPrevKF&&loss_kfs.count(pKFi->mPrevKF)) {
             if (pKFi->isBad() || pKFi->mPrevKF->mnId > maxKFid) {
@@ -1460,7 +1460,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
 
 
 
-            EdgeDvlIMU *eG = new EdgeDvlIMU(pKFi->mpDvlPreintegrationKeyFrame);
+            EdgeDvlIMU2 *eG = new EdgeDvlIMU2(pKFi->mpDvlPreintegrationKeyFrame);
             eG->setLevel(0);
             eG->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
             eG->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
@@ -2092,7 +2092,7 @@ void Optimizer::PoseOptimizationDVLIMUBiasOnly(set<KeyFrame*, KFComparator> &los
     //	vppUsedKF.reserve(OptKFs.size() + FixedKFs.size());
     //	std::cout << "build optimization graph" << std::endl;
     EdgeDvlIMUWithBias *bias_edge = NULL;
-    EdgeDvlIMU *fixed_bias_edge = NULL;
+    EdgeDvlIMU2 *fixed_bias_edge = NULL;
     for(auto pKFi:loss_kfs) {
         if (loss_kfs.count(pKFi->mPrevKF)) {
             if (pKFi->isBad() || pKFi->mPrevKF->mnId > maxKFid) {

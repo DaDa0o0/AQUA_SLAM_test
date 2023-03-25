@@ -1732,6 +1732,27 @@ public:
 
 };
 
+class EdgeDvlIMU2: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
+    {
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        EdgeDvlIMU2(): dt(0.0),mpInt(NULL) {resize(9);}
+        EdgeDvlIMU2(DVLGroPreIntegration *pInt);
+
+        virtual bool read(std::istream &is);
+        virtual bool write(std::ostream &os) const;
+
+        void computeError();
+        //	virtual void linearizeOplus();
+
+        //	const Eigen::Matrix3d JRg, JVg, JPg;
+        //	const Eigen::Matrix3d JVa, JPa;
+        DVLGroPreIntegration *mpInt;
+        double dt;
+
+    };
+
 class EdgeDvlIMUGravityRefine: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
 {
 public:

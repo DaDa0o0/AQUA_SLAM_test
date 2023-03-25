@@ -2738,7 +2738,7 @@ void DvlGyroOptimizer::LocalDVLIMUPoseGraph(Atlas* pAtlas, KeyFrame* pKF, Map* p
             // optimizer.addEdge(edge);
 
 
-            EdgeDvlIMU *eG = new EdgeDvlIMU(pKFi->mpDvlPreintegrationKeyFrame);
+            EdgeDvlIMU2 *eG = new EdgeDvlIMU2(pKFi->mpDvlPreintegrationKeyFrame);
             eG->setLevel(0);
             eG->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
             eG->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
