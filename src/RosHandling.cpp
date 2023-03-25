@@ -304,9 +304,9 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 
 
 		for (size_t i = 0, iend = vpMPs.size(); i < iend; i++) {
-			if (vpMPs[i]->isBad()) {
-				continue;
-			}
+			// if (vpMPs[i]->isBad()) {
+			// 	continue;
+			// }
 			cv::Mat pos_end = vpMPs[i]->GetWorldPos();
 //			glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
 //			pcl::PointXYZRGB p(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2),(uint8_t)color[0],(uint8_t)color[1],(uint8_t)color[2]);
@@ -332,7 +332,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 			p_start.y = T_c0_cj.translation().y();
 			p_start.z = T_c0_cj.translation().z();
 
-			GenerateFreePointcloud(p_start, p_end, m_octomap_resolution, *free_cloud);
+			// GenerateFreePointcloud(p_start, p_end, m_octomap_resolution, *free_cloud);
 //			cout << "add free pointcloud number: " << free_cloud.size() << endl;
 
 
@@ -344,59 +344,64 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
         Eigen::Isometry3d T_w_c0 = mT_w_c0;
 
         pcl::transformPointCloud(*cloud, *cloud, T_w_c0.matrix());
-        pcl::transformPointCloud(*free_cloud, *free_cloud, T_w_c0.matrix());
+        // pcl::transformPointCloud(*free_cloud, *free_cloud, T_w_c0.matrix());
 
-        *mp_cloud_free += *free_cloud;
+        // *mp_cloud_free += *free_cloud;
         *mp_cloud_occupied += *cloud;
 
 	}
 //	cout << "total free pointcloud number: " << mp_cloud_free->size() << endl;
 
+    sensor_msgs::PointCloud2 sparse_map;
+    pcl::toROSMsg(*mp_cloud_occupied, sparse_map);
+    sparse_map.header.frame_id = "orb_slam";
+    mp_pointcloud_pub->publish(sparse_map);
+
 	// remove noise map point
-	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
-	sor.setInputCloud(mp_cloud_occupied);
-	sor.setMeanK(50);
-	sor.setStddevMulThresh(1);
-	sor.filter(*mp_cloud_occupied);
-
-	pcl::VoxelGrid<pcl::PointXYZRGB> vg;
-	vg.setInputCloud(mp_cloud_free);
-	vg.setLeafSize(0.05f, 0.05f, 0.05f);
-	vg.filter(*mp_cloud_free);
-//	pcl::io::savePCDFileBinary("./data/map.pcd", *mp_cloud_occupied);
-	vector<KeyFrame *> vpKFs = pAtlas->GetAllKeyFrames();
-	KeyFrame *kp = vpKFs[0];
-//	Eigen::Isometry3d T_e_c=
-	Eigen::Isometry3d T_d_c_eigen;
-	cv::cv2eigen(T_d_c, T_d_c_eigen.matrix());
-	Eigen::Isometry3d T_rviz_orb = Eigen::Isometry3d::Identity();
-	Eigen::AngleAxisd r1(M_PI / 2, Eigen::Vector3d::UnitY());
-	Eigen::AngleAxisd r2(-M_PI / 2, Eigen::Vector3d::UnitZ());
-	T_rviz_orb.rotate(r1);
-	T_rviz_orb.rotate(r2);
-	// convert map point from orb frame to rviz frame
-	// pcl::transformPointCloud(*mp_cloud_occupied, *mp_cloud_occupied, T_d_c_eigen.matrix());
-	// pcl::transformPointCloud(*mp_cloud_free, *mp_cloud_free, T_d_c_eigen.matrix());
-
-	for (auto p: *mp_cloud_occupied) {
-		octomap::point3d p_oct(p.x, p.y, p.z);
-		mp_octree->updateNode(p_oct, true);
-	}
-	for (auto p: *mp_cloud_free) {
-		octomap::point3d p_oct(p.x, p.y, p.z);
-		mp_octree->updateNode(p_oct, false);
-	}
-
-	sensor_msgs::PointCloud2 sparse_map;
-	pcl::toROSMsg(*mp_cloud_occupied, sparse_map);
-	sparse_map.header.frame_id = "orb_slam";
-	mp_pointcloud_pub->publish(sparse_map);
-
-
-	octomap_msgs::Octomap map;
-	map.header = sparse_map.header;
-	octomap_msgs::fullMapToMsg(*mp_octree, map);
-	mp_octomap_pub->publish(map);
+// 	pcl::StatisticalOutlierRemoval<pcl::PointXYZRGB> sor;
+// 	sor.setInputCloud(mp_cloud_occupied);
+// 	sor.setMeanK(50);
+// 	sor.setStddevMulThresh(1);
+// 	sor.filter(*mp_cloud_occupied);
+//
+// 	pcl::VoxelGrid<pcl::PointXYZRGB> vg;
+// 	vg.setInputCloud(mp_cloud_free);
+// 	vg.setLeafSize(0.05f, 0.05f, 0.05f);
+// 	vg.filter(*mp_cloud_free);
+// //	pcl::io::savePCDFileBinary("./data/map.pcd", *mp_cloud_occupied);
+// 	vector<KeyFrame *> vpKFs = pAtlas->GetAllKeyFrames();
+// 	KeyFrame *kp = vpKFs[0];
+// //	Eigen::Isometry3d T_e_c=
+// 	Eigen::Isometry3d T_d_c_eigen;
+// 	cv::cv2eigen(T_d_c, T_d_c_eigen.matrix());
+// 	Eigen::Isometry3d T_rviz_orb = Eigen::Isometry3d::Identity();
+// 	Eigen::AngleAxisd r1(M_PI / 2, Eigen::Vector3d::UnitY());
+// 	Eigen::AngleAxisd r2(-M_PI / 2, Eigen::Vector3d::UnitZ());
+// 	T_rviz_orb.rotate(r1);
+// 	T_rviz_orb.rotate(r2);
+// 	// convert map point from orb frame to rviz frame
+// 	// pcl::transformPointCloud(*mp_cloud_occupied, *mp_cloud_occupied, T_d_c_eigen.matrix());
+// 	// pcl::transformPointCloud(*mp_cloud_free, *mp_cloud_free, T_d_c_eigen.matrix());
+//
+// 	for (auto p: *mp_cloud_occupied) {
+// 		octomap::point3d p_oct(p.x, p.y, p.z);
+// 		mp_octree->updateNode(p_oct, true);
+// 	}
+// 	for (auto p: *mp_cloud_free) {
+// 		octomap::point3d p_oct(p.x, p.y, p.z);
+// 		mp_octree->updateNode(p_oct, false);
+// 	}
+//
+// 	// sensor_msgs::PointCloud2 sparse_map;
+// 	// pcl::toROSMsg(*mp_cloud_occupied, sparse_map);
+// 	// sparse_map.header.frame_id = "orb_slam";
+// 	// mp_pointcloud_pub->publish(sparse_map);
+//
+//
+// 	octomap_msgs::Octomap map;
+// 	map.header = sparse_map.header;
+// 	octomap_msgs::fullMapToMsg(*mp_octree, map);
+// 	mp_octomap_pub->publish(map);
 }
 void RosHandling::PublishMap(ORB_SLAM3::Atlas *pAtlas, int state)
 {
