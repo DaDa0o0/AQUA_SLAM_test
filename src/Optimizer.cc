@@ -5086,13 +5086,20 @@ void Optimizer::OptimizeEssentialGraph(Map *pMap, KeyFrame *pLoopKF, KeyFrame *p
 			g2o::Sim3 Sji = Sjw * Swi;
 
 			g2o::EdgeSim3 *e = new g2o::EdgeSim3();
-			e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDj)));
-			e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi)));
-			e->setMeasurement(Sji);
-			count_kf++;
-			count_spa_tree++;
-			e->information() = matLambda;
-			optimizer.addEdge(e);
+            auto v1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDj));
+            auto v2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi));
+            if(v1&&v2){
+                e->setVertex(1, v1);
+                e->setVertex(0, v2);
+                e->setMeasurement(Sji);
+                count_kf++;
+                count_spa_tree++;
+                e->information() = matLambda;
+                optimizer.addEdge(e);
+            }
+            else
+                continue;
+
 		}
 
 		// Loop edges
@@ -5113,13 +5120,17 @@ void Optimizer::OptimizeEssentialGraph(Map *pMap, KeyFrame *pLoopKF, KeyFrame *p
 
 				g2o::Sim3 Sli = Slw * Swi;
 				g2o::EdgeSim3 *el = new g2o::EdgeSim3();
-				el->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pLKF->mnId)));
-				el->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi)));
-				el->setMeasurement(Sli);
-				el->information() = matLambda;
-				optimizer.addEdge(el);
-				count_kf++;
-				count_loop++;
+                auto v1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pLKF->mnId));
+                auto v2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi));
+                if(v1&&v2){
+                    el->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pLKF->mnId)));
+                    el->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi)));
+                    el->setMeasurement(Sli);
+                    el->information() = matLambda;
+                    optimizer.addEdge(el);
+                    count_kf++;
+                    count_loop++;
+                }
 			}
 		}
 
@@ -5147,13 +5158,17 @@ void Optimizer::OptimizeEssentialGraph(Map *pMap, KeyFrame *pLoopKF, KeyFrame *p
 					g2o::Sim3 Sni = Snw * Swi;
 
 					g2o::EdgeSim3 *en = new g2o::EdgeSim3();
-					en->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pKFn->mnId)));
-					en->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi)));
-					en->setMeasurement(Sni);
-					en->information() = matLambda;
-					optimizer.addEdge(en);
-					count_kf++;
-					count_cov++;
+                    auto v1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pKFn->mnId));
+                    auto v2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi));
+                    if(v1&&v2){
+                        en->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(pKFn->mnId)));
+                        en->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(optimizer.vertex(nIDi)));
+                        en->setMeasurement(Sni);
+                        en->information() = matLambda;
+                        optimizer.addEdge(en);
+                        count_kf++;
+                        count_cov++;
+                    }
 				}
 			}
 		}

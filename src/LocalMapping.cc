@@ -202,7 +202,7 @@ void LocalMapping::Run()
 				// }
 
 			}
-            if(mpAtlas->GetAllMaps().front()->isImuInitialized()&&new_KF>2){
+            if(mpAtlas->GetAllMaps().front()->isImuInitialized()&&new_KF>10){
                 mpTracker->mpRosHandler->UpdateMap(mpAtlas);
                 mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
                 new_KF = 0;

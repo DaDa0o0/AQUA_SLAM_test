@@ -304,9 +304,9 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 
 
 		for (size_t i = 0, iend = vpMPs.size(); i < iend; i++) {
-			// if (vpMPs[i]->isBad()) {
-			// 	continue;
-			// }
+			if (vpMPs[i]->isBad()) {
+				continue;
+			}
 			cv::Mat pos_end = vpMPs[i]->GetWorldPos();
 //			glVertex3f(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2));
 //			pcl::PointXYZRGB p(pos.at<float>(0),pos.at<float>(1),pos.at<float>(2),(uint8_t)color[0],(uint8_t)color[1],(uint8_t)color[2]);

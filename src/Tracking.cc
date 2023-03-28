@@ -5347,7 +5347,7 @@ void Tracking::CreateNewKeyFrame()
     else{
         pKF->SetNewBias(mpLastKeyFrame->GetImuBias());
     }
-    ROS_INFO_STREAM(fixed<<setprecision(6)<<"New KF["<<pKF->mnId<<"] time"<<pKF->mTimeStamp<<"dvl: "<<pKF->mbDVL);
+    // ROS_INFO_STREAM(fixed<<setprecision(6)<<"New KF["<<pKF->mnId<<"] time"<<pKF->mTimeStamp<<"dvl: "<<pKF->mbDVL);
 
 
 	// // pKF->SetNewBias(mpLastKeyFrame->GetImuBias());

@@ -1113,6 +1113,10 @@ void LoopClosing::CorrectLoop()
     // Send a stop signal to Local Mapping
     // Avoid new keyframes are inserted while correcting the loop
     mpLocalMapper->RequestStop();
+    while(!mpLocalMapper->isStopped())
+    {
+        usleep(1000);
+    }
     mpLocalMapper->EmptyQueue(); // Proccess keyframes in the queue
 
 
@@ -1331,14 +1335,14 @@ void LoopClosing::CorrectLoop()
     mpCurrentKF->AddLoopEdge(mpLoopMatchedKF);
 
     // Launch a new thread to perform Global Bundle Adjustment (Only if few keyframes, if not it would take too much time)
-    if(!pLoopMap->isImuInitialized() || (pLoopMap->KeyFramesInMap()<200 && mpAtlas->CountMaps()==1))
-    {
-        mbRunningGBA = true;
-        mbFinishedGBA = false;
-        mbStopGBA = false;
-
-        mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment, this, pLoopMap, mpCurrentKF->mnId);
-    }
+    // if(!pLoopMap->isImuInitialized() || (pLoopMap->KeyFramesInMap()<200 && mpAtlas->CountMaps()==1))
+    // {
+    //     mbRunningGBA = true;
+    //     mbFinishedGBA = false;
+    //     mbStopGBA = false;
+    //
+    //     mpThreadGBA = new thread(&LoopClosing::RunGlobalBundleAdjustment, this, pLoopMap, mpCurrentKF->mnId);
+    // }
 
     // Loop closed. Release Local Mapping.
     mpLocalMapper->Release();
