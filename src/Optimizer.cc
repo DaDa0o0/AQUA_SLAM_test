@@ -1225,7 +1225,7 @@ int Optimizer::PoseOptimization(Frame *pFrame)
 	return nInitialCorrespondences - nBad;
 }
 
-void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas)
+void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas, int& optimized_kf_id)
 {
     // Setup optimizer
     g2o::SparseOptimizer optimizer;
@@ -1243,8 +1243,9 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
     // Set KeyFrame vertices (fixed poses and optimizable velocities)
     long maxKFid = (*loss_kfs.rbegin())->mnId;
 
+
 	stringstream ss;
-	ss << "DVL_IMU optimization: " << endl;
+	ss << "DVL_IMU_PoseOnly optimization: " << endl;
     // iterate ls_kf from last to first, and add vertex to optimizer, and set the last 10 of them as fixed
     for (auto rit = loss_kfs.rbegin(); rit != loss_kfs.rend(); ++rit) {
         KeyFrame* pKFi = *rit;
@@ -1262,11 +1263,11 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             VP->setFixed(false);
 			ss << "optimizable: " << pKFi->mnId << endl;
         }
-        else if (pKFi->mnId == (*loss_kfs.begin())->mnId) {
-            ss << "fixed: " << pKFi->mnId << endl;
-            VP->setFixed(true);
-        }
-		else if (pKFi->mnId > maxKFid - 5) {
+        // else if (pKFi->mnId == (*loss_kfs.begin())->mnId) {
+        //     ss << "fixed: " << pKFi->mnId << endl;
+        //     VP->setFixed(true);
+        // }
+		else if (pKFi->mnId > (optimized_kf_id-4)) {
 			VP->setFixed(false);
 			ss << "optimizable: " << pKFi->mnId << endl;
 		}
@@ -1276,7 +1277,8 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
         }
         optimizer.addVertex(VP);
     }
-    ROS_DEBUG_STREAM(ss.str());
+    ROS_INFO_STREAM(ss.str());
+    optimized_kf_id = maxKFid;
 
 
     // set<KeyFrame*, KFComparator>::reverse_iterator rit;
@@ -1471,7 +1473,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             eG->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
             eG->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() *1000);
+            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() *100);
             eG->setId((maxKFid+1)*2 + pKFi->mnId);
             optimizer.addEdge(eG);
             fixed_bias_edge = eG;
@@ -1483,7 +1485,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
 
     // Compute error for different scales
     //	std::cout << "start optimization" << std::endl;
-    optimizer.setVerbose(true);
+    // optimizer.setVerbose(true);
 
     // for(auto p:vpab){
     //     p->setFixed(false);
@@ -1573,7 +1575,11 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
         }
         VertexPoseDvlIMU *VP = new VertexPoseDvlIMU(pKFi);
         VP->setId(pKFi->mnId);
-        if (pKFi->mnId != (*loss_kfs.begin())->mnId) {
+        if (pKFi->mnId == (*loss_kfs.begin())->mnId) {
+            VP->setFixed(true);
+            ss << "fixed: " << pKFi->mnId << endl;
+        }
+        else if(pKFi->GetMap()!=(*loss_kfs.begin())->GetMap()){
             VP->setFixed(false);
             ss << "optimizable: " << pKFi->mnId << endl;
         }
@@ -1583,7 +1589,7 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
         }
         optimizer.addVertex(VP);
     }
-    // ROS_INFO_STREAM(ss.str());
+    ROS_INFO_STREAM(ss.str());
 
 
 

@@ -1359,10 +1359,10 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                             const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
                             VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[0]);
                             if(v1->estimate().mPoorVision){
-                                e->setInformation(Eigen::Matrix<double, 2, 2>::Identity() * lamda_visual * 1);
+                                e->setInformation(Eigen::Matrix<double, 2, 2>::Identity()* invSigma2 * lamda_visual * 1);
                             }
                             else{
-                                e->setInformation(Eigen::Matrix<double, 2, 2>::Identity() * lamda_visual);
+                                e->setInformation(Eigen::Matrix<double, 2, 2>::Identity()* invSigma2 * lamda_visual);
                             }
                             // e->setInformation(Eigen::Matrix2d::Identity() * invSigma2* lamda_visual);
 
@@ -1404,10 +1404,10 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                             Eigen::Matrix3d Info = Eigen::Matrix3d::Identity() * invSigma2 * lamda_visual;
                             VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[0]);
                             if(v1->estimate().mPoorVision){
-                                e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_visual * 1);
+                                e->setInformation(Info  * 1);
                             }
                             else{
-                                e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_visual);
+                                e->setInformation(Info );
                             }
 
                             g2o::RobustKernelHuber *rk = new g2o::RobustKernelHuber;
@@ -1576,12 +1576,12 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
             eG->setId(optimizer.edges().size());
             VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(eG->vertices()[0]);
-            VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(eG->vertices()[0]);
+            VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(eG->vertices()[1]);
             if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
                 eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * 1000 * (mono_edges.size()+stereo_edges.size()));
             }
             else{
-                eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * (mono_edges.size()+stereo_edges.size()));
+                eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL );
             }
             // eG->setId(maxKFid+1 + pKFi->mnId);
             dvlimu_edges.push_back(eG);

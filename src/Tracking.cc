@@ -3538,11 +3538,11 @@ void Tracking::StereoInitialization()
         if(mpIntegrator->GetDoLossIntegration()){
             std::unique_lock<std::shared_mutex> lock(mLossKFMutex);
             mvpLossKF.insert(pKFini);
-            ROS_INFO_STREAM("add KF["<<pKFini->mnId<<"] to loss KF set");
+            ROS_DEBUG_STREAM("add KF["<<pKFini->mnId<<"] to loss KF set");
         }
         auto all_loss_kf =getMvpLossKf();
         if(all_loss_kf.size()>0 && (mpIntegrator->GetDoLossIntegration())){
-            Optimizer::PoseOnlyOptimizationDVLIMU(all_loss_kf, mpAtlas);
+            Optimizer::PoseOnlyOptimizationDVLIMU(all_loss_kf, mpAtlas, mLossLastOptID);
             ROS_DEBUG_STREAM("DVL IMU Optimization done");
             for (auto pKF : all_loss_kf) {
                 ROS_DEBUG_STREAM(fixed<<setprecision(6)<< "KF[" << pKF->mnId << "] bias: "<<pKF->GetImuBias()
@@ -3928,6 +3928,7 @@ void Tracking::CreateMapInAtlas()
         mvpLossKF.clear();
 		// insert 5 KF before mpLastKeyFrame to mvpLossKF
         auto pkf =mpLastKeyFrame;
+        mLossLastOptID = mpLastKeyFrame->mnId;
         // remember to change in optimization, if change the number if KF inserted
 		while(mvpLossKF.size() < 5 && pkf){
 			ROS_INFO_STREAM("pKF["<<pkf->mnId<<"] inserted");
@@ -5216,7 +5217,19 @@ bool Tracking::NeedNewKeyFrame()
 
 
 	bool bNeedToInsertClose;
-	bNeedToInsertClose = (nTrackedClose < 100) && (nNonTrackedClose > 70);
+    // int N = (mCurrentFrame.Nleft == -1) ? mCurrentFrame.N : mCurrentFrame.Nleft;
+    // for(int i =0; i<N; i++)
+    // {
+    //     if(mCurrentFrame.mvDepth[i]>0 && mCurrentFrame.mvDepth[i]<mThDepth)
+    //     {
+    //         if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
+    //             nTrackedClose++;
+    //         else
+    //             nNonTrackedClose++;
+    //
+    //     }
+    // }
+	bNeedToInsertClose = (nTrackedClose < 100) && (nNonTrackedClose > 70) && (mpAtlas->GetAllKeyFrames().size()>mKFThresholdForMap);
 
 	// Thresholds
 	float thRefRatio = 0.75f;

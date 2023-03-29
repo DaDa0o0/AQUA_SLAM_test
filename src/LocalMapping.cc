@@ -142,7 +142,7 @@ void LocalMapping::Run()
                                                          mpCurrentKeyFrame->GetMap(),
                                                          num_FixedKF_BA);
                     }
-                    else {
+                    else if(mpAtlas->KeyFramesInMap() > 3){
                         // DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(mpCurrentKeyFrame,
                         // 											   &mbAbortBA,
                         // 											   mpCurrentKeyFrame->GetMap(),
@@ -158,20 +158,20 @@ void LocalMapping::Run()
 						mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
 
                     }
-                    // else{
-                    //     auto loss_kf = mpTracker->getMvpLossKf();
-                    //     ROS_INFO_STREAM("KF during loss:");
-                    //     for(auto pKF:loss_kf){
-                    //         ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
-                    //                              <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
-                    //     }
-                    //
-                    //     Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas,mpTracker->mlamda_DVL);
-                    //     mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
-                    //     mpTracker->mpRosHandler->PublishLossKF(loss_kf);
-                    //     mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-                    //     // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
-                    // }
+                    else{
+                        auto loss_kf = mpTracker->getMvpLossKf();
+                        // ROS_INFO_STREAM("KF during loss:");
+                        // for(auto pKF:loss_kf){
+                        //     ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
+                        //                          <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
+                        // }
+
+                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas,mpTracker->mlamda_DVL);
+                        mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
+                        mpTracker->mpRosHandler->PublishLossKF(loss_kf);
+                        mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+                        // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+                    }
 					// auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
 //					mpDenseMapper->Update();
 				}
@@ -202,9 +202,9 @@ void LocalMapping::Run()
 				// }
 
 			}
-            if(mpAtlas->GetAllMaps().front()->isImuInitialized()&&new_KF>10){
+            mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+            if(mpAtlas->GetAllMaps().front()->isImuInitialized()&&new_KF>=1){
                 mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-                mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
                 new_KF = 0;
             }
 

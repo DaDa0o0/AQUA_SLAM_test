@@ -504,6 +504,7 @@ public:
     protected: set<KeyFrame*,KFComparator> mvpLossKF;
 
     int mLossFNum = 0;
+    int mLossLastOptID = 0;
 public:
     set<KeyFrame*, KFComparator> getMvpLossKf();
 };

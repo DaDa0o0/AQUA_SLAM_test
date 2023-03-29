@@ -304,7 +304,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 
 
 		for (size_t i = 0, iend = vpMPs.size(); i < iend; i++) {
-			if (vpMPs[i]->isBad()) {
+			if (vpMPs[i]->isBad() || vpMPs[i]->Observations()<3) {
 				continue;
 			}
 			cv::Mat pos_end = vpMPs[i]->GetWorldPos();
