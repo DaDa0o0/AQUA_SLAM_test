@@ -2930,24 +2930,6 @@ void Tracking::TrackDVLGyro()
                     }
                     else{
                         CreateNewKeyFrame();
-                        if(0){
-                            set<KeyFrame*, KFComparator> spKFs;
-                            spKFs.insert(mpLastKeyFrame);
-                            KeyFrame* pKF_last_opt = mpLocalMapper->GetCurrKF()->mPrevKF;
-                            KeyFrame*  pKFi = mpLastKeyFrame->mPrevKF;
-                            while (pKFi){
-                                if(pKFi->mnId == pKF_last_opt->mnId){
-                                    spKFs.insert(pKFi);
-                                    break;
-                                }
-                                spKFs.insert(pKFi);
-                                pKFi = pKFi->mPrevKF;
-                            }
-                            if (spKFs.size() > 1) {
-                                Optimizer::PoseOnlyOptimizationDVLIMU(spKFs,mpAtlas);
-                                PredictStateDvlGro();
-                            }
-                        }
                     }
 
                 }
@@ -2959,7 +2941,7 @@ void Tracking::TrackDVLGyro()
                         mvpLossKF.insert(pkf);
                         ROS_INFO_STREAM("add KF["<<pkf->mnId<<"] to loss KF set");
                         auto loss_kf = mvpLossKF;
-                        Optimizer::PoseOnlyOptimizationDVLIMU(loss_kf, mpAtlas);
+                        // Optimizer::PoseOnlyOptimizationDVLIMU(loss_kf, mpAtlas);
                     }
                 }
 
@@ -5035,7 +5017,7 @@ bool Tracking::TrackLocalMap()
 	// Decide if the tracking was succesful
 	// More restrictive if there was a relocalization recently
 	mpLocalMapper->mnMatchesInliers = mnMatchesInliers;
-    if(mnMatchesInliers < mpORBextractorLeft->nfeatures * 0.2){
+    if(mnMatchesInliers < mpORBextractorLeft->nfeatures * 0.15){
         mCurrentFrame.mPoorVision = true;
     }
     // ROS_INFO_STREAM("Matching Inliers: "<<mnMatchesInliers);
@@ -5048,18 +5030,8 @@ bool Tracking::TrackLocalMap()
 //	}
 
 
-    if (mnMatchesInliers < 30) {
-        if(mLossFNum<30){
-            mLossFNum++;
-            PredictStateDvlGro();
-            return true;
-        }
-        else{
-            mLossFNum = 0;
-            PredictStateDvlGro();
-            return false;
-        }
-
+    if (mnMatchesInliers < 5) {
+        return false;
     }
     else {
         return true;

@@ -1359,7 +1359,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                             const float &invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
                             VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[0]);
                             if(v1->estimate().mPoorVision){
-                                e->setInformation(Eigen::Matrix<double, 2, 2>::Identity() * lamda_visual * 0.01);
+                                e->setInformation(Eigen::Matrix<double, 2, 2>::Identity() * lamda_visual * 1);
                             }
                             else{
                                 e->setInformation(Eigen::Matrix<double, 2, 2>::Identity() * lamda_visual);
@@ -1404,7 +1404,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                             Eigen::Matrix3d Info = Eigen::Matrix3d::Identity() * invSigma2 * lamda_visual;
                             VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(e->vertices()[0]);
                             if(v1->estimate().mPoorVision){
-                                e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_visual * 0.01);
+                                e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_visual * 1);
                             }
                             else{
                                 e->setInformation(Eigen::Matrix<double, 3, 3>::Identity() * lamda_visual);
@@ -1578,7 +1578,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(eG->vertices()[0]);
             VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(eG->vertices()[0]);
             if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
-                eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * 100000 * (mono_edges.size()+stereo_edges.size()));
+                eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * 1000 * (mono_edges.size()+stereo_edges.size()));
             }
             else{
                 eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * (mono_edges.size()+stereo_edges.size()));
@@ -1763,7 +1763,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         optimizer.optimize(5);
         for (auto e: mono_edges) {
             e->computeError();
-            e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
+            // e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
             if (e->chi2() > 5.991) {
                 e->setLevel(1);
                 remove_obs.insert(mono_obs[e]);
@@ -1776,7 +1776,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         }
         for (auto e: stereo_edges) {
             e->computeError();
-            e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
+            // e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
             if (e->chi2() > 7.8) {
                 e->setLevel(1);
                 remove_obs.insert(stereo_obs[e]);

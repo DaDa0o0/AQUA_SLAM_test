@@ -130,6 +130,7 @@ public:
 	{}
 	DvlImuCamPose(KeyFrame *pKF);
 	DvlImuCamPose(Frame *pF);
+    DvlImuCamPose(const DvlImuCamPose& dic);
 //		GyroDvlCamPose(Eigen::Matrix3d &_Rwc, Eigen::Vector3d &_twc, KeyFrame *pKF);
 
 //		void SetParam(const std::vector<Eigen::Matrix3d> &_Rcw, const std::vector<Eigen::Vector3d> &_tcw, const std::vector<Eigen::Matrix3d> &_Rbc,

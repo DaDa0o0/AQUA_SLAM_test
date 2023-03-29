@@ -19,6 +19,7 @@ BOOST_LIBRARIES=/usr/lib/x86_64-linux-gnu/libboost_system.so;/usr/lib/x86_64-lin
 BOOST_LIBRARY_DIRS=/usr/lib/x86_64-linux-gnu
 BUILD_GMOCK=ON
 BUILD_SHARED_LIBS=ON
+BUILD_TESTING=ON
 Boost_ADDITIONAL_VERSIONS=1.71.0;1.71;1.71.0;1.71;1.70.0;1.70;1.69.0;1.69;1.68.0;1.68;1.67.0;1.67;1.66.0;1.66;1.65.1;1.65.0;1.65;1.64.0;1.64;1.63.0;1.63;1.62.0;1.62;1.61.0;1.61;1.60.0;1.60;1.59.0;1.59;1.58.0;1.58;1.57.0;1.57;1.56.0;1.56;1.55.0;1.55
 Boost_ATOMIC_FOUND=ON
 Boost_ATOMIC_HEADER=ON
@@ -160,7 +161,6 @@ CATKIN_TEST_RESULTS_DIR=/home/da/project/ros/orb_dvl2_ws/src/build/test_results
 CATKIN_TOPLEVEL=TRUE
 CATKIN_WHITELIST_PACKAGES=
 CATKIN_WORKSPACES=/home/da/project/ros/orb_dvl2_ws/devel;/home/da/project/ros/catkin_ws/devel;/opt/ros/noetic
-CHECK_LIBRARY_EXISTS_LIBRARIES=pthread
 CMAKE_ADDR2LINE=/usr/bin/llvm-addr2line-15
 CMAKE_AR=/usr/bin/llvm-ar-15
 CMAKE_AR=/usr/bin/llvm-ar-15
@@ -172,7 +172,6 @@ CMAKE_AUTOMOC_PATH_PREFIX=OFF
 CMAKE_BASE_NAME=clang++-15
 CMAKE_BINARY_DIR=/home/da/project/ros/orb_dvl2_ws/src/build
 CMAKE_BUILD_TOOL=/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/ninja/linux/x64/ninja
-CMAKE_BUILD_TYPE=RelWithDebInfo
 CMAKE_BUILD_TYPE=RelWithDebInfo
 CMAKE_C11_COMPILE_FEATURES=c_std_11;c_static_assert
 CMAKE_C11_EXTENSION_COMPILE_OPTION=-std=gnu11
@@ -192,6 +191,10 @@ CMAKE_C99_COMPILE_FEATURES=c_std_99;c_restrict;c_variadic_macros
 CMAKE_C99_EXTENSION_COMPILE_OPTION=-std=gnu99
 CMAKE_C99_STANDARD_COMPILE_OPTION=-std=c99
 CMAKE_C99_STANDARD__HAS_FULL_SUPPORT=ON
+CMAKE_CACHEFILE_DIR=/home/da/project/ros/orb_dvl2_ws/src/build
+CMAKE_CACHE_MAJOR_VERSION=3
+CMAKE_CACHE_MINOR_VERSION=25
+CMAKE_CACHE_PATCH_VERSION=2
 CMAKE_CFG_INTDIR=.
 CMAKE_COLOR_DIAGNOSTICS=ON
 CMAKE_COMMAND=/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/cmake/linux/x64/bin/cmake
@@ -241,384 +244,13 @@ CMAKE_CXX_COMPILER=/usr/bin/clang++-15
 CMAKE_CXX_COMPILER_ABI=ELF
 CMAKE_CXX_COMPILER_AR=/usr/bin/llvm-ar-15
 CMAKE_CXX_COMPILER_AR=/usr/bin/llvm-ar-15
-CMAKE_CXX_COMPILER_ARCHITECTURE_ID=
 CMAKE_CXX_COMPILER_ARG1=
 CMAKE_CXX_COMPILER_ENV_VAR=CXX
 CMAKE_CXX_COMPILER_FRONTEND_VARIANT=GNU
 CMAKE_CXX_COMPILER_ID=Clang
-CMAKE_CXX_COMPILER_ID_PLATFORM_CONTENT=#define STRINGIFY_HELPER(X) #X
-#define STRINGIFY(X) STRINGIFY_HELPER(X)
-
-/* Identify known platforms by name.  */
-#if defined(__linux) || defined(__linux__) || defined(linux)
-# define PLATFORM_ID "Linux"
-
-#elif defined(__MSYS__)
-# define PLATFORM_ID "MSYS"
-
-#elif defined(__CYGWIN__)
-# define PLATFORM_ID "Cygwin"
-
-#elif defined(__MINGW32__)
-# define PLATFORM_ID "MinGW"
-
-#elif defined(__APPLE__)
-# define PLATFORM_ID "Darwin"
-
-#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-# define PLATFORM_ID "Windows"
-
-#elif defined(__FreeBSD__) || defined(__FreeBSD)
-# define PLATFORM_ID "FreeBSD"
-
-#elif defined(__NetBSD__) || defined(__NetBSD)
-# define PLATFORM_ID "NetBSD"
-
-#elif defined(__OpenBSD__) || defined(__OPENBSD)
-# define PLATFORM_ID "OpenBSD"
-
-#elif defined(__sun) || defined(sun)
-# define PLATFORM_ID "SunOS"
-
-#elif defined(_AIX) || defined(__AIX) || defined(__AIX__) || defined(__aix) || defined(__aix__)
-# define PLATFORM_ID "AIX"
-
-#elif defined(__hpux) || defined(__hpux__)
-# define PLATFORM_ID "HP-UX"
-
-#elif defined(__HAIKU__)
-# define PLATFORM_ID "Haiku"
-
-#elif defined(__BeOS) || defined(__BEOS__) || defined(_BEOS)
-# define PLATFORM_ID "BeOS"
-
-#elif defined(__QNX__) || defined(__QNXNTO__)
-# define PLATFORM_ID "QNX"
-
-#elif defined(__tru64) || defined(_tru64) || defined(__TRU64__)
-# define PLATFORM_ID "Tru64"
-
-#elif defined(__riscos) || defined(__riscos__)
-# define PLATFORM_ID "RISCos"
-
-#elif defined(__sinix) || defined(__sinix__) || defined(__SINIX__)
-# define PLATFORM_ID "SINIX"
-
-#elif defined(__UNIX_SV__)
-# define PLATFORM_ID "UNIX_SV"
-
-#elif defined(__bsdos__)
-# define PLATFORM_ID "BSDOS"
-
-#elif defined(_MPRAS) || defined(MPRAS)
-# define PLATFORM_ID "MP-RAS"
-
-#elif defined(__osf) || defined(__osf__)
-# define PLATFORM_ID "OSF1"
-
-#elif defined(_SCO_SV) || defined(SCO_SV) || defined(sco_sv)
-# define PLATFORM_ID "SCO_SV"
-
-#elif defined(__ultrix) || defined(__ultrix__) || defined(_ULTRIX)
-# define PLATFORM_ID "ULTRIX"
-
-#elif defined(__XENIX__) || defined(_XENIX) || defined(XENIX)
-# define PLATFORM_ID "Xenix"
-
-#elif defined(__WATCOMC__)
-# if defined(__LINUX__)
-#  define PLATFORM_ID "Linux"
-
-# elif defined(__DOS__)
-#  define PLATFORM_ID "DOS"
-
-# elif defined(__OS2__)
-#  define PLATFORM_ID "OS2"
-
-# elif defined(__WINDOWS__)
-#  define PLATFORM_ID "Windows3x"
-
-# elif defined(__VXWORKS__)
-#  define PLATFORM_ID "VxWorks"
-
-# else /* unknown platform */
-#  define PLATFORM_ID
-# endif
-
-#elif defined(__INTEGRITY)
-# if defined(INT_178B)
-#  define PLATFORM_ID "Integrity178"
-
-# else /* regular Integrity */
-#  define PLATFORM_ID "Integrity"
-# endif
-
-# elif defined(_ADI_COMPILER)
-#  define PLATFORM_ID "ADSP"
-
-#else /* unknown platform */
-# define PLATFORM_ID
-
-#endif
-
-/* For windows compilers MSVC and Intel we can determine
-   the architecture of the compiler being used.  This is because
-   the compilers do not have flags that can change the architecture,
-   but rather depend on which compiler is being used
-*/
-#if defined(_WIN32) && defined(_MSC_VER)
-# if defined(_M_IA64)
-#  define ARCHITECTURE_ID "IA64"
-
-# elif defined(_M_ARM64EC)
-#  define ARCHITECTURE_ID "ARM64EC"
-
-# elif defined(_M_X64) || defined(_M_AMD64)
-#  define ARCHITECTURE_ID "x64"
-
-# elif defined(_M_IX86)
-#  define ARCHITECTURE_ID "X86"
-
-# elif defined(_M_ARM64)
-#  define ARCHITECTURE_ID "ARM64"
-
-# elif defined(_M_ARM)
-#  if _M_ARM == 4
-#   define ARCHITECTURE_ID "ARMV4I"
-#  elif _M_ARM == 5
-#   define ARCHITECTURE_ID "ARMV5I"
-#  else
-#   define ARCHITECTURE_ID "ARMV" STRINGIFY(_M_ARM)
-#  endif
-
-# elif defined(_M_MIPS)
-#  define ARCHITECTURE_ID "MIPS"
-
-# elif defined(_M_SH)
-#  define ARCHITECTURE_ID "SHx"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__WATCOMC__)
-# if defined(_M_I86)
-#  define ARCHITECTURE_ID "I86"
-
-# elif defined(_M_IX86)
-#  define ARCHITECTURE_ID "X86"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__IAR_SYSTEMS_ICC__) || defined(__IAR_SYSTEMS_ICC)
-# if defined(__ICCARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__ICCRX__)
-#  define ARCHITECTURE_ID "RX"
-
-# elif defined(__ICCRH850__)
-#  define ARCHITECTURE_ID "RH850"
-
-# elif defined(__ICCRL78__)
-#  define ARCHITECTURE_ID "RL78"
-
-# elif defined(__ICCRISCV__)
-#  define ARCHITECTURE_ID "RISCV"
-
-# elif defined(__ICCAVR__)
-#  define ARCHITECTURE_ID "AVR"
-
-# elif defined(__ICC430__)
-#  define ARCHITECTURE_ID "MSP430"
-
-# elif defined(__ICCV850__)
-#  define ARCHITECTURE_ID "V850"
-
-# elif defined(__ICC8051__)
-#  define ARCHITECTURE_ID "8051"
-
-# elif defined(__ICCSTM8__)
-#  define ARCHITECTURE_ID "STM8"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__ghs__)
-# if defined(__PPC64__)
-#  define ARCHITECTURE_ID "PPC64"
-
-# elif defined(__ppc__)
-#  define ARCHITECTURE_ID "PPC"
-
-# elif defined(__ARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__x86_64__)
-#  define ARCHITECTURE_ID "x64"
-
-# elif defined(__i386__)
-#  define ARCHITECTURE_ID "X86"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__TI_COMPILER_VERSION__)
-# if defined(__TI_ARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__MSP430__)
-#  define ARCHITECTURE_ID "MSP430"
-
-# elif defined(__TMS320C28XX__)
-#  define ARCHITECTURE_ID "TMS320C28x"
-
-# elif defined(__TMS320C6X__) || defined(_TMS320C6X)
-#  define ARCHITECTURE_ID "TMS320C6x"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-# elif defined(__ADSPSHARC__)
-#  define ARCHITECTURE_ID "SHARC"
-
-# elif defined(__ADSPBLACKFIN__)
-#  define ARCHITECTURE_ID "Blackfin"
-
-#elif defined(__TASKING__)
-
-# if defined(__CTC__) || defined(__CPTC__)
-#  define ARCHITECTURE_ID "TriCore"
-
-# elif defined(__CMCS__)
-#  define ARCHITECTURE_ID "MCS"
-
-# elif defined(__CARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__CARC__)
-#  define ARCHITECTURE_ID "ARC"
-
-# elif defined(__C51__)
-#  define ARCHITECTURE_ID "8051"
-
-# elif defined(__CPCP__)
-#  define ARCHITECTURE_ID "PCP"
-
-# else
-#  define ARCHITECTURE_ID ""
-# endif
-
-#else
-#  define ARCHITECTURE_ID
-#endif
-
-/* Convert integer to decimal digit literals.  */
-#define DEC(n)                   \
-  ('0' + (((n) / 10000000)%10)), \
-  ('0' + (((n) / 1000000)%10)),  \
-  ('0' + (((n) / 100000)%10)),   \
-  ('0' + (((n) / 10000)%10)),    \
-  ('0' + (((n) / 1000)%10)),     \
-  ('0' + (((n) / 100)%10)),      \
-  ('0' + (((n) / 10)%10)),       \
-  ('0' +  ((n) % 10))
-
-/* Convert integer to hex digit literals.  */
-#define HEX(n)             \
-  ('0' + ((n)>>28 & 0xF)), \
-  ('0' + ((n)>>24 & 0xF)), \
-  ('0' + ((n)>>20 & 0xF)), \
-  ('0' + ((n)>>16 & 0xF)), \
-  ('0' + ((n)>>12 & 0xF)), \
-  ('0' + ((n)>>8  & 0xF)), \
-  ('0' + ((n)>>4  & 0xF)), \
-  ('0' + ((n)     & 0xF))
-
-/* Construct a string literal encoding the version number. */
-#ifdef COMPILER_VERSION
-char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
-
-/* Construct a string literal encoding the version number components. */
-#elif defined(COMPILER_VERSION_MAJOR)
-char const info_version[] = {
-  'I', 'N', 'F', 'O', ':',
-  'c','o','m','p','i','l','e','r','_','v','e','r','s','i','o','n','[',
-  COMPILER_VERSION_MAJOR,
-# ifdef COMPILER_VERSION_MINOR
-  '.', COMPILER_VERSION_MINOR,
-#  ifdef COMPILER_VERSION_PATCH
-   '.', COMPILER_VERSION_PATCH,
-#   ifdef COMPILER_VERSION_TWEAK
-    '.', COMPILER_VERSION_TWEAK,
-#   endif
-#  endif
-# endif
-  ']','\0'};
-#endif
-
-/* Construct a string literal encoding the internal version number. */
-#ifdef COMPILER_VERSION_INTERNAL
-char const info_version_internal[] = {
-  'I', 'N', 'F', 'O', ':',
-  'c','o','m','p','i','l','e','r','_','v','e','r','s','i','o','n','_',
-  'i','n','t','e','r','n','a','l','[',
-  COMPILER_VERSION_INTERNAL,']','\0'};
-#elif defined(COMPILER_VERSION_INTERNAL_STR)
-char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
-#endif
-
-/* Construct a string literal encoding the version number components. */
-#ifdef SIMULATE_VERSION_MAJOR
-char const info_simulate_version[] = {
-  'I', 'N', 'F', 'O', ':',
-  's','i','m','u','l','a','t','e','_','v','e','r','s','i','o','n','[',
-  SIMULATE_VERSION_MAJOR,
-# ifdef SIMULATE_VERSION_MINOR
-  '.', SIMULATE_VERSION_MINOR,
-#  ifdef SIMULATE_VERSION_PATCH
-   '.', SIMULATE_VERSION_PATCH,
-#   ifdef SIMULATE_VERSION_TWEAK
-    '.', SIMULATE_VERSION_TWEAK,
-#   endif
-#  endif
-# endif
-  ']','\0'};
-#endif
-
-/* Construct the string literal in pieces to prevent the source from
-   getting matched.  Store it in a pointer rather than an array
-   because some compilers will just produce instructions to fill the
-   array rather than assigning a pointer to a static array.  */
-char const* info_platform = "INFO" ":" "platform[" PLATFORM_ID "]";
-char const* info_arch = "INFO" ":" "arch[" ARCHITECTURE_ID "]";
-
 CMAKE_CXX_COMPILER_ID_RUN=1
-CMAKE_CXX_COMPILER_ID_TEST_FLAGS=-c;--c++;--ec++;--target=arm-arm-none-eabi -mcpu=cortex-m3;-c -I__does_not_exist__
-CMAKE_CXX_COMPILER_ID_TOOL_MATCH_INDEX=2
-CMAKE_CXX_COMPILER_ID_TOOL_MATCH_REGEX=
-Ld[^
-]*(
-[ 	]+[^
-]*)*
-[ 	]+([^ 	
-]+)[^
-]*-o[^
-]*CompilerIdCXX/(\./)?(CompilerIdCXX.(framework|xctest|build/[^ 	
-]+)/)?CompilerIdCXX[ 	
-\"]
-CMAKE_CXX_COMPILER_ID_VENDORS=IAR
-CMAKE_CXX_COMPILER_ID_VENDOR_REGEX_IAR=IAR .+ Compiler
 CMAKE_CXX_COMPILER_LOADED=1
-CMAKE_CXX_COMPILER_NAMES=c++
 CMAKE_CXX_COMPILER_PREDEFINES_COMMAND=/usr/bin/clang++-15;-dM;-E;-c;/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/cmake/linux/x64/share/cmake-3.25/Modules/CMakeCXXCompilerABI.cpp
-CMAKE_CXX_COMPILER_PRODUCED_FILES=a.out
-CMAKE_CXX_COMPILER_PRODUCED_OUTPUT=
 CMAKE_CXX_COMPILER_RANLIB=/usr/bin/llvm-ranlib-15
 CMAKE_CXX_COMPILER_RANLIB=/usr/bin/llvm-ranlib-15
 CMAKE_CXX_COMPILER_VERSION=15.0.7
@@ -685,7 +317,6 @@ CMAKE_CXX_STANDARD=17
 CMAKE_CXX_STANDARD_COMPUTED_DEFAULT=14
 CMAKE_CXX_STANDARD_DEFAULT=14
 CMAKE_CXX_VERBOSE_FLAG=-v
-CMAKE_CXX_XCODE_ARCHS=
 CMAKE_C_ABI_COMPILED=TRUE
 CMAKE_C_ARCHIVE_APPEND=<CMAKE_AR> q <TARGET> <LINK_FLAGS> <OBJECTS>
 CMAKE_C_ARCHIVE_APPEND_IPO="/usr/bin/llvm-ar-15" r <TARGET> <LINK_FLAGS> <OBJECTS>
@@ -700,384 +331,13 @@ CMAKE_C_COMPILER=/usr/bin/clang-15
 CMAKE_C_COMPILER_ABI=ELF
 CMAKE_C_COMPILER_AR=/usr/bin/llvm-ar-15
 CMAKE_C_COMPILER_AR=/usr/bin/llvm-ar-15
-CMAKE_C_COMPILER_ARCHITECTURE_ID=
 CMAKE_C_COMPILER_ARG1=
 CMAKE_C_COMPILER_ENV_VAR=CC
 CMAKE_C_COMPILER_FRONTEND_VARIANT=GNU
 CMAKE_C_COMPILER_ID=Clang
-CMAKE_C_COMPILER_ID_PLATFORM_CONTENT=#define STRINGIFY_HELPER(X) #X
-#define STRINGIFY(X) STRINGIFY_HELPER(X)
-
-/* Identify known platforms by name.  */
-#if defined(__linux) || defined(__linux__) || defined(linux)
-# define PLATFORM_ID "Linux"
-
-#elif defined(__MSYS__)
-# define PLATFORM_ID "MSYS"
-
-#elif defined(__CYGWIN__)
-# define PLATFORM_ID "Cygwin"
-
-#elif defined(__MINGW32__)
-# define PLATFORM_ID "MinGW"
-
-#elif defined(__APPLE__)
-# define PLATFORM_ID "Darwin"
-
-#elif defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
-# define PLATFORM_ID "Windows"
-
-#elif defined(__FreeBSD__) || defined(__FreeBSD)
-# define PLATFORM_ID "FreeBSD"
-
-#elif defined(__NetBSD__) || defined(__NetBSD)
-# define PLATFORM_ID "NetBSD"
-
-#elif defined(__OpenBSD__) || defined(__OPENBSD)
-# define PLATFORM_ID "OpenBSD"
-
-#elif defined(__sun) || defined(sun)
-# define PLATFORM_ID "SunOS"
-
-#elif defined(_AIX) || defined(__AIX) || defined(__AIX__) || defined(__aix) || defined(__aix__)
-# define PLATFORM_ID "AIX"
-
-#elif defined(__hpux) || defined(__hpux__)
-# define PLATFORM_ID "HP-UX"
-
-#elif defined(__HAIKU__)
-# define PLATFORM_ID "Haiku"
-
-#elif defined(__BeOS) || defined(__BEOS__) || defined(_BEOS)
-# define PLATFORM_ID "BeOS"
-
-#elif defined(__QNX__) || defined(__QNXNTO__)
-# define PLATFORM_ID "QNX"
-
-#elif defined(__tru64) || defined(_tru64) || defined(__TRU64__)
-# define PLATFORM_ID "Tru64"
-
-#elif defined(__riscos) || defined(__riscos__)
-# define PLATFORM_ID "RISCos"
-
-#elif defined(__sinix) || defined(__sinix__) || defined(__SINIX__)
-# define PLATFORM_ID "SINIX"
-
-#elif defined(__UNIX_SV__)
-# define PLATFORM_ID "UNIX_SV"
-
-#elif defined(__bsdos__)
-# define PLATFORM_ID "BSDOS"
-
-#elif defined(_MPRAS) || defined(MPRAS)
-# define PLATFORM_ID "MP-RAS"
-
-#elif defined(__osf) || defined(__osf__)
-# define PLATFORM_ID "OSF1"
-
-#elif defined(_SCO_SV) || defined(SCO_SV) || defined(sco_sv)
-# define PLATFORM_ID "SCO_SV"
-
-#elif defined(__ultrix) || defined(__ultrix__) || defined(_ULTRIX)
-# define PLATFORM_ID "ULTRIX"
-
-#elif defined(__XENIX__) || defined(_XENIX) || defined(XENIX)
-# define PLATFORM_ID "Xenix"
-
-#elif defined(__WATCOMC__)
-# if defined(__LINUX__)
-#  define PLATFORM_ID "Linux"
-
-# elif defined(__DOS__)
-#  define PLATFORM_ID "DOS"
-
-# elif defined(__OS2__)
-#  define PLATFORM_ID "OS2"
-
-# elif defined(__WINDOWS__)
-#  define PLATFORM_ID "Windows3x"
-
-# elif defined(__VXWORKS__)
-#  define PLATFORM_ID "VxWorks"
-
-# else /* unknown platform */
-#  define PLATFORM_ID
-# endif
-
-#elif defined(__INTEGRITY)
-# if defined(INT_178B)
-#  define PLATFORM_ID "Integrity178"
-
-# else /* regular Integrity */
-#  define PLATFORM_ID "Integrity"
-# endif
-
-# elif defined(_ADI_COMPILER)
-#  define PLATFORM_ID "ADSP"
-
-#else /* unknown platform */
-# define PLATFORM_ID
-
-#endif
-
-/* For windows compilers MSVC and Intel we can determine
-   the architecture of the compiler being used.  This is because
-   the compilers do not have flags that can change the architecture,
-   but rather depend on which compiler is being used
-*/
-#if defined(_WIN32) && defined(_MSC_VER)
-# if defined(_M_IA64)
-#  define ARCHITECTURE_ID "IA64"
-
-# elif defined(_M_ARM64EC)
-#  define ARCHITECTURE_ID "ARM64EC"
-
-# elif defined(_M_X64) || defined(_M_AMD64)
-#  define ARCHITECTURE_ID "x64"
-
-# elif defined(_M_IX86)
-#  define ARCHITECTURE_ID "X86"
-
-# elif defined(_M_ARM64)
-#  define ARCHITECTURE_ID "ARM64"
-
-# elif defined(_M_ARM)
-#  if _M_ARM == 4
-#   define ARCHITECTURE_ID "ARMV4I"
-#  elif _M_ARM == 5
-#   define ARCHITECTURE_ID "ARMV5I"
-#  else
-#   define ARCHITECTURE_ID "ARMV" STRINGIFY(_M_ARM)
-#  endif
-
-# elif defined(_M_MIPS)
-#  define ARCHITECTURE_ID "MIPS"
-
-# elif defined(_M_SH)
-#  define ARCHITECTURE_ID "SHx"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__WATCOMC__)
-# if defined(_M_I86)
-#  define ARCHITECTURE_ID "I86"
-
-# elif defined(_M_IX86)
-#  define ARCHITECTURE_ID "X86"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__IAR_SYSTEMS_ICC__) || defined(__IAR_SYSTEMS_ICC)
-# if defined(__ICCARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__ICCRX__)
-#  define ARCHITECTURE_ID "RX"
-
-# elif defined(__ICCRH850__)
-#  define ARCHITECTURE_ID "RH850"
-
-# elif defined(__ICCRL78__)
-#  define ARCHITECTURE_ID "RL78"
-
-# elif defined(__ICCRISCV__)
-#  define ARCHITECTURE_ID "RISCV"
-
-# elif defined(__ICCAVR__)
-#  define ARCHITECTURE_ID "AVR"
-
-# elif defined(__ICC430__)
-#  define ARCHITECTURE_ID "MSP430"
-
-# elif defined(__ICCV850__)
-#  define ARCHITECTURE_ID "V850"
-
-# elif defined(__ICC8051__)
-#  define ARCHITECTURE_ID "8051"
-
-# elif defined(__ICCSTM8__)
-#  define ARCHITECTURE_ID "STM8"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__ghs__)
-# if defined(__PPC64__)
-#  define ARCHITECTURE_ID "PPC64"
-
-# elif defined(__ppc__)
-#  define ARCHITECTURE_ID "PPC"
-
-# elif defined(__ARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__x86_64__)
-#  define ARCHITECTURE_ID "x64"
-
-# elif defined(__i386__)
-#  define ARCHITECTURE_ID "X86"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-#elif defined(__TI_COMPILER_VERSION__)
-# if defined(__TI_ARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__MSP430__)
-#  define ARCHITECTURE_ID "MSP430"
-
-# elif defined(__TMS320C28XX__)
-#  define ARCHITECTURE_ID "TMS320C28x"
-
-# elif defined(__TMS320C6X__) || defined(_TMS320C6X)
-#  define ARCHITECTURE_ID "TMS320C6x"
-
-# else /* unknown architecture */
-#  define ARCHITECTURE_ID ""
-# endif
-
-# elif defined(__ADSPSHARC__)
-#  define ARCHITECTURE_ID "SHARC"
-
-# elif defined(__ADSPBLACKFIN__)
-#  define ARCHITECTURE_ID "Blackfin"
-
-#elif defined(__TASKING__)
-
-# if defined(__CTC__) || defined(__CPTC__)
-#  define ARCHITECTURE_ID "TriCore"
-
-# elif defined(__CMCS__)
-#  define ARCHITECTURE_ID "MCS"
-
-# elif defined(__CARM__)
-#  define ARCHITECTURE_ID "ARM"
-
-# elif defined(__CARC__)
-#  define ARCHITECTURE_ID "ARC"
-
-# elif defined(__C51__)
-#  define ARCHITECTURE_ID "8051"
-
-# elif defined(__CPCP__)
-#  define ARCHITECTURE_ID "PCP"
-
-# else
-#  define ARCHITECTURE_ID ""
-# endif
-
-#else
-#  define ARCHITECTURE_ID
-#endif
-
-/* Convert integer to decimal digit literals.  */
-#define DEC(n)                   \
-  ('0' + (((n) / 10000000)%10)), \
-  ('0' + (((n) / 1000000)%10)),  \
-  ('0' + (((n) / 100000)%10)),   \
-  ('0' + (((n) / 10000)%10)),    \
-  ('0' + (((n) / 1000)%10)),     \
-  ('0' + (((n) / 100)%10)),      \
-  ('0' + (((n) / 10)%10)),       \
-  ('0' +  ((n) % 10))
-
-/* Convert integer to hex digit literals.  */
-#define HEX(n)             \
-  ('0' + ((n)>>28 & 0xF)), \
-  ('0' + ((n)>>24 & 0xF)), \
-  ('0' + ((n)>>20 & 0xF)), \
-  ('0' + ((n)>>16 & 0xF)), \
-  ('0' + ((n)>>12 & 0xF)), \
-  ('0' + ((n)>>8  & 0xF)), \
-  ('0' + ((n)>>4  & 0xF)), \
-  ('0' + ((n)     & 0xF))
-
-/* Construct a string literal encoding the version number. */
-#ifdef COMPILER_VERSION
-char const* info_version = "INFO" ":" "compiler_version[" COMPILER_VERSION "]";
-
-/* Construct a string literal encoding the version number components. */
-#elif defined(COMPILER_VERSION_MAJOR)
-char const info_version[] = {
-  'I', 'N', 'F', 'O', ':',
-  'c','o','m','p','i','l','e','r','_','v','e','r','s','i','o','n','[',
-  COMPILER_VERSION_MAJOR,
-# ifdef COMPILER_VERSION_MINOR
-  '.', COMPILER_VERSION_MINOR,
-#  ifdef COMPILER_VERSION_PATCH
-   '.', COMPILER_VERSION_PATCH,
-#   ifdef COMPILER_VERSION_TWEAK
-    '.', COMPILER_VERSION_TWEAK,
-#   endif
-#  endif
-# endif
-  ']','\0'};
-#endif
-
-/* Construct a string literal encoding the internal version number. */
-#ifdef COMPILER_VERSION_INTERNAL
-char const info_version_internal[] = {
-  'I', 'N', 'F', 'O', ':',
-  'c','o','m','p','i','l','e','r','_','v','e','r','s','i','o','n','_',
-  'i','n','t','e','r','n','a','l','[',
-  COMPILER_VERSION_INTERNAL,']','\0'};
-#elif defined(COMPILER_VERSION_INTERNAL_STR)
-char const* info_version_internal = "INFO" ":" "compiler_version_internal[" COMPILER_VERSION_INTERNAL_STR "]";
-#endif
-
-/* Construct a string literal encoding the version number components. */
-#ifdef SIMULATE_VERSION_MAJOR
-char const info_simulate_version[] = {
-  'I', 'N', 'F', 'O', ':',
-  's','i','m','u','l','a','t','e','_','v','e','r','s','i','o','n','[',
-  SIMULATE_VERSION_MAJOR,
-# ifdef SIMULATE_VERSION_MINOR
-  '.', SIMULATE_VERSION_MINOR,
-#  ifdef SIMULATE_VERSION_PATCH
-   '.', SIMULATE_VERSION_PATCH,
-#   ifdef SIMULATE_VERSION_TWEAK
-    '.', SIMULATE_VERSION_TWEAK,
-#   endif
-#  endif
-# endif
-  ']','\0'};
-#endif
-
-/* Construct the string literal in pieces to prevent the source from
-   getting matched.  Store it in a pointer rather than an array
-   because some compilers will just produce instructions to fill the
-   array rather than assigning a pointer to a static array.  */
-char const* info_platform = "INFO" ":" "platform[" PLATFORM_ID "]";
-char const* info_arch = "INFO" ":" "arch[" ARCHITECTURE_ID "]";
-
 CMAKE_C_COMPILER_ID_RUN=1
-CMAKE_C_COMPILER_ID_TEST_FLAGS=-c;-Aa;-D__CLASSIC_C__;--target=arm-arm-none-eabi -mcpu=cortex-m3;-c -I__does_not_exist__
-CMAKE_C_COMPILER_ID_TOOL_MATCH_INDEX=2
-CMAKE_C_COMPILER_ID_TOOL_MATCH_REGEX=
-Ld[^
-]*(
-[ 	]+[^
-]*)*
-[ 	]+([^ 	
-]+)[^
-]*-o[^
-]*CompilerIdC/(\./)?(CompilerIdC.(framework|xctest|build/[^ 	
-]+)/)?CompilerIdC[ 	
-\"]
-CMAKE_C_COMPILER_ID_VENDORS=IAR
-CMAKE_C_COMPILER_ID_VENDOR_REGEX_IAR=IAR .+ Compiler
 CMAKE_C_COMPILER_LOADED=1
-CMAKE_C_COMPILER_NAMES=cc
 CMAKE_C_COMPILER_PREDEFINES_COMMAND=/usr/bin/clang-15;-dM;-E;-c;/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/cmake/linux/x64/share/cmake-3.25/Modules/CMakeCXXCompilerABI.cpp
-CMAKE_C_COMPILER_PRODUCED_FILES=a.out
-CMAKE_C_COMPILER_PRODUCED_OUTPUT=
 CMAKE_C_COMPILER_RANLIB=/usr/bin/llvm-ranlib-15
 CMAKE_C_COMPILER_RANLIB=/usr/bin/llvm-ranlib-15
 CMAKE_C_COMPILER_VERSION=15.0.7
@@ -1141,7 +401,6 @@ CMAKE_C_SOURCE_FILE_EXTENSIONS=c;m
 CMAKE_C_STANDARD_COMPUTED_DEFAULT=17
 CMAKE_C_STANDARD_DEFAULT=17
 CMAKE_C_VERBOSE_FLAG=-v
-CMAKE_C_XCODE_ARCHS=
 CMAKE_DEPFILE_FLAGS_C=-MD -MT <DEP_TARGET> -MF <DEP_FILE>
 CMAKE_DEPFILE_FLAGS_CXX=-MD -MT <DEP_TARGET> -MF <DEP_FILE>
 CMAKE_DLLTOOL=/usr/bin/llvm-dlltool-15
@@ -1207,7 +466,6 @@ CMAKE_INSTALL_LOCALSTATEDIR=var
 CMAKE_INSTALL_MANDIR=
 CMAKE_INSTALL_OLDINCLUDEDIR=/usr/include
 CMAKE_INSTALL_PREFIX=/usr/local
-CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT=1
 CMAKE_INSTALL_RUNSTATEDIR=
 CMAKE_INSTALL_SBINDIR=sbin
 CMAKE_INSTALL_SHAREDSTATEDIR=com
@@ -1234,9 +492,6 @@ CMAKE_MAJOR_VERSION=3
 CMAKE_MAKE_PROGRAM=/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/ninja/linux/x64/ninja
 CMAKE_MATCH_0=
 CMAKE_MATCH_1=
-CMAKE_MATCH_2=
-CMAKE_MATCH_3=
-CMAKE_MATCH_4=
 CMAKE_MATCH_COUNT=0
 CMAKE_MINIMUM_REQUIRED_VERSION=2.6
 CMAKE_MINOR_VERSION=25
@@ -1250,6 +505,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO=
 CMAKE_MODULE_PATH=/usr/lib/x86_64-linux-gnu/cmake/pcl/Modules;/usr/lib/cmake/vtk-7.1;/home/da/project/ros/orb_dvl2_ws/src/dvl2/Thirdparty/g2o/cmake_modules
 CMAKE_MT=
 CMAKE_NM=/usr/bin/llvm-nm-15
+CMAKE_NUMBER_OF_MAKEFILES=12
 CMAKE_OBJCOPY=/usr/bin/llvm-objcopy-15
 CMAKE_OBJDUMP=/usr/bin/llvm-objdump-15
 CMAKE_PARENT_LIST_FILE=/home/da/project/ros/orb_dvl2_ws/src/dvl2/Thirdparty/g2o/CMakeLists.txt
@@ -1265,10 +521,14 @@ CMAKE_PREFIX_PATH_AS_IS=/home/da/project/ros/orb_dvl2_ws/devel;/home/da/project/
 CMAKE_PROJECT_DESCRIPTION=
 CMAKE_PROJECT_HOMEPAGE_URL=
 CMAKE_PROJECT_NAME=Project
-CMAKE_PROJECT_VERSION=1.10.0
-CMAKE_PROJECT_VERSION_MAJOR=1
-CMAKE_PROJECT_VERSION_MINOR=10
-CMAKE_PROJECT_VERSION_PATCH=0
+CMAKE_PROJECT_VERSION=
+CMAKE_PROJECT_VERSION=
+CMAKE_PROJECT_VERSION_MAJOR=
+CMAKE_PROJECT_VERSION_MAJOR=
+CMAKE_PROJECT_VERSION_MINOR=
+CMAKE_PROJECT_VERSION_MINOR=
+CMAKE_PROJECT_VERSION_PATCH=
+CMAKE_PROJECT_VERSION_PATCH=
 CMAKE_PROJECT_VERSION_TWEAK=
 CMAKE_RANLIB=/usr/bin/llvm-ranlib-15
 CMAKE_RANLIB=/usr/bin/llvm-ranlib-15
@@ -1342,9 +602,18 @@ CMAKE_UNAME=/usr/bin/uname
 CMAKE_USE_PTHREADS_INIT=1
 CMAKE_VERBOSE_MAKEFILE=FALSE
 CMAKE_VERSION=3.25.2
-COMPILER_BASENAME=clang++-15
 COMPONENT=PEOPLE
 CONFIG_FILES=/usr/local/lib/cmake/fmt/fmt-targets-release.cmake
+COVERAGE_COMMAND=/usr/bin/gcov
+COVERAGE_EXTRA_FLAGS=-l
+CTEST_SUBMIT_RETRY_COUNT=3
+CTEST_SUBMIT_RETRY_DELAY=5
+DART_TESTING_TIMEOUT=1500
+DBoW2_BINARY_DIR=/home/da/project/ros/orb_dvl2_ws/src/build/dvl2/Thirdparty/DBoW2
+DBoW2_IS_TOP_LEVEL=OFF
+DBoW2_LIB_DEPENDS=general;opencv_calib3d;general;opencv_core;general;opencv_dnn;general;opencv_features2d;general;opencv_flann;general;opencv_highgui;general;opencv_imgcodecs;general;opencv_imgproc;general;opencv_ml;general;opencv_objdetect;general;opencv_photo;general;opencv_shape;general;opencv_stitching;general;opencv_superres;general;opencv_video;general;opencv_videoio;general;opencv_videostab;general;opencv_viz;general;opencv_aruco;general;opencv_bgsegm;general;opencv_bioinspired;general;opencv_ccalib;general;opencv_datasets;general;opencv_dnn_objdetect;general;opencv_dpm;general;opencv_face;general;opencv_freetype;general;opencv_fuzzy;general;opencv_hdf;general;opencv_hfs;general;opencv_img_hash;general;opencv_line_descriptor;general;opencv_optflow;general;opencv_phase_unwrapping;general;opencv_plot;general;opencv_reg;general;opencv_rgbd;general;opencv_saliency;general;opencv_sfm;general;opencv_stereo;general;opencv_structured_light;general;opencv_surface_matching;general;opencv_text;general;opencv_tracking;general;opencv_xfeatures2d;general;opencv_ximgproc;general;opencv_xobjdetect;general;opencv_xphoto;general;opencv_calib3d;general;opencv_core;general;opencv_dnn;general;opencv_features2d;general;opencv_flann;general;opencv_highgui;general;opencv_imgcodecs;general;opencv_imgproc;general;opencv_ml;general;opencv_objdetect;general;opencv_photo;general;opencv_shape;general;opencv_stitching;general;opencv_superres;general;opencv_video;general;opencv_videoio;general;opencv_videostab;general;opencv_viz;general;opencv_aruco;general;opencv_bgsegm;general;opencv_bioinspired;general;opencv_ccalib;general;opencv_datasets;general;opencv_dnn_objdetect;general;opencv_dpm;general;opencv_face;general;opencv_freetype;general;opencv_fuzzy;general;opencv_hdf;general;opencv_hfs;general;opencv_img_hash;general;opencv_line_descriptor;general;opencv_optflow;general;opencv_phase_unwrapping;general;opencv_plot;general;opencv_reg;general;opencv_rgbd;general;opencv_saliency;general;opencv_sfm;general;opencv_stereo;general;opencv_structured_light;general;opencv_surface_matching;general;opencv_text;general;opencv_tracking;general;opencv_xfeatures2d;general;opencv_ximgproc;general;opencv_xobjdetect;general;opencv_xphoto;general;-lm;
+DBoW2_SOURCE_DIR=/home/da/project/ros/orb_dvl2_ws/src/dvl2/Thirdparty/DBoW2
+DOXYGEN_DOT_EXECUTABLE=/usr/bin/dot
 DOXYGEN_EXECUTABLE=/usr/bin/doxygen
 DOXYGEN_FOUND=TRUE
 EIGEN3_DEFINITIONS=
@@ -1382,6 +651,7 @@ Eigen3_VERSION_TWEAK=0
 Eigen_FOUND=TRUE
 FILES_W_PATH=srv/SetInfof.srv
 FIND_PACKAGE_MESSAGE_DETAILS_Boost=[/usr/include][cfound components: log_setup log date_time filesystem thread regex chrono atomic ][v1.71.0()]
+FIND_PACKAGE_MESSAGE_DETAILS_Doxygen=[/usr/bin/doxygen][cfound components: doxygen dot ][v1.8.17()]
 FIND_PACKAGE_MESSAGE_DETAILS_Eigen=[/usr/include/eigen3][v(3.1)]
 FIND_PACKAGE_MESSAGE_DETAILS_FLANN=[/usr/lib/x86_64-linux-gnu/libflann_cpp.so][/usr/include][v()]
 FIND_PACKAGE_MESSAGE_DETAILS_OpenCV=[/home/da/project/Thirdparty/opencv3.2][v3.4.16(3.2)]
@@ -1507,16 +777,17 @@ LSB_DISTRIB_ID=Ubuntu
 LSB_FOUND=TRUE
 LSB_RELEASE=20.04
 LSB_RELEASE_EXECUTABLE=/usr/bin/lsb_release
-MACRO_CHECK_LIBRARY_EXISTS_DEFINITION=-DCHECK_FUNCTION_EXISTS=pthread_create 
+MAKECOMMAND=/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/cmake/linux/x64/bin/cmake --build . --config "${CTEST_CONFIGURATION_TYPE}"
+MEMORYCHECK_COMMAND=MEMORYCHECK_COMMAND-NOTFOUND
+MEMORYCHECK_SUPPRESSIONS_FILE=
 MODULE_GENERATED_NAME=manifest.l
 MSG_GENERATED_NAME=SetInfof.js
 MSG_INCLUDE_DIRS=std_msgs;/opt/ros/noetic/share/std_msgs/cmake/../msg
 MSG_I_FLAGS=-Istd_msgs:/opt/ros/noetic/share/std_msgs/cmake/../msg
 MSG_NAME=SetInfof.srv
 MSG_SHORT_NAME=SetInfof
-MSVC_CXX_ARCHITECTURE_ID=
-MSVC_C_ARCHITECTURE_ID=
 NOSETESTS=/usr/bin/nosetests3
+OCTOMAP_OMP=FALSE
 OPENCV_ARUCO_FOUND=1
 OPENCV_BGSEGM_FOUND=1
 OPENCV_BIOINSPIRED_FOUND=1
@@ -1603,8 +874,10 @@ ORB_DVL2_HOMEPAGE_URL=
 ORB_DVL2_INCLUDE_DIRS=/home/da/project/ros/orb_dvl2_ws/devel/include
 ORB_DVL2_INSTALLED_SERVICE_FILES=srv/SetInfof.srv
 ORB_DVL2_IS_TOP_LEVEL=OFF
+ORB_DVL2_LIB_DEPENDS=general;opencv_calib3d;general;opencv_core;general;opencv_dnn;general;opencv_features2d;general;opencv_flann;general;opencv_highgui;general;opencv_imgcodecs;general;opencv_imgproc;general;opencv_ml;general;opencv_objdetect;general;opencv_photo;general;opencv_shape;general;opencv_stitching;general;opencv_superres;general;opencv_video;general;opencv_videoio;general;opencv_videostab;general;opencv_viz;general;opencv_aruco;general;opencv_bgsegm;general;opencv_bioinspired;general;opencv_ccalib;general;opencv_datasets;general;opencv_dnn_objdetect;general;opencv_dpm;general;opencv_face;general;opencv_freetype;general;opencv_fuzzy;general;opencv_hdf;general;opencv_hfs;general;opencv_img_hash;general;opencv_line_descriptor;general;opencv_optflow;general;opencv_phase_unwrapping;general;opencv_plot;general;opencv_reg;general;opencv_rgbd;general;opencv_saliency;general;opencv_sfm;general;opencv_stereo;general;opencv_structured_light;general;opencv_surface_matching;general;opencv_text;general;opencv_tracking;general;opencv_xfeatures2d;general;opencv_ximgproc;general;opencv_xobjdetect;general;opencv_xphoto;general;/usr/lib/x86_64-linux-gnu/libboost_log_setup.so;general;/usr/lib/x86_64-linux-gnu/libboost_log.so;general;/usr/lib/x86_64-linux-gnu/libboost_date_time.so;general;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so;general;/usr/lib/x86_64-linux-gnu/libboost_thread.so;general;-lpthread;general;/usr/lib/x86_64-linux-gnu/libboost_regex.so;general;/usr/lib/x86_64-linux-gnu/libboost_chrono.so;general;/usr/lib/x86_64-linux-gnu/libboost_atomic.so;general;pcl_common;general;pcl_kdtree;general;pcl_octree;general;pcl_search;general;pcl_sample_consensus;general;pcl_filters;general;pcl_io;general;pcl_features;general;pcl_ml;general;pcl_segmentation;general;pcl_visualization;general;pcl_surface;general;pcl_registration;general;pcl_keypoints;general;pcl_tracking;general;pcl_recognition;general;pcl_stereo;general;pcl_apps;general;pcl_outofcore;general;pcl_people;general;/usr/lib/x86_64-linux-gnu/libboost_system.so;general;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so;general;/usr/lib/x86_64-linux-gnu/libboost_date_time.so;general;/usr/lib/x86_64-linux-gnu/libboost_iostreams.so;general;/usr/lib/x86_64-linux-gnu/libboost_regex.so;optimized;/usr/lib/x86_64-linux-gnu/libqhull.so;debug;/usr/lib/x86_64-linux-gnu/libqhull.so;general;/usr/lib/libOpenNI.so;general;/usr/lib/libOpenNI2.so;general;vtkChartsCore;general;vtkCommonColor;general;vtkCommonCore;general;vtksys;general;vtkCommonDataModel;general;vtkCommonMath;general;vtkCommonMisc;general;vtkCommonSystem;general;vtkCommonTransforms;general;vtkCommonExecutionModel;general;vtkFiltersGeneral;general;vtkCommonComputationalGeometry;general;vtkFiltersCore;general;vtkInfovisCore;general;vtkFiltersExtraction;general;vtkFiltersStatistics;general;vtkImagingFourier;general;vtkImagingCore;general;vtkalglib;general;vtkRenderingContext2D;general;vtkRenderingCore;general;vtkFiltersGeometry;general;vtkFiltersSources;general;vtkRenderingFreeType;general;/usr/lib/x86_64-linux-gnu/libfreetype.so;general;/usr/lib/x86_64-linux-gnu/libz.so;general;vtkFiltersModeling;general;vtkImagingSources;general;vtkInteractionStyle;general;vtkInteractionWidgets;general;vtkFiltersHybrid;general;vtkImagingColor;general;vtkImagingGeneral;general;vtkImagingHybrid;general;vtkIOImage;general;vtkDICOMParser;general;vtkmetaio;general;/usr/lib/x86_64-linux-gnu/libjpeg.so;general;/usr/lib/x86_64-linux-gnu/libpng.so;general;/usr/lib/x86_64-linux-gnu/libtiff.so;general;vtkRenderingAnnotation;general;vtkRenderingVolume;general;vtkIOXML;general;vtkIOCore;general;vtkIOXMLParser;general;/usr/lib/x86_64-linux-gnu/libexpat.so;general;vtkIOGeometry;general;vtkIOLegacy;general;vtkIOPLY;general;vtkRenderingLOD;general;vtkViewsContext2D;general;vtkViewsCore;general;vtkRenderingContextOpenGL2;general;vtkRenderingOpenGL2;general;FLANN::FLANN;general;DBoW2;general;octomap;general;/opt/ros/noetic/lib/libimage_transport.so;general;/opt/ros/noetic/lib/libclass_loader.so;general;/usr/lib/x86_64-linux-gnu/libPocoFoundation.so;general;/usr/lib/x86_64-linux-gnu/libdl.so;general;/opt/ros/noetic/lib/libroslib.so;general;/opt/ros/noetic/lib/librospack.so;general;/usr/lib/x86_64-linux-gnu/libpython3.8.so;general;/usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libtinyxml2.so;general;/opt/ros/noetic/lib/libtf.so;general;/opt/ros/noetic/lib/libtf2_ros.so;general;/opt/ros/noetic/lib/libactionlib.so;general;/opt/ros/noetic/lib/libmessage_filters.so;general;/opt/ros/noetic/lib/libroscpp.so;general;/usr/lib/x86_64-linux-gnu/libpthread.so;general;/usr/lib/x86_64-linux-gnu/libboost_chrono.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.71.0;general;/opt/ros/noetic/lib/libxmlrpcpp.so;general;/opt/ros/noetic/lib/libtf2.so;general;/opt/ros/noetic/lib/librosconsole.so;general;/opt/ros/noetic/lib/librosconsole_log4cxx.so;general;/opt/ros/noetic/lib/librosconsole_backend_interface.so;general;/usr/lib/x86_64-linux-gnu/liblog4cxx.so;general;/usr/lib/x86_64-linux-gnu/libboost_regex.so.1.71.0;general;/opt/ros/noetic/lib/libroscpp_serialization.so;general;/opt/ros/noetic/lib/librostime.so;general;/usr/lib/x86_64-linux-gnu/libboost_date_time.so.1.71.0;general;/opt/ros/noetic/lib/libcpp_common.so;general;/usr/lib/x86_64-linux-gnu/libboost_system.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libboost_thread.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libconsole_bridge.so.0.4;general;-lboost_serialization;general;-lboost_system;general;-lboost_filesystem;general;-lboost_iostreams;general;-lcrypto;
 ORB_DVL2_MAINTAINER=da <da@todo.todo>
 ORB_DVL2_MSG_DEPENDENCIES=std_msgs
+ORB_DVL2_Optmization_LIB_DEPENDS=general;opencv_calib3d;general;opencv_core;general;opencv_dnn;general;opencv_features2d;general;opencv_flann;general;opencv_highgui;general;opencv_imgcodecs;general;opencv_imgproc;general;opencv_ml;general;opencv_objdetect;general;opencv_photo;general;opencv_shape;general;opencv_stitching;general;opencv_superres;general;opencv_video;general;opencv_videoio;general;opencv_videostab;general;opencv_viz;general;opencv_aruco;general;opencv_bgsegm;general;opencv_bioinspired;general;opencv_ccalib;general;opencv_datasets;general;opencv_dnn_objdetect;general;opencv_dpm;general;opencv_face;general;opencv_freetype;general;opencv_fuzzy;general;opencv_hdf;general;opencv_hfs;general;opencv_img_hash;general;opencv_line_descriptor;general;opencv_optflow;general;opencv_phase_unwrapping;general;opencv_plot;general;opencv_reg;general;opencv_rgbd;general;opencv_saliency;general;opencv_sfm;general;opencv_stereo;general;opencv_structured_light;general;opencv_surface_matching;general;opencv_text;general;opencv_tracking;general;opencv_xfeatures2d;general;opencv_ximgproc;general;opencv_xobjdetect;general;opencv_xphoto;general;/usr/lib/x86_64-linux-gnu/libboost_log_setup.so;general;/usr/lib/x86_64-linux-gnu/libboost_log.so;general;/usr/lib/x86_64-linux-gnu/libboost_date_time.so;general;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so;general;/usr/lib/x86_64-linux-gnu/libboost_thread.so;general;-lpthread;general;/usr/lib/x86_64-linux-gnu/libboost_regex.so;general;/usr/lib/x86_64-linux-gnu/libboost_chrono.so;general;/usr/lib/x86_64-linux-gnu/libboost_atomic.so;general;pcl_common;general;pcl_kdtree;general;pcl_octree;general;pcl_search;general;pcl_sample_consensus;general;pcl_filters;general;pcl_io;general;pcl_features;general;pcl_ml;general;pcl_segmentation;general;pcl_visualization;general;pcl_surface;general;pcl_registration;general;pcl_keypoints;general;pcl_tracking;general;pcl_recognition;general;pcl_stereo;general;pcl_apps;general;pcl_outofcore;general;pcl_people;general;/usr/lib/x86_64-linux-gnu/libboost_system.so;general;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so;general;/usr/lib/x86_64-linux-gnu/libboost_date_time.so;general;/usr/lib/x86_64-linux-gnu/libboost_iostreams.so;general;/usr/lib/x86_64-linux-gnu/libboost_regex.so;optimized;/usr/lib/x86_64-linux-gnu/libqhull.so;debug;/usr/lib/x86_64-linux-gnu/libqhull.so;general;/usr/lib/libOpenNI.so;general;/usr/lib/libOpenNI2.so;general;vtkChartsCore;general;vtkCommonColor;general;vtkCommonCore;general;vtksys;general;vtkCommonDataModel;general;vtkCommonMath;general;vtkCommonMisc;general;vtkCommonSystem;general;vtkCommonTransforms;general;vtkCommonExecutionModel;general;vtkFiltersGeneral;general;vtkCommonComputationalGeometry;general;vtkFiltersCore;general;vtkInfovisCore;general;vtkFiltersExtraction;general;vtkFiltersStatistics;general;vtkImagingFourier;general;vtkImagingCore;general;vtkalglib;general;vtkRenderingContext2D;general;vtkRenderingCore;general;vtkFiltersGeometry;general;vtkFiltersSources;general;vtkRenderingFreeType;general;/usr/lib/x86_64-linux-gnu/libfreetype.so;general;/usr/lib/x86_64-linux-gnu/libz.so;general;vtkFiltersModeling;general;vtkImagingSources;general;vtkInteractionStyle;general;vtkInteractionWidgets;general;vtkFiltersHybrid;general;vtkImagingColor;general;vtkImagingGeneral;general;vtkImagingHybrid;general;vtkIOImage;general;vtkDICOMParser;general;vtkmetaio;general;/usr/lib/x86_64-linux-gnu/libjpeg.so;general;/usr/lib/x86_64-linux-gnu/libpng.so;general;/usr/lib/x86_64-linux-gnu/libtiff.so;general;vtkRenderingAnnotation;general;vtkRenderingVolume;general;vtkIOXML;general;vtkIOCore;general;vtkIOXMLParser;general;/usr/lib/x86_64-linux-gnu/libexpat.so;general;vtkIOGeometry;general;vtkIOLegacy;general;vtkIOPLY;general;vtkRenderingLOD;general;vtkViewsContext2D;general;vtkViewsCore;general;vtkRenderingContextOpenGL2;general;vtkRenderingOpenGL2;general;FLANN::FLANN;general;DBoW2;general;g2o;general;/opt/ros/noetic/lib/libimage_transport.so;general;/opt/ros/noetic/lib/libclass_loader.so;general;/usr/lib/x86_64-linux-gnu/libPocoFoundation.so;general;/usr/lib/x86_64-linux-gnu/libdl.so;general;/opt/ros/noetic/lib/libroslib.so;general;/opt/ros/noetic/lib/librospack.so;general;/usr/lib/x86_64-linux-gnu/libpython3.8.so;general;/usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libtinyxml2.so;general;/opt/ros/noetic/lib/libtf.so;general;/opt/ros/noetic/lib/libtf2_ros.so;general;/opt/ros/noetic/lib/libactionlib.so;general;/opt/ros/noetic/lib/libmessage_filters.so;general;/opt/ros/noetic/lib/libroscpp.so;general;/usr/lib/x86_64-linux-gnu/libpthread.so;general;/usr/lib/x86_64-linux-gnu/libboost_chrono.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libboost_filesystem.so.1.71.0;general;/opt/ros/noetic/lib/libxmlrpcpp.so;general;/opt/ros/noetic/lib/libtf2.so;general;/opt/ros/noetic/lib/librosconsole.so;general;/opt/ros/noetic/lib/librosconsole_log4cxx.so;general;/opt/ros/noetic/lib/librosconsole_backend_interface.so;general;/usr/lib/x86_64-linux-gnu/liblog4cxx.so;general;/usr/lib/x86_64-linux-gnu/libboost_regex.so.1.71.0;general;/opt/ros/noetic/lib/libroscpp_serialization.so;general;/opt/ros/noetic/lib/librostime.so;general;/usr/lib/x86_64-linux-gnu/libboost_date_time.so.1.71.0;general;/opt/ros/noetic/lib/libcpp_common.so;general;/usr/lib/x86_64-linux-gnu/libboost_system.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libboost_thread.so.1.71.0;general;/usr/lib/x86_64-linux-gnu/libconsole_bridge.so.0.4;
 ORB_DVL2_PACKAGE_FORMAT=2
 ORB_DVL2_RUN_DEPENDS=geometry_msgs;image_transport;message_filters;nav_msgs;octomap_msgs;pose_graph_msgs;roscpp;sensor_msgs;tf;vehicle_interface;waterlinked_a50_ros_driver;message_runtime
 ORB_DVL2_SERVICE_FILES=/home/da/project/ros/orb_dvl2_ws/src/dvl2/srv/SetInfof.srv
@@ -1613,16 +886,11 @@ ORB_DVL2_URL_BUGTRACKER=
 ORB_DVL2_URL_REPOSITORY=
 ORB_DVL2_URL_WEBSITE=
 ORB_DVL2_VERSION=0.0.0
-OUTPUT=Change Dir: /home/da/project/ros/orb_dvl2_ws/src/build/CMakeFiles/CMakeScratch/TryCompile-q8de07
-
-Run Build Command(s):/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.141/bin/ninja/linux/x64/ninja cmTC_a0aa3 && [1/2] Building C object CMakeFiles/cmTC_a0aa3.dir/CheckFunctionExists.c.o
-[2/2] Linking C executable cmTC_a0aa3
-
-
 OpenCV_CONFIG=/home/da/project/Thirdparty/opencv3.2/share/OpenCV/OpenCVConfig.cmake
 OpenCV_CONFIG_PATH=/home/da/project/Thirdparty/opencv3.2/share/OpenCV
 OpenCV_CONSIDERED_CONFIGS=/home/da/project/Thirdparty/opencv3.2/share/OpenCV/OpenCVConfig.cmake
 OpenCV_CONSIDERED_VERSIONS=3.4.16
+OpenCV_DIR=/home/da/project/Thirdparty/opencv3.2/share/OpenCV
 OpenCV_DIR=/home/da/project/Thirdparty/opencv3.2/share/OpenCV
 OpenCV_FOUND=1
 OpenCV_INCLUDE_DIRS=/home/da/project/Thirdparty/opencv3.2/include;/home/da/project/Thirdparty/opencv3.2/include/opencv
@@ -2117,7 +1385,6 @@ PKG_CONFIG_VERSION_STRING=0.29.1
 PKG_MSG_FILES=
 PKG_MSG_INCLUDE_DIRS=
 PKG_SRV_FILES=srv/SetInfof.srv
-PRESET_CMAKE_SYSTEM_NAME=FALSE
 PROJECT_BINARY_DIR=/home/da/project/ros/orb_dvl2_ws/src/build/dvl2/Thirdparty/g2o
 PROJECT_CMAKE_DIR=/usr/local/lib/cmake/Pangolin
 PROJECT_DESCRIPTION=
@@ -2191,7 +1458,6 @@ QHULL_MAJOR_VERSION=6
 QHULL_RELEASE_NAME=qhull_p;qhull6;qhull
 QHULL_ROOT=/usr
 Qhull_FOUND=TRUE
-ROS_BUILD_TYPE=RelWithDebInfo
 RT_LIBRARY=/usr/lib/x86_64-linux-gnu/librt.so
 RUN_CONFIGURE=ON
 SERVICE_DIR=/home/da/project/ros/orb_dvl2_ws/src/dvl2/srv
@@ -2258,15 +1524,12 @@ VTK_WRAP_PYTHON=ON
 VTK_WRAP_TCL=ON
 _BOOST_INCLUDEDIR_CHANGED=0
 _BOOST_INCLUDEDIR_LAST=/usr/include
-_BOOST_LIBRARYDIR_CHANGED=0
-_BOOST_ROOT_CHANGED=0
 _Boost_ADDITIONAL_VERSIONS_CHANGED=0
 _Boost_ADDITIONAL_VERSIONS_LAST=1.71.0;1.71;1.71.0;1.71;1.70.0;1.70;1.69.0;1.69;1.68.0;1.68;1.67.0;1.67;1.66.0;1.66;1.65.1;1.65.0;1.65;1.64.0;1.64;1.63.0;1.63;1.62.0;1.62;1.61.0;1.61;1.60.0;1.60;1.59.0;1.59;1.58.0;1.58;1.57.0;1.57;1.56.0;1.56;1.55.0;1.55
 _Boost_CHANGE_INCDIR=0
 _Boost_CHANGE_LIBDIR_DEBUG=0
 _Boost_CHANGE_LIBDIR_RELEASE=0
 _Boost_CHANGE_LIBNAME=0
-_Boost_COMPILER_CHANGED=0
 _Boost_COMPONENTS_SEARCHED=atomic;chrono;date_time;filesystem;iostreams;log;log_setup;regex;system;thread
 _Boost_EXTRA_FIND_COMPONENTS=date_time;filesystem;thread;regex;chrono;atomic
 _Boost_FIND_LIBRARY_HINTS_FOR_COMPONENT=
@@ -2285,17 +1548,10 @@ _Boost_LOG_DEPENDENCIES=date_time;log_setup;filesystem;thread;regex;chrono;atomi
 _Boost_LOG_TARGET_DEPENDENCIES=Boost::date_time;Boost::log_setup;Boost::filesystem;Boost::thread;Boost::regex;Boost::chrono;Boost::atomic
 _Boost_NAMESPACE_CHANGED=0
 _Boost_NAMESPACE_LAST=boost
-_Boost_NO_SYSTEM_PATHS_CHANGED=0
-_Boost_THREADAPI_CHANGED=0
 _Boost_THREAD_DEPENDENCIES=chrono;date_time;atomic
 _Boost_THREAD_TARGET_DEPENDENCIES=Boost::chrono;Boost::date_time;Boost::atomic;Threads::Threads
-_Boost_USE_DEBUG_PYTHON_CHANGED=0
 _Boost_USE_MULTITHREADED_CHANGED=0
 _Boost_USE_MULTITHREADED_LAST=TRUE
-_Boost_USE_STATIC_LIBS_CHANGED=0
-_Boost_USE_STATIC_RUNTIME_CHANGED=0
-_Boost_USE_STLPORT_CHANGED=0
-_Boost_USE_STLPORT_DEPRECATED_NATIVE_IOSTREAMS_CHANGED=0
 _Boost_VARS_DIR=BOOST_ROOT;Boost_NO_SYSTEM_PATHS
 _Boost_VARS_INC=BOOST_INCLUDEDIR;Boost_INCLUDE_DIR;Boost_ADDITIONAL_VERSIONS
 _Boost_VARS_LIB=BOOST_LIBRARYDIR;Boost_LIBRARY_DIR_DEBUG;BOOST_LIBRARYDIR;Boost_LIBRARY_DIR_RELEASE
@@ -2309,11 +1565,11 @@ _CATKIN_FIND_=0
 _CATKIN_SKIP_INSTALL_RULES=FALSE
 _CATKIN_USE_CUSTOM_INSTALL=TRUE
 _CMAKE_CUDA_IMPLICIT_INCLUDE_DIRECTORIES_INIT=/usr/include
-_CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES_INIT=/usr/include
+_CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES_INIT=/usr/include/c++/10;/usr/include/x86_64-linux-gnu/c++/10;/usr/include/c++/10/backward;/usr/lib/llvm-15/lib/clang/15.0.7/include;/usr/local/include;/usr/include/x86_64-linux-gnu;/usr/include;/usr/include
 _CMAKE_CXX_IPO_MAY_BE_SUPPORTED_BY_COMPILER=YES
 _CMAKE_CXX_IPO_SUPPORTED_BY_CMAKE=YES
 _CMAKE_CXX_PIE_MAY_BE_SUPPORTED_BY_LINKER=YES
-_CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES_INIT=/usr/include
+_CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES_INIT=/usr/lib/llvm-15/lib/clang/15.0.7/include;/usr/local/include;/usr/include/x86_64-linux-gnu;/usr/include;/usr/include
 _CMAKE_C_IPO_MAY_BE_SUPPORTED_BY_COMPILER=YES
 _CMAKE_C_IPO_SUPPORTED_BY_CMAKE=YES
 _CMAKE_C_PIE_MAY_BE_SUPPORTED_BY_LINKER=YES
@@ -2324,10 +1580,6 @@ _CMAKE_SYSTEM_PREFIX_PATH_INSTALL_PREFIX_COUNT=2
 _CMAKE_SYSTEM_PREFIX_PATH_INSTALL_PREFIX_VALUE=/usr/local
 _CMAKE_SYSTEM_PREFIX_PATH_STAGING_PREFIX_COUNT=0
 _CMAKE_SYSTEM_PREFIX_PATH_STAGING_PREFIX_VALUE=
-_CMAKE_TOOLCHAIN_LOCATION=/usr/bin
-_CMAKE_TOOLCHAIN_SUFFIX=-15
-_CMAKE_USER_CXX_COMPILER_PATH=/usr/bin
-_CMAKE_USER_C_COMPILER_PATH=/usr/bin
 _DIR=/usr/local/lib/cmake/fmt
 _ENV_BOOSTROOT=
 _ENV_BOOST_INCLUDEDIR=
@@ -2352,10 +1604,6 @@ _PKG_CONFIG_VERSION_ERROR=
 _PYTHON_PATH_VERSION_SUFFIX=3
 _Python_NAMES=python3
 _Python_VERSIONS=;;3.12;3.11;3.10;3.9;3.8;3.7;3.6;3.5;3.4;3.3;3.2;3.1;3.0
-_SET_CMAKE_CXX_COMPILER_ARCHITECTURE_ID=
-_SET_CMAKE_CXX_COMPILER_SYSROOT=
-_SET_CMAKE_C_COMPILER_ARCHITECTURE_ID=
-_SET_CMAKE_C_COMPILER_SYSROOT=
 _VTK_MISSING=
 __COMPILER_CLANG=1
 __COMPILER_CMAKE_COMMON_COMPILER_MACROS=1
@@ -2364,9 +1612,6 @@ __LINUX_COMPILER_GNU=1
 __OpenCV_INCLUDE_DIRS=/home/da/project/Thirdparty/opencv3.2/include;/home/da/project/Thirdparty/opencv3.2/include/opencv
 __UNIX_PATHS_INCLUDED=1
 __ar=/usr/bin/llvm-ar-15
-__clang_hint_1=/usr/lib/llvm-15/bin
-__clang_hint_2=/usr/bin
-__clang_hints=/usr/lib/llvm-15/bin;/usr/bin
 __component=
 __cvcomponent=
 __cvcomponentIdx=47
@@ -2391,27 +1636,21 @@ __pkg_config_checked_PC_OPENNI2=1
 __pkg_config_checked_PC_USB_10=1
 __ranlib=/usr/bin/llvm-ranlib-15
 __remap_warnings=
-__version_x=15
-__version_x_y=15.0
 _ai=3(vtkInteractionStyle,vtkRenderingFreeType,vtkRenderingOpenGL2)
 _ai_len=3
 _argv=FILES;SetInfof.srv
 _boost_ARCHITECTURE_TAG=
-_boost_BOOSTIFIED_VERSION=1_55
 _boost_COMPILER=-clang15
 _boost_DEBUG_ABI_TAG=-d
 _boost_DEBUG_NAMES=boost_atomic-clang15-mt-d-1_71;boost_atomic-clang15-mt-d;boost_atomic-clang15-mt-d;boost_atomic-mt-d-1_71;boost_atomic-mt-d;boost_atomic-mt-d;boost_atomic-mt;boost_atomic
-_boost_INCLUDE_SEARCH_DIRS=/usr/include;PATHS;C:/boost/include;C:/boost;/sw/local/include
 _boost_LIBRARY_SEARCH_DIRS_DEBUG=/usr/lib/x86_64-linux-gnu;NO_DEFAULT_PATH;NO_CMAKE_FIND_ROOT_PATH
 _boost_LIBRARY_SEARCH_DIRS_RELEASE=/usr/lib/x86_64-linux-gnu;NO_DEFAULT_PATH;NO_CMAKE_FIND_ROOT_PATH
 _boost_LIBRARY_SEARCH_DIRS_tmp=/usr/lib/x86_64-linux-gnu;NO_DEFAULT_PATH;NO_CMAKE_FIND_ROOT_PATH
 _boost_MULTITHREADED=-mt
-_boost_PATH_SUFFIXES=boost-1_71_0;boost_1_71_0;boost/boost-1_71_0;boost/boost_1_71_0;boost-1_71;boost_1_71;boost/boost-1_71;boost/boost_1_71;boost-1_71_0;boost_1_71_0;boost/boost-1_71_0;boost/boost_1_71_0;boost-1_71;boost_1_71;boost/boost-1_71;boost/boost_1_71;boost-1_70_0;boost_1_70_0;boost/boost-1_70_0;boost/boost_1_70_0;boost-1_70;boost_1_70;boost/boost-1_70;boost/boost_1_70;boost-1_69_0;boost_1_69_0;boost/boost-1_69_0;boost/boost_1_69_0;boost-1_69;boost_1_69;boost/boost-1_69;boost/boost_1_69;boost-1_68_0;boost_1_68_0;boost/boost-1_68_0;boost/boost_1_68_0;boost-1_68;boost_1_68;boost/boost-1_68;boost/boost_1_68;boost-1_67_0;boost_1_67_0;boost/boost-1_67_0;boost/boost_1_67_0;boost-1_67;boost_1_67;boost/boost-1_67;boost/boost_1_67;boost-1_66_0;boost_1_66_0;boost/boost-1_66_0;boost/boost_1_66_0;boost-1_66;boost_1_66;boost/boost-1_66;boost/boost_1_66;boost-1_65_1;boost_1_65_1;boost/boost-1_65_1;boost/boost_1_65_1;boost-1_65_0;boost_1_65_0;boost/boost-1_65_0;boost/boost_1_65_0;boost-1_65;boost_1_65;boost/boost-1_65;boost/boost_1_65;boost-1_64_0;boost_1_64_0;boost/boost-1_64_0;boost/boost_1_64_0;boost-1_64;boost_1_64;boost/boost-1_64;boost/boost_1_64;boost-1_63_0;boost_1_63_0;boost/boost-1_63_0;boost/boost_1_63_0;boost-1_63;boost_1_63;boost/boost-1_63;boost/boost_1_63;boost-1_62_0;boost_1_62_0;boost/boost-1_62_0;boost/boost_1_62_0;boost-1_62;boost_1_62;boost/boost-1_62;boost/boost_1_62;boost-1_61_0;boost_1_61_0;boost/boost-1_61_0;boost/boost_1_61_0;boost-1_61;boost_1_61;boost/boost-1_61;boost/boost_1_61;boost-1_60_0;boost_1_60_0;boost/boost-1_60_0;boost/boost_1_60_0;boost-1_60;boost_1_60;boost/boost-1_60;boost/boost_1_60;boost-1_59_0;boost_1_59_0;boost/boost-1_59_0;boost/boost_1_59_0;boost-1_59;boost_1_59;boost/boost-1_59;boost/boost_1_59;boost-1_58_0;boost_1_58_0;boost/boost-1_58_0;boost/boost_1_58_0;boost-1_58;boost_1_58;boost/boost-1_58;boost/boost_1_58;boost-1_57_0;boost_1_57_0;boost/boost-1_57_0;boost/boost_1_57_0;boost-1_57;boost_1_57;boost/boost-1_57;boost/boost_1_57;boost-1_56_0;boost_1_56_0;boost/boost-1_56_0;boost/boost_1_56_0;boost-1_56;boost_1_56;boost/boost-1_56;boost/boost_1_56;boost-1_55_0;boost_1_55_0;boost/boost-1_55_0;boost/boost_1_55_0;boost-1_55;boost_1_55;boost/boost-1_55;boost/boost_1_55;boost-1_81_0;boost_1_81_0;boost/boost-1_81_0;boost/boost_1_81_0;boost-1_81;boost_1_81;boost/boost-1_81;boost/boost_1_81;boost-1_80_0;boost_1_80_0;boost/boost-1_80_0;boost/boost_1_80_0;boost-1_80;boost_1_80;boost/boost-1_80;boost/boost_1_80;boost-1_79_0;boost_1_79_0;boost/boost-1_79_0;boost/boost_1_79_0;boost-1_79;boost_1_79;boost/boost-1_79;boost/boost_1_79;boost-1_78_0;boost_1_78_0;boost/boost-1_78_0;boost/boost_1_78_0;boost-1_78;boost_1_78;boost/boost-1_78;boost/boost_1_78;boost-1_77_0;boost_1_77_0;boost/boost-1_77_0;boost/boost_1_77_0;boost-1_77;boost_1_77;boost/boost-1_77;boost/boost_1_77;boost-1_76_0;boost_1_76_0;boost/boost-1_76_0;boost/boost_1_76_0;boost-1_76;boost_1_76;boost/boost-1_76;boost/boost_1_76;boost-1_75_0;boost_1_75_0;boost/boost-1_75_0;boost/boost_1_75_0;boost-1_75;boost_1_75;boost/boost-1_75;boost/boost_1_75;boost-1_74_0;boost_1_74_0;boost/boost-1_74_0;boost/boost_1_74_0;boost-1_74;boost_1_74;boost/boost-1_74;boost/boost_1_74;boost-1_73_0;boost_1_73_0;boost/boost-1_73_0;boost/boost_1_73_0;boost-1_73;boost_1_73;boost/boost-1_73;boost/boost_1_73;boost-1_72_0;boost_1_72_0;boost/boost-1_72_0;boost/boost_1_72_0;boost-1_72;boost_1_72;boost/boost-1_72;boost/boost_1_72;boost-1_71_0;boost_1_71_0;boost/boost-1_71_0;boost/boost_1_71_0;boost-1_71;boost_1_71;boost/boost-1_71;boost/boost_1_71;boost-1_70_0;boost_1_70_0;boost/boost-1_70_0;boost/boost_1_70_0;boost-1_70;boost_1_70;boost/boost-1_70;boost/boost_1_70;boost-1_69_0;boost_1_69_0;boost/boost-1_69_0;boost/boost_1_69_0;boost-1_69;boost_1_69;boost/boost-1_69;boost/boost_1_69;boost-1_68_0;boost_1_68_0;boost/boost-1_68_0;boost/boost_1_68_0;boost-1_68;boost_1_68;boost/boost-1_68;boost/boost_1_68;boost-1_67_0;boost_1_67_0;boost/boost-1_67_0;boost/boost_1_67_0;boost-1_67;boost_1_67;boost/boost-1_67;boost/boost_1_67;boost-1_66_0;boost_1_66_0;boost/boost-1_66_0;boost/boost_1_66_0;boost-1_66;boost_1_66;boost/boost-1_66;boost/boost_1_66;boost-1_65_1;boost_1_65_1;boost/boost-1_65_1;boost/boost_1_65_1;boost-1_65_0;boost_1_65_0;boost/boost-1_65_0;boost/boost_1_65_0;boost-1_65;boost_1_65;boost/boost-1_65;boost/boost_1_65;boost-1_64_0;boost_1_64_0;boost/boost-1_64_0;boost/boost_1_64_0;boost-1_64;boost_1_64;boost/boost-1_64;boost/boost_1_64;boost-1_63_0;boost_1_63_0;boost/boost-1_63_0;boost/boost_1_63_0;boost-1_63;boost_1_63;boost/boost-1_63;boost/boost_1_63;boost-1_62_0;boost_1_62_0;boost/boost-1_62_0;boost/boost_1_62_0;boost-1_62;boost_1_62;boost/boost-1_62;boost/boost_1_62;boost-1_61_0;boost_1_61_0;boost/boost-1_61_0;boost/boost_1_61_0;boost-1_61;boost_1_61;boost/boost-1_61;boost/boost_1_61;boost-1_60_0;boost_1_60_0;boost/boost-1_60_0;boost/boost_1_60_0;boost-1_60;boost_1_60;boost/boost-1_60;boost/boost_1_60;boost-1_59_0;boost_1_59_0;boost/boost-1_59_0;boost/boost_1_59_0;boost-1_59;boost_1_59;boost/boost-1_59;boost/boost_1_59;boost-1_58_0;boost_1_58_0;boost/boost-1_58_0;boost/boost_1_58_0;boost-1_58;boost_1_58;boost/boost-1_58;boost/boost_1_58;boost-1_57_0;boost_1_57_0;boost/boost-1_57_0;boost/boost_1_57_0;boost-1_57;boost_1_57;boost/boost-1_57;boost/boost_1_57;boost-1_56_0;boost_1_56_0;boost/boost-1_56_0;boost/boost_1_56_0;boost-1_56;boost_1_56;boost/boost-1_56;boost/boost_1_56;boost-1_55_0;boost_1_55_0;boost/boost-1_55_0;boost/boost_1_55_0;boost-1_55;boost_1_55;boost/boost-1_55;boost/boost_1_55
 _boost_RELEASE_ABI_TAG=
 _boost_RELEASE_NAMES=boost_atomic-clang15-mt-1_71;boost_atomic-clang15-mt;boost_atomic-clang15-mt;boost_atomic-mt-1_71;boost_atomic-mt;boost_atomic-mt;boost_atomic-mt;boost_atomic
 _boost_STATIC_RUNTIME_WORKAROUND=false
 _boost_TEST_VERSIONS=1.71.0;1.71;1.71.0;1.71;1.70.0;1.70;1.69.0;1.69;1.68.0;1.68;1.67.0;1.67;1.66.0;1.66;1.65.1;1.65.0;1.65;1.64.0;1.64;1.63.0;1.63;1.62.0;1.62;1.61.0;1.61;1.60.0;1.60;1.59.0;1.59;1.58.0;1.58;1.57.0;1.57;1.56.0;1.56;1.55.0;1.55;1.81.0;1.81;1.80.0;1.80;1.79.0;1.79;1.78.0;1.78;1.77.0;1.77;1.76.0;1.76;1.75.0;1.75;1.74.0;1.74;1.73.0;1.73;1.72.0;1.72;1.71.0;1.71;1.70.0;1.70;1.69.0;1.69;1.68.0;1.68;1.67.0;1.67;1.66.0;1.66;1.65.1;1.65.0;1.65;1.64.0;1.64;1.63.0;1.63;1.62.0;1.62;1.61.0;1.61;1.60.0;1.60;1.59.0;1.59;1.58.0;1.58;1.57.0;1.57;1.56.0;1.56;1.55.0;1.55;1.54.0;1.54;1.53.0;1.53;1.52.0;1.52;1.51.0;1.51;1.50.0;1.50;1.49.0;1.49;1.48.0;1.48;1.47.0;1.47;1.46.1;1.46.0;1.46;1.45.0;1.45;1.44.0;1.44;1.43.0;1.43;1.42.0;1.42;1.41.0;1.41;1.40.0;1.40;1.39.0;1.39;1.38.0;1.38;1.37.0;1.37;1.36.1;1.36.0;1.36;1.35.1;1.35.0;1.35;1.34.1;1.34.0;1.34;1.33.1;1.33.0;1.33
-_boost_VER=
 _boost_docstring_debug=Boost atomic library (debug)
 _boost_docstring_release=Boost atomic library (release)
 _catkin_marker_file=/home/da/project/ros/orb_dvl2_ws/devel/.catkin
@@ -2419,7 +1658,6 @@ _cmd=catkin_find_pkg;catkin;/home/da/project/ros/orb_dvl2_ws/src
 _comp=
 _count=0
 _cxx_index=1
-_dir=/usr/lib/x86_64-linux-gnu
 _disabled_message_generators=
 _eigen_major_version_match=define EIGEN_MAJOR_VERSION 3
 _eigen_minor_version_match=define EIGEN_MINOR_VERSION 7
@@ -3496,31 +2734,9 @@ _no_cmake_path=1
 _other_libraries=pcl_common;pcl_kdtree;pcl_octree;pcl_search;pcl_sample_consensus;pcl_filters;pcl_io;pcl_features;pcl_ml;pcl_segmentation;pcl_visualization;pcl_surface;pcl_registration;pcl_keypoints;pcl_tracking;pcl_recognition;pcl_stereo;pcl_apps;pcl_outofcore;pcl_people
 _out=
 _pkg=
-_pkg_check_modules_cnt=1
-_pkg_check_modules_exist_query=--print-errors;--short-errors;--exists;libopenni2
-_pkg_check_modules_list=libopenni2
-_pkg_check_modules_packages=libopenni2
-_pkg_check_modules_pkg=
-_pkg_check_modules_pkg_name=libopenni2
-_pkg_check_prefix=PC_OPENNI2
 _pkg_is_required=0
 _pkg_is_silent=1
 _pkg_modules=libopenni
-_pkgconfig_CFLAGS=-I/usr/include/openni2
-_pkgconfig_INCLUDE_DIRS=/usr/include/openni2
-_pkgconfig_LDFLAGS=-L/usr/lib;-lOpenNI2
-_pkgconfig_LIBRARIES=OpenNI2
-_pkgconfig_LIBRARY_DIRS=/usr/lib
-_pkgconfig_STATIC_CFLAGS=-I/usr/include/openni2
-_pkgconfig_STATIC_INCLUDE_DIRS=/usr/include/openni2
-_pkgconfig_STATIC_LDFLAGS=-L/usr/lib;-lOpenNI2
-_pkgconfig_STATIC_LIBRARIES=OpenNI2
-_pkgconfig_STATIC_LIBRARY_DIRS=/usr/lib
-_pkgconfig_VERSION=2.2.0.3
-_pkgconfig_error=
-_pkgconfig_failed=0
-_pkgconfig_invoke_result=
-_pkgconfig_retval=0
 _report=Check the website 'http://wiki.ros.org/diagnostic_msgs' for information and consider reporting the problem.
 _res=2
 _space=
@@ -4064,6 +3280,10 @@ nav_msgs_VERSION_PATCH=1
 nav_msgs_VERSION_TWEAK=0
 nav_msgs_dep=actionlib_msgs
 node_js_INSTALL_DIR=share/gennodejs
+octomap_BINARY_DIR=/home/da/project/ros/orb_dvl2_ws/src/build/dvl2/Thirdparty/octomap
+octomap_IS_TOP_LEVEL=OFF
+octomap_LIB_DEPENDS=general;octomath;
+octomap_SOURCE_DIR=/home/da/project/ros/orb_dvl2_ws/src/dvl2/Thirdparty/octomap
 octomap_msgs_CONFIG=/opt/ros/noetic/share/octomap_msgs/cmake/octomap_msgsConfig.cmake
 octomap_msgs_CONFIG_INCLUDED=TRUE
 octomap_msgs_CONSIDERED_CONFIGS=/opt/ros/noetic/share/octomap_msgs/cmake/octomap_msgsConfig.cmake
@@ -4132,7 +3352,6 @@ pending_deps=
 people_library_path=/usr/lib/x86_64-linux-gnu
 people_library_path_debug=/usr/lib/x86_64-linux-gnu
 pkg_cfg_extras=vehicle_interface-msg-extras.cmake
-pkg_count=1
 pkgcfg_lib_PC_FLANN_flann=/usr/lib/x86_64-linux-gnu/libflann.so
 pkgcfg_lib_PC_FLANN_flann_cpp=/usr/lib/x86_64-linux-gnu/libflann_cpp.so
 pkgcfg_lib_PC_FLANN_lz4=/usr/lib/x86_64-linux-gnu/liblz4.so
@@ -4588,8 +3807,6 @@ tracking_library_path=/usr/lib/x86_64-linux-gnu
 tracking_library_path_debug=/usr/lib/x86_64-linux-gnu
 type=
 v=UBUNTU_FOCAL
-val=0
-variable=
 vehicle_interface_BINARY_DIR=/home/da/project/ros/orb_dvl2_ws/src/build/vehicle_interface
 vehicle_interface_CONFIG=/home/da/project/ros/orb_dvl2_ws/devel/share/vehicle_interface/cmake/vehicle_interfaceConfig.cmake
 vehicle_interface_CONFIG_INCLUDED=TRUE
@@ -4617,7 +3834,6 @@ vehicle_interface_VERSION_MINOR=0
 vehicle_interface_VERSION_PATCH=0
 vehicle_interface_VERSION_TWEAK=0
 vehicle_interface_dep=message_generation
-ver=
 version=
 visualization_library_path=/usr/lib/x86_64-linux-gnu
 visualization_library_path_debug=/usr/lib/x86_64-linux-gnu

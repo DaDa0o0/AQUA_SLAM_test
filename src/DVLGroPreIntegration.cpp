@@ -430,26 +430,44 @@ void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc, co
 void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3d &v_dk, const double &dt)
 {
     // V_dk
+    Eigen::Vector3d V_dk = Eigen::Vector3d::Zero();
+    V_dk.x() = v_dk.x;
+    V_dk.y() = v_dk.y;
+    V_dk.z() = v_dk.z;
+
     cv::Mat_<double> v(3, 1);
-    v << v_dk.x, v_dk.y, v_dk.z;
+    v << V_dk.x(), V_dk.y(), V_dk.z();
     //	if (cv::norm(v)>(double)mVelocityThreshold)
     //		return;
+    // mVelocity = v;
     bDVL = true;
     //	ReintegrateWithVelocity();
     if (dV.at<double>(0) == 0 && dV.at<double>(1) == 0 && dV.at<double>(2) == 0) {
         //		dV = dR * mR_g_d* v;
         //		dV = dR * v;
         dV = mR_g_d.t() * dR * mR_g_d * v;
+        mVelocity = v.clone();
         //		cout<<"dR:"<<dR<<endl;
         //		cout<<"dV:"<<dV<<endl;
+        ROS_INFO_STREAM("reintegration with velocity");
         ReintegrateWithVelocity();
     }
     else {
         //		dV = dR * v;
-        dV = mR_g_d.t() * dR * mR_g_d * v;
+        // mVelocity = (v+mVelocity)/2;
+        mVelocity = v.clone();
+        dV = mR_g_d.t() * dR * mR_g_d * mVelocity;
     }
     // update pose from Last gyro frame to current dvl frame
     cv::Mat accW = (cv::Mat_<double>(3, 1) << mAngV.x - mb.bwx, mAngV.y - mb.bwy, mAngV.z - mb.bwz);
+
+    cv::Mat acc_b;
+    if(mvMeasurements2.size()>0){
+        auto  acc = mvMeasurements2.back().a;
+        acc_b = (cv::Mat_<double>(3, 1) << acc.x - mb.bax, acc.y - mb.bay, acc.z - mb.baz);
+    }
+    else
+        acc_b = cv::Mat::zeros(3,1,CV_64F);
 
 
     // Total integrated time
@@ -459,17 +477,18 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3d &v_dk, cons
     dP_dvl = dP_dvl + dV * dt;
     //	if (dP.at<double>(0,0)!=0)
     //		cout<<"dP: "<<dP<<endl;
+    dP_acc = dP_acc + dDeltaV*dt + 0.5*dR*acc_b*dt*dt;
+    dDeltaV = dDeltaV + dR * (acc_b * dt);
 
     // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
     cv::Mat v_k_hat = (cv::Mat_<double>(3, 3) << 0, -dV.at<double>(2), dV.at<double>(1), dV.at<double>(
             2), 0, -dV.at<double>(0), -dV.at<double>(1), dV.at<double>(0), 0);
 
     //todo_tightly
-    //	not sure JPg is correct or not
     //	add velocity jacobians
     //  Update position and velocity jacobians wrt bias correction
-    JPg = JPg - dR * dt * v_k_hat * JRg;
-
+    JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
+    JVa = JVa - dR*dt;
 
 
     // Update delta rotation
@@ -479,9 +498,15 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3d &v_dk, cons
 
     // Update rotation jacobian wrt bias correction
     JRg = dRi.deltaR.t() * JRg - dRi.rightJ * dt;
-
-
-    mvMeasurements.push_back(integrable(v_dk, cv::Point3d(0, 0, 0), dt));
+    Eigen::Vector4d velocity_beam = Eigen::Vector4d::Zero();
+    mvMeasurements2.push_back(
+            integrable(cv::Point3d(0, 0, 0), cv::Point3d(0, 0, 0), cv::Point3d(V_dk.x(), V_dk.y(), V_dk.z()),
+                       velocity_beam, dt));
+    mvMeasurements.push_back(integrable(cv::Point3d(V_dk.x(), V_dk.y(), V_dk.z()), cv::Point3d(0, 0, 0), dt));
+    mBeams.push_back(velocity_beam(0));
+    mBeams.push_back(velocity_beam(1));
+    mBeams.push_back(velocity_beam(2));
+    mBeams.push_back(velocity_beam(3));
 }
 
 void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &velocity_beam, const double &dt)

@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 //	ros::Subscriber sub_imu = n.subscribe("/BlueRov2/imu/data/ENU", 100, &ImuGrabber::GrabImu, &imugb);
 	ros::Subscriber sub_imu = n.subscribe(imu_topic, 100, &ImuGrabber::GrabImu, &imugb);
 	// flowave/falcon DVL
-	ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL, &dvlgb);
+	// ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL, &dvlgb);
 	ros::Subscriber sub_dvl2 = n.subscribe("/dvl/data", 100, &DVLGrabber::GrabDVL2, &dvlgb);
 	// rovco DVL
 //	ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL2, &dvlgb);
@@ -742,8 +742,25 @@ void DVLGrabber::GrabDVL(const nav_msgs::OdometryConstPtr &odo)
 {
 //	BOOST_LOG_TRIVIAL(info) << fixed << setprecision(9) << "DVL recieved! time:" << odo->header.stamp.toSec();
 //	cout<<"DVL recieved! time:"<<odo->header.stamp.toNSec()<<endl;
+    waterlinked_a50_ros_driver::DVLPtr msg = boost::make_shared<waterlinked_a50_ros_driver::DVL>();
+    msg->header = odo->header;
+    msg->velocity_valid = true;
+    msg->velocity.x = odo->twist.twist.linear.x;
+    msg->velocity.y = odo->twist.twist.linear.y;
+    msg->velocity.z = odo->twist.twist.linear.z;
+    for(int i=0;i<4;i++){
+        waterlinked_a50_ros_driver::DVLBeam b;
+        b.rssi = 0;
+        b.nsd = 0;
+        b.valid = 0;
+        b.id = i;
+        b.velocity = 0;
+        msg->beams.push_back(b);
+    }
+
 	mBufMutex.lock();
 	dvlBuf.push(odo);
+    dvlBuf2.push(msg);
 	mBufMutex.unlock();
 	return;
 }

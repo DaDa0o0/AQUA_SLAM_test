@@ -1471,7 +1471,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             eG->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
             eG->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() *100);
+            eG->setInformation(Eigen::Matrix<double, 9, 9>::Identity() *1000);
             eG->setId((maxKFid+1)*2 + pKFi->mnId);
             optimizer.addEdge(eG);
             fixed_bias_edge = eG;
@@ -6362,7 +6362,7 @@ void Optimizer::GlobalVAPoseGraphOptimization(KeyFrame* pCurKF, vector<KeyFrame*
                     num_connections++;
                 }
             }
-            ROS_DEBUG_STREAM("add multi-map constrain for global pose graph, from ID: "<<pKFi->mnId<<"to ID: "<<pKFn->mnId);
+            ROS_INFO_STREAM("add multi-map constrain for global pose graph, from ID: "<<pKFi->mnId<<"to ID: "<<pKFn->mnId);
         }
 
         if (num_connections == 0) {

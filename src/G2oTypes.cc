@@ -1554,6 +1554,69 @@ void DvlImuCamPose::Reset()
 
 }
 
+DvlImuCamPose::DvlImuCamPose(const DvlImuCamPose &dic)
+{
+    mTimestamp = dic.mTimestamp;
+    mPoorVision = dic.mPoorVision;
+    // Load Gyro rotation and Dvl translation
+    //	t_c0_gyro = Converter::toVector3d(pF->GetDvlPosition());
+    //	R_c0_gyro = Converter::toMatrix3d(pF->GetGyroRotation());
+
+    Rwc = dic.Rwc;
+    twc = dic.twc;
+    //	Rwc = Converter::toMatrix3d(pF->mRwc.t());
+    //	twc = - Rwc * Converter::toVector3d(pF->mTcw.rowRange(0,3).col(3));
+
+
+    // Load camera poses
+    int num_cams = dic.tcw.size();
+
+    tcw.resize(num_cams);
+    Rcw.resize(num_cams);
+    t_c_gyro.resize(num_cams);
+    R_c_gyro.resize(num_cams);
+    t_gyro_c.resize(num_cams);
+    R_gyro_c.resize(num_cams);
+    t_dvl_c.resize(num_cams);
+    R_dvl_c.resize(num_cams);
+    t_c_dvl.resize(num_cams);
+    R_c_dvl.resize(num_cams);
+    pCamera.resize(num_cams);
+
+    // Left camera
+    tcw[0] = dic.tcw[0];
+    Rcw[0] = dic.Rcw[0];
+    t_c_gyro[0] = dic.t_c_gyro[0];
+    R_c_gyro[0] = dic.R_c_gyro[0];
+    t_gyro_c[0] = dic.t_gyro_c[0];
+    R_gyro_c[0] = dic.R_gyro_c[0];
+    t_c_dvl[0] = dic.t_c_dvl[0];
+    R_c_dvl[0] = dic.R_c_dvl[0];
+    t_dvl_c[0] = dic.t_dvl_c[0];
+    R_dvl_c[0] = dic.R_dvl_c[0];
+    pCamera[0] = dic.pCamera[0];
+    bf = dic.bf;
+
+    if(num_cams>1)
+    {
+        T_r_l.matrix() = dic.T_r_l.matrix();
+        Rcw[1] = dic.Rcw[1];
+        tcw[1] = dic.tcw[1];
+
+        t_c_gyro[1] = dic.t_c_gyro[1];
+        R_c_gyro[1] = dic.R_c_gyro[1];
+        R_gyro_c[1] = dic.R_gyro_c[1];
+        t_gyro_c[1] = dic.t_gyro_c[1];
+
+        t_c_dvl[1] = dic.t_c_dvl[1];
+        R_c_dvl[1] = dic.R_c_dvl[1];
+        R_dvl_c[1] = dic.R_dvl_c[1];
+        t_dvl_c[1] = dic.t_dvl_c[1];
+
+        pCamera[1] = dic.pCamera[1];
+    }
+}
+
     template<typename MatrixType, typename Archive>
 void serializeEigenMatrix(Archive &ar, MatrixType &m, const unsigned int version)
 {
@@ -2207,11 +2270,13 @@ void EdgeDvlIMU::computeError()
 
     //	mpInt->ReintegrateWithVelocity(v_gt );
 
+    // Eigen::Vector3d e_R = R_b0_w.transpose() * LogSO3(dR.transpose() * R_est);
     Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
-    e_R[0]=e_R[0]*1000;
+    e_R[0]=e_R[0]*50;
+    // e_R[2]=e_R[2]*10;
 
-    const Eigen::Vector3d e_V = 5 * (VDelta_est - dDelta_V);
-    const Eigen::Vector3d e_P = 0.01 * (P_acc_est - dP_acc);
+    const Eigen::Vector3d e_V = 50 * (VDelta_est - dDelta_V);
+    const Eigen::Vector3d e_P = 1 * (P_acc_est - dP_acc);
 
     _error<<e_R, e_V, e_P;
 }
