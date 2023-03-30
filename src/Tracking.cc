@@ -1797,7 +1797,7 @@ bool Tracking::PredictStateDvlGro()
         cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
         T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
         mCurrentFrame.SetPose(T_c1_c0_cv);
-
+        ROS_INFO_STREAM("predict from KF["<<mCurrentFrame.mpLastKeyFrame->mnId<<"]");
 		return true;
 	}
 
@@ -2664,6 +2664,7 @@ void Tracking::TrackDVLGyro()
 	// set mbMapUpdated to update map later
 	int nCurMapChangeIndex = pCurrentMap->GetMapChangeIndex();
 	int nMapChangeIndex = pCurrentMap->GetLastMapChange();
+    ROS_INFO_STREAM("Map change check in tracking: "<<nCurMapChangeIndex);
 	if (nCurMapChangeIndex > nMapChangeIndex) {
 		// cout << "Map update detected" << endl;
 		pCurrentMap->SetLastMapChange(nCurMapChangeIndex);
@@ -5030,8 +5031,10 @@ bool Tracking::TrackLocalMap()
 //		return true;
 //	}
 
-
-    if (mnMatchesInliers < 5) {
+    if(mnMatchesInliers<20){
+        PredictStateDvlGro();
+    }
+    if (mnMatchesInliers < 20) {
         return false;
     }
     else {
@@ -5217,20 +5220,22 @@ bool Tracking::NeedNewKeyFrame()
 
 
 	bool bNeedToInsertClose;
-    // int N = (mCurrentFrame.Nleft == -1) ? mCurrentFrame.N : mCurrentFrame.Nleft;
-    // for(int i =0; i<N; i++)
-    // {
-    //     if(mCurrentFrame.mvDepth[i]>0 && mCurrentFrame.mvDepth[i]<mThDepth)
-    //     {
-    //         if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
-    //             nTrackedClose++;
-    //         else
-    //             nNonTrackedClose++;
-    //
-    //     }
-    // }
-	bNeedToInsertClose = (nTrackedClose < 100) && (nNonTrackedClose > 70) && (mpAtlas->GetAllKeyFrames().size()>mKFThresholdForMap);
+    int N = (mCurrentFrame.Nleft == -1) ? mCurrentFrame.N : mCurrentFrame.Nleft;
+    for(int i =0; i<N; i++)
+    {
+        if(mCurrentFrame.mvDepth[i]>0 && mCurrentFrame.mvDepth[i]<mThDepth)
+        {
+            if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
+                nTrackedClose++;
+            else
+                nNonTrackedClose++;
 
+        }
+    }
+	bNeedToInsertClose = (nTrackedClose < 100) && (nNonTrackedClose > 70) && (mpAtlas->GetAllKeyFrames().size()>mKFThresholdForMap);
+    if(!mCurrentFrame.mPoorVision){
+        mCurrentFrame.mPoorVision = bNeedToInsertClose;
+    }
 	// Thresholds
 	float thRefRatio = 0.75f;
 
@@ -5245,7 +5250,7 @@ bool Tracking::NeedNewKeyFrame()
 
 
 
-	if (((c1a || c1b || c1c) && c2)) {
+	if (((c1a || c1b ) && c2)) {
 		// If the mapping accepts keyframes, insert keyframe.
 		// Otherwise send a signal to interrupt BA
 		if (bLocalMappingIdle) {
@@ -5253,7 +5258,7 @@ bool Tracking::NeedNewKeyFrame()
 		}
 		else {
 			mpLocalMapper->InterruptBA();
-            if (mpLocalMapper->KeyframesInQueue() < 5) {
+            if (mpLocalMapper->KeyframesInQueue() < 3) {
                 return true;
             }
             else {
@@ -6394,55 +6399,60 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
 // 	}
 //
 //
-//     //update lastframe pose
-//     if(mLastFrame.mpDvlPreintegrationKeyFrame){
-//         DVLGroPreIntegration *pDvlPreintegratedFromKF = mLastFrame.mpDvlPreintegrationKeyFrame;
-//         cv::Mat T_c0_cf_cv = mLastFrame.mpLastKeyFrame->GetPoseInverse();
-//         Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
-//         cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
-//         cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
-//         cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
-//         cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
-//         cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
-//         Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
-//         Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
-//         cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gf_g1);
-//         cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_df_d1);
-//         Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
-//         Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
-//         T_df_d1.pretranslate(t_df_df_d1);
-//         T_df_d1.rotate(R_df_d1);
-//         Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
-//         cv::Mat T_c1_c0_cv(4,4,CV_32F);
-//         cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
-//         T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
-//         mLastFrame.SetPose(T_c1_c0_cv);
-//     }
+    //update lastframe pose
+    if(mLastFrame.mpDvlPreintegrationKeyFrame && pCurrentKeyFrame == mLastFrame.mpLastKeyFrame){
+        DVLGroPreIntegration *pDvlPreintegratedFromKF = mLastFrame.mpDvlPreintegrationKeyFrame;
+        cv::Mat T_c0_cf_cv = mLastFrame.mpLastKeyFrame->GetPoseInverse();
+        Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
+        cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
+        cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
+        cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
+        cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
+        cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
+        Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
+        Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
+        cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gf_g1);
+        cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_df_d1);
+        Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
+        Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+        T_df_d1.pretranslate(t_df_df_d1);
+        T_df_d1.rotate(R_df_d1);
+        Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
+        cv::Mat T_c1_c0_cv(4,4,CV_32F);
+        cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
+        T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
+        mLastFrame.SetPose(T_c1_c0_cv);
+        // ROS_INFO_STREAM("update last frame pose");
+    }
 
 
 
     //update currentFrame pose
-    // DVLGroPreIntegration *pDvlPreintegratedFromKF = mCurrentFrame.mpDvlPreintegrationKeyFrame;
-    // cv::Mat T_c0_cf_cv = mCurrentFrame.mpLastKeyFrame->GetPoseInverse();
-    // Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
-    // cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
-    // cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
-    // cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
-    // cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
-    // cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
-    // Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
-    // Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
-    // cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gf_g1);
-    // cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_df_d1);
-    // Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
-    // Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
-    // T_df_d1.pretranslate(t_df_df_d1);
-    // T_df_d1.rotate(R_df_d1);
-    // Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
-    // cv::Mat T_c1_c0_cv(4,4,CV_32F);
-    // cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
-    // T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
-    // mCurrentFrame.SetPose(T_c1_c0_cv);
+    if(mCurrentFrame.mpLastKeyFrame == pCurrentKeyFrame){
+        DVLGroPreIntegration *pDvlPreintegratedFromKF = mCurrentFrame.mpDvlPreintegrationKeyFrame;
+        cv::Mat T_c0_cf_cv = mCurrentFrame.mpLastKeyFrame->GetPoseInverse();
+        Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
+        cv::Mat T_g_d_cv = GetExtrinsicPara().mT_gyro_dvl;
+        cv::Mat T_d_c_cv = GetExtrinsicPara().mT_dvl_c;
+        cv::cv2eigen(T_g_d_cv,T_g_d.matrix());
+        cv::cv2eigen(T_d_c_cv,T_d_c.matrix());
+        cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
+        Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
+        Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
+        cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gf_g1);
+        cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_df_d1);
+        Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
+        Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+        T_df_d1.pretranslate(t_df_df_d1);
+        T_df_d1.rotate(R_df_d1);
+        Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
+        cv::Mat T_c1_c0_cv(4,4,CV_32F);
+        cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
+        T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
+        mCurrentFrame.SetPose(T_c1_c0_cv);
+        // ROS_INFO_STREAM("update current frame pose");
+    }
+    // PredictStateDvlGro();
 
 
 }

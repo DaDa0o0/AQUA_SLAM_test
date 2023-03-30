@@ -304,7 +304,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 
 
 		for (size_t i = 0, iend = vpMPs.size(); i < iend; i++) {
-			if (vpMPs[i]->isBad() || vpMPs[i]->Observations()<3) {
+			if (vpMPs[i]->isBad() || vpMPs[i]->Observations()<5) {
 				continue;
 			}
 			cv::Mat pos_end = vpMPs[i]->GetWorldPos();
@@ -738,12 +738,12 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             if(pKF->mPoorVision){
                 marker.color.r = 1.0f;
                 marker.color.g = 0.0f;
-                marker.color.b = 0.0f;
+                marker.color.b = 1.0f;
             }
             else{
                 marker.color.r = 0.0f;
-                marker.color.g = 0.0f;
-                marker.color.b = 1.0f;
+                marker.color.g = 1.0f;
+                marker.color.b = 0.0f;
             }
             marker.color.a = 1.0f;
             marker.lifetime = ros::Duration(0);

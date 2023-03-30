@@ -2273,11 +2273,11 @@ void EdgeDvlIMU::computeError()
     // Eigen::Vector3d e_R = R_b0_w.transpose() * LogSO3(dR.transpose() * R_est);
     Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
     // e_R[0]=e_R[0]*50;//10_24 GX5 X axis is yaw
-    e_R[1]=e_R[1]*50;//bofore 10_24 GX5 Y axis is yaw
+    // e_R[1]=e_R[1]*50;//bofore 10_24 GX5 Y axis is yaw
     // e_R[2]=e_R[2]*10;
 
-    const Eigen::Vector3d e_V = 50 * (VDelta_est - dDelta_V);
-    const Eigen::Vector3d e_P = 0.1 * (P_acc_est - dP_acc);
+    const Eigen::Vector3d e_V =  (VDelta_est - dDelta_V);
+    const Eigen::Vector3d e_P =  (P_acc_est - dP_acc);
 
     _error<<e_R, e_V, e_P;
 }

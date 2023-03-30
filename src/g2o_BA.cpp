@@ -315,28 +315,29 @@ bool OptimizeBAWithoutBias(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse 
     // get error before optimization
     double visual_chi2 = 0, dvl_chi2 = 0;
     for (auto e: edge_mono) {
-        e->computeError();
         e->setLevel(0);
         e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
+        e->computeError();
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_stereo) {
-        e->computeError();
         e->setLevel(0);
         e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
+        e->computeError();
         visual_chi2 += e->chi2();
     }
     for (auto e: edge_dvl_imu) {
-        e->computeError();
         e->setLevel(0);
         e->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * dvl_imu_weight *
                           (edge_mono.size() + edge_stereo.size()));
+        e->computeError();
         dvl_chi2 += e->chi2();
     }
     for (auto e: edge_se3) {
         e->setLevel(1);
     }
-    ROS_INFO_STREAM("Before optimization, visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
+    optimizer->computeActiveErrors();
+    ROS_INFO_STREAM("Before optimization, total chi2:<<"<<optimizer->chi2() <<" visual chi2: " << visual_chi2 << ", dvl chi2: " << dvl_chi2);
     //optimize the graph
 
 
@@ -655,13 +656,13 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
     for (auto e: edge_mono) {
         e->computeError();
         e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
-        if (e->chi2() > 10) {
-            // std::remove(edge_mono.begin(), edge_mono.end(), e);
-            // g2o::VertexSBAPointXYZ* v = dynamic_cast<g2o::VertexSBAPointXYZ*>(e->vertices()[1]);
-            // vertex_point.erase(v);
-            // vertex_point_Fixed.erase(v);
-            // optimizer->vertices().erase(v->id());
-            // optimizer->edges().erase(e);
+        if (e->chi2() > 5.9) {
+            std::remove(edge_mono.begin(), edge_mono.end(), e);
+            g2o::VertexSBAPointXYZ* v = dynamic_cast<g2o::VertexSBAPointXYZ*>(e->vertices()[1]);
+            vertex_point.erase(v);
+            vertex_point_Fixed.erase(v);
+            optimizer->vertices().erase(v->id());
+            optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix2d::Identity() * 0.0001);
             e->setLevel(1);
             e->setInformation(Eigen::Matrix2d::Identity() * visual_weight);
@@ -675,13 +676,13 @@ bool OptimizePoseGraphWithout(std_srvs::EmptyRequest &req, std_srvs::EmptyRespon
     for (auto e: edge_stereo) {
         e->computeError();
         e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);
-        if (e->chi2() > 10) {
-            // std::remove(edge_stereo.begin(), edge_stereo.end(), e);
-            // g2o::VertexSBAPointXYZ* v = dynamic_cast<g2o::VertexSBAPointXYZ*>(e->vertices()[1]);
-            // vertex_point.erase(v);
-            // vertex_point_Fixed.erase(v);
-            // optimizer->vertices().erase(v->id());
-            // optimizer->edges().erase(e);
+        if (e->chi2() > 7.8) {
+            std::remove(edge_stereo.begin(), edge_stereo.end(), e);
+            g2o::VertexSBAPointXYZ* v = dynamic_cast<g2o::VertexSBAPointXYZ*>(e->vertices()[1]);
+            vertex_point.erase(v);
+            vertex_point_Fixed.erase(v);
+            optimizer->vertices().erase(v->id());
+            optimizer->edges().erase(e);
             // e->setInformation(Eigen::Matrix3d::Identity() * 0.0001);
             e->setLevel(1);
             e->setInformation(Eigen::Matrix3d::Identity() * visual_weight);

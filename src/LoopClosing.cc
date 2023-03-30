@@ -71,6 +71,8 @@ void LoopClosing::Run()
         //----------------------------
         if(CheckNewKeyFrames())
         {
+            mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+            mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
             if(mpLastCurrentKF)
             {
                 mpLastCurrentKF->mvpLoopCandKFs.clear();
