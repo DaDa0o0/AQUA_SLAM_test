@@ -83,6 +83,7 @@ public:
 	//publish pointcloud and octomap
 	void UpdateMap(ORB_SLAM3::Atlas *pAtlas);
 	void PublishMap(ORB_SLAM3::Atlas *pAtlas, int state);
+    void Run(Atlas* pAtlas);
 	void BroadcastTF(const Eigen::Isometry3d &T_c0_cj_orb,
 	                 const ros::Time &stamp,
 	                 const string &id,

@@ -934,8 +934,9 @@ void KeyFrame::SetNewBias(const IMU::Bias &b)
 {
     unique_lock<mutex> lock(mMutexPose);
     mImuBias = b;
-    // if(mpImuPreintegrated)
-    //     mpImuPreintegrated->SetNewBias(b);
+    if(mpDvlPreintegrationKeyFrame){
+        mpDvlPreintegrationKeyFrame->SetNewBias(b);
+    }
 }
 
 cv::Mat KeyFrame::GetGyroBias()

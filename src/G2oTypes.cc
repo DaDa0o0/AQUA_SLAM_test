@@ -1935,12 +1935,12 @@ void EdgeDvlIMUInitWithoutBias::computeError()
 	_error<<e_V;
 }
 
-EdgeDvlIMUInitRefineWithBias::EdgeDvlIMUInitRefineWithBias(DVLGroPreIntegration* pInt):mpInt(pInt), dt(mpInt->dT)
+EdgeDvlIMUInit::EdgeDvlIMUInit(DVLGroPreIntegration* pInt): mpInt(pInt), dt(mpInt->dT)
 {
     resize(9);
 }
 
-void EdgeDvlIMUInitRefineWithBias::computeError()
+void EdgeDvlIMUInit::computeError()
 {
     const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
     const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);

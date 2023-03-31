@@ -71,8 +71,6 @@ void LoopClosing::Run()
         //----------------------------
         if(CheckNewKeyFrames())
         {
-            mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-            mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
             if(mpLastCurrentKF)
             {
                 mpLastCurrentKF->mvpLoopCandKFs.clear();
@@ -1940,8 +1938,8 @@ void LoopClosing::MergeLocal()
     pMergeMap->IncreaseChangeIndex();
 
     mpAtlas->RemoveBadMaps();
-    mpRosHandler->UpdateMap(mpAtlas);
-    mpRosHandler->PublishIntegration(mpAtlas);
+    // mpRosHandler->UpdateMap(mpAtlas);
+    // mpRosHandler->PublishIntegration(mpAtlas);
 
 }
 

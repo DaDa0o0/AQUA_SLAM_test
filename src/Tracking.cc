@@ -2664,7 +2664,7 @@ void Tracking::TrackDVLGyro()
 	// set mbMapUpdated to update map later
 	int nCurMapChangeIndex = pCurrentMap->GetMapChangeIndex();
 	int nMapChangeIndex = pCurrentMap->GetLastMapChange();
-    ROS_INFO_STREAM("Map change check in tracking: "<<nCurMapChangeIndex);
+    // ROS_INFO_STREAM("Map change check in tracking: "<<nCurMapChangeIndex);
 	if (nCurMapChangeIndex > nMapChangeIndex) {
 		// cout << "Map update detected" << endl;
 		pCurrentMap->SetLastMapChange(nCurMapChangeIndex);
@@ -2677,6 +2677,7 @@ void Tracking::TrackDVLGyro()
         StereoInitialization();
 
 		mpFrameDrawer->Update(this);
+        topicPublishDVLOnly();
 
 		if (mState != OK) // If rightly initialized, mState=OK
 		{
@@ -3422,7 +3423,6 @@ void Tracking::StereoInitialization()
 		if (mSensor == System::DVL_STEREO) {
             if (mpIntegrator->GetDoLossIntegration()) {
                 PredictStateDvlGro();
-                topicPublishDVLOnly();
             }
             else {
                 mCurrentFrame.SetPose(cv::Mat::eye(4, 4, CV_32F));
@@ -3549,7 +3549,7 @@ void Tracking::StereoInitialization()
                 ROS_DEBUG_STREAM(fixed<<setprecision(6)<< "KF[" << pKF->mnId << "] bias: "<<pKF->GetImuBias()
                 << " integration duration: " << pKF->mpDvlPreintegrationKeyFrame->dT);
             }
-            UpdateFrameDVLGyro(pKFini->GetImuBias(),pKFini);
+            // UpdateFrameDVLGyro(pKFini->GetImuBias(),pKFini);
 			PredictStateDvlGro();
         }
         mpRosHandler->PublishLossKF(all_loss_kf);
@@ -5031,10 +5031,10 @@ bool Tracking::TrackLocalMap()
 //		return true;
 //	}
 
-    if(mnMatchesInliers<20){
-        PredictStateDvlGro();
-    }
-    if (mnMatchesInliers < 20) {
+    // if(mnMatchesInliers<20){
+    //     PredictStateDvlGro();
+    // }
+    if (mnMatchesInliers < 10) {
         return false;
     }
     else {
@@ -5180,11 +5180,6 @@ bool Tracking::NeedNewKeyFrame()
             return false;
         }
     }
-	else {
-		if ((mCurrentFrame.mTimeStamp - mpLastKeyFrame->mTimeStamp >= mKF_init_step)&& mCurrentFrame.mbDVL) {
-			return true;
-		}
-	}
 
 
 
@@ -5247,17 +5242,19 @@ bool Tracking::NeedNewKeyFrame()
 	const bool c1c = mnMatchesInliers < nRefMatches * 0.25 || bNeedToInsertClose;
 	// Condition 2: Few tracked points compared to reference keyframe. Lots of visual odometry compared to map matches.
 	const bool c2 = (((mnMatchesInliers < nRefMatches * thRefRatio || bNeedToInsertClose)) && mnMatchesInliers > 15);
+    bool c3 = (mCurrentFrame.mTimeStamp - mpLastKeyFrame->mTimeStamp >= mKF_init_step) || (mCurrentFrame.mbDVL);
 
 
-
-	if (((c1a || c1b ) && c2)) {
+	if (((c1a || c1b ) && c2 || c3)) {
 		// If the mapping accepts keyframes, insert keyframe.
 		// Otherwise send a signal to interrupt BA
 		if (bLocalMappingIdle) {
+            ROS_INFO_STREAM("Idle BA");
 			return true;
 		}
 		else {
 			mpLocalMapper->InterruptBA();
+            ROS_INFO_STREAM("interrupt BA");
             if (mpLocalMapper->KeyframesInQueue() < 3) {
                 return true;
             }
@@ -5320,23 +5317,23 @@ void Tracking::CreateNewKeyFrame()
         ROS_ERROR_STREAM("mpLastKeyFrame is NULL! when create new KF!");
         assert(-1);
     }
-    //Optimize bias of new KF
-    if(mInitialized){
-        set<KeyFrame*, KFComparator> spKFs;
-        spKFs.insert(pKF);
-        spKFs.insert(mpLastKeyFrame);
-        if (spKFs.size() > 1) {
-            Optimizer::PoseOptimizationDVLIMUBiasOnly(spKFs,mpAtlas);
-            UpdateFrameDVLGyro(pKF->GetImuBias(),pKF);
-        }
-        else{
-            ROS_ERROR_STREAM("Only one KF in spKFs, cannot optimize bias!");
-            assert(-1);
-        }
-    }
-    else{
-        pKF->SetNewBias(mpLastKeyFrame->GetImuBias());
-    }
+    // //Optimize bias of new KF
+    // if(mInitialized){
+    //     set<KeyFrame*, KFComparator> spKFs;
+    //     spKFs.insert(pKF);
+    //     spKFs.insert(mpLastKeyFrame);
+    //     if (spKFs.size() > 1) {
+    //         Optimizer::PoseOptimizationDVLIMUBiasOnly(spKFs,mpAtlas);
+    //         UpdateFrameDVLGyro(pKF->GetImuBias(),pKF);
+    //     }
+    //     else{
+    //         ROS_ERROR_STREAM("Only one KF in spKFs, cannot optimize bias!");
+    //         assert(-1);
+    //     }
+    // }
+    // else{
+    //     pKF->SetNewBias(mpLastKeyFrame->GetImuBias());
+    // }
     // ROS_INFO_STREAM(fixed<<setprecision(6)<<"New KF["<<pKF->mnId<<"] time"<<pKF->mTimeStamp<<"dvl: "<<pKF->mbDVL);
 
 
@@ -6394,9 +6391,7 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
 // 	cv::Mat Vwdvl1;
 // 	float t12;
 //
-// 	while (!mCurrentFrame.mpDvlPreintegrationKeyFrame) {
-// 		usleep(500);
-// 	}
+
 //
 //
     //update lastframe pose
@@ -6426,8 +6421,10 @@ void Tracking::UpdateFrameDVLGyro(const IMU::Bias &b, KeyFrame *pCurrentKeyFrame
     }
 
 
-
-    //update currentFrame pose
+    while (!mCurrentFrame.mpDvlPreintegrationKeyFrame) {
+        usleep(100);
+    }
+    // update currentFrame pose
     if(mCurrentFrame.mpLastKeyFrame == pCurrentKeyFrame){
         DVLGroPreIntegration *pDvlPreintegratedFromKF = mCurrentFrame.mpDvlPreintegrationKeyFrame;
         cv::Mat T_c0_cf_cv = mCurrentFrame.mpLastKeyFrame->GetPoseInverse();

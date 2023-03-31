@@ -706,6 +706,7 @@ void DVLGroPreIntegration::SetNewBias(const Bias &bu_)
     db.at<double>(3) = bu_.bax - mb.bax;
     db.at<double>(4) = bu_.bay - mb.bay;
     db.at<double>(5) = bu_.baz - mb.baz;
+    mb = bu_;
 }
 
 IMU::Bias DVLGroPreIntegration::GetDeltaBias(const Bias &b_)

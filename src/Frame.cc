@@ -414,6 +414,9 @@ cv::Mat Frame::GetImuPose()
 
 bool Frame::isInFrustum(MapPoint *pMP, float viewingCosLimit)
 {
+    if(pMP->isBad()){
+        return false;
+    }
 	if (Nleft == -1) {
 		// cout << "\na";
 		pMP->mbTrackInView = false;

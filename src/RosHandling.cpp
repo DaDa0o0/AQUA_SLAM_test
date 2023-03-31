@@ -261,6 +261,9 @@ void RosHandling::PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, 
 void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 {
 	const std::lock_guard<std::mutex> guard(m_mutex_map);
+    if(!pAtlas->isDvlImuInitialized()){
+        return;
+    }
 //	pcl::PointCloud<pcl::PointXYZRGB> cloud;
 //	octomap::OcTree tree(0.1);
 	mp_cloud_occupied->clear();
@@ -532,6 +535,9 @@ double RosHandling::LinearInterpolation(double start_x, double end_x, double sta
 }
 void RosHandling::PublishIntegration(Atlas *pAtlas)
 {
+    if(!pAtlas->isDvlImuInitialized()){
+        return;
+    }
     auto maps = pAtlas->GetAllMaps();
     set<KeyFrame*,KFComparator> all_kf;
     visualization_msgs::MarkerArray all_markers;
@@ -927,4 +933,15 @@ bool RosHandling::FullBA(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &r
 {
     mp_LocalMapping->FullBA();
     return true;
+}
+
+void RosHandling::Run(Atlas* pAtlas)
+{
+    while(1){
+        UpdateMap(pAtlas);
+        PublishIntegration(pAtlas);
+        //sleep for 0.25 second
+        usleep(250000);
+    }
+
 }

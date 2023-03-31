@@ -352,7 +352,7 @@ class VertexAccBias: public g2o::BaseVertex<3, Eigen::Vector3d>
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	VertexAccBias()
-	{}
+	{ setEstimate(Eigen::Vector3d::Zero());}
 	VertexAccBias(KeyFrame *pKF);
 	VertexAccBias(Frame *pF);
 
@@ -1820,12 +1820,12 @@ public:
 
 };
 
-class EdgeDvlIMUInitRefineWithBias: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
+class EdgeDvlIMUInit: public g2o::BaseMultiEdge<3, Eigen::Matrix<double, 3, 1>>
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    EdgeDvlIMUInitRefineWithBias(DVLGroPreIntegration *pInt);
+    EdgeDvlIMUInit(DVLGroPreIntegration *pInt);
 
     virtual bool read(std::istream &is)
     { return false; }

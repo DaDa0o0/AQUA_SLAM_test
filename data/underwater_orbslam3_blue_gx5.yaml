@@ -77,7 +77,7 @@ Optimizer.visual_lamda: 1
 Optimizer.DVL_lamda: 1
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
-Optimizer.KF_init_step: 0.0
+Optimizer.KF_init_step: 0.25
 Optimizer.KF_num_for_init: 200
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3

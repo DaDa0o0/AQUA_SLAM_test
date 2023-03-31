@@ -164,7 +164,7 @@ public:
 	// fix bias extrinsic, opt velocity
 	void static DvlGyroInitOptimization6(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
 
-	void static DvlIMUInitOptimization(Map *pMap, Eigen::Vector3d &bg, bool bMono, float priorG = 1e2);
+	void static DvlIMUInitOptimization(Map *pMap);
 
     void static DvlIMURefineOptimization(Atlas *pAtlas);
 

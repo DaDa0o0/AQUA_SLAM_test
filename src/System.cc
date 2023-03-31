@@ -254,6 +254,8 @@ else
 		                mergingThreshold); // mSensor!=MONOCULAR);
 	mptLoopClosing = new thread(&ORB_SLAM3::LoopClosing::Run, mpLoopCloser);
 
+    auto viewer = new thread(&ORB_SLAM3::RosHandling::Run, mRosHandler, mpAtlas);
+
 	//Initialize the Viewer thread and launch
 	// if (bUseViewer) {
 	// 	mpViewer = new Viewer(this, mpFrameDrawer, mpMapDrawer, mpTracker, strSettingsFile);

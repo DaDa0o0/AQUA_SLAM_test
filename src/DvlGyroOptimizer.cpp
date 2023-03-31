@@ -1078,7 +1078,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                                               double lamda_DVL, double lamda_visual)
 {
     Map *pCurrentMap = pKF->GetMap();
-    int Nd = std::min(20, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
+    int Nd = std::min(10, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
     const unsigned long maxKFid = pKF->mnId;
 
     vector<KeyFrame *> OptKFs;
@@ -1224,7 +1224,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         T_c0_cj.rotate(VP->estimate().Rwc);
         T_c0_cj.pretranslate(VP->estimate().twc);
         map_pose_original.insert(std::pair<VertexPoseDvlIMU*, Eigen::Isometry3d>(VP, T_c0_cj));
-        ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
+        // ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
 
         // DVLGroPreIntegration *pDVLGroPreIntegration2 = new DVLGroPreIntegration();
         // boost::archive::text_iarchive ia1(i_file1);
@@ -1242,7 +1242,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         VP->setId(pKFi->mnId);
         VP->setFixed(true);
         optimizer.addVertex(VP);
-        ROS_INFO_STREAM("fixed KF: "<<pKFi->mnId);
+        // ROS_INFO_STREAM("fixed KF: "<<pKFi->mnId);
     }
 
     // Biases
@@ -1259,7 +1259,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
 
         VertexAccBias *VA = new VertexAccBias(pKFi);
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
-        VA->setFixed(true);
+        VA->setFixed(false);
         optimizer.addVertex(VA);
         vpab.push_back(VA);
 
@@ -1437,6 +1437,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             }
         }
     }
+    ROS_INFO_STREAM("visual edge size: "<<(mono_edges.size()+stereo_edges.size()));
 
 
     // Graph edges
@@ -1472,8 +1473,10 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             //				g2o::HyperGraph::Vertex *VV2 = optimizer.vertex(maxKFid + (pKFi->mnId) + 1);
             g2o::HyperGraph::Vertex *VV1 = optimizer.vertex((maxKFid + 1)*3 + pKFi->mPrevKF->mnId);
             g2o::HyperGraph::Vertex *VV2 = optimizer.vertex((maxKFid + 1)*3 + pKFi->mnId);
-            g2o::HyperGraph::Vertex *VG = optimizer.vertex(maxKFid + 1 + pKFi->mnId);
-            g2o::HyperGraph::Vertex *VA = optimizer.vertex((maxKFid + 1)*2 + pKFi->mnId);
+            g2o::HyperGraph::Vertex *VG1 = optimizer.vertex(maxKFid + 1 + pKFi->mPrevKF->mnId);
+            g2o::HyperGraph::Vertex *VA1 = optimizer.vertex((maxKFid + 1) * 2 + pKFi->mPrevKF->mnId);
+            g2o::HyperGraph::Vertex *VG2 = optimizer.vertex(maxKFid + 1 + pKFi->mnId);
+            g2o::HyperGraph::Vertex *VA2 = optimizer.vertex((maxKFid + 1) * 2 + pKFi->mnId);
             g2o::HyperGraph::Vertex *VT_d_c = optimizer.vertex((maxKFid + 1)*4);
             g2o::HyperGraph::Vertex *VT_g_d = optimizer.vertex((maxKFid + 1)*4+1);
             g2o::HyperGraph::Vertex *VR_b0_w = optimizer.vertex((maxKFid + 1) * 4 + 2);
@@ -1490,37 +1493,15 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             //				cout<<"VP2: tcw[0]"<<VP2->estimate().tcw[0]<<endl;
             //				cout<<"VP2: twc"<<VP2->estimate().twc<<endl;
 
-            if (!VP1 || !VG || !VP2) {
-                cout << "Error" << VP1 << ", " << VG << ", " << VP2 << endl;
-
-                continue;
+            if (!VP1|| !VP2 || !VV1 || !VV2 || !VG1 || !VG2 || !VA1 || !VA2 || !VT_d_c || !VT_g_d || !VR_b0_w) {
+                ROS_ERROR_STREAM("LocalVAIBA Error");
+                assert(0);
             }
-            std::vector<cv::Point3d> vbias_a, vbias_g;
-            vbias_a.push_back(cv::Point3d(pKFi->mPrevKF->GetImuBias().bax, pKFi->mPrevKF->GetImuBias().bay,
-                                          pKFi->mPrevKF->GetImuBias().baz));
-            vbias_g.push_back(cv::Point3d(pKFi->mPrevKF->GetImuBias().bwx, pKFi->mPrevKF->GetImuBias().bwy,
-                                          pKFi->mPrevKF->GetImuBias().bwz));
-            cv::Mat acc_prior = cv::Mat(vbias_a);
-            cv::Mat gyr_prior = cv::Mat(vbias_g);
-            acc_prior.convertTo(acc_prior, CV_32F);
-            gyr_prior.convertTo(gyr_prior, CV_32F);
-            acc_prior = acc_prior.reshape(1);
-            gyr_prior = gyr_prior.reshape(1);
-            EdgePriorAcc *epa = new EdgePriorAcc(acc_prior);
-            epa->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
-            epa->setId(optimizer.edges().size());
-            epa->setLevel(0);
-            epa->setInformation(Eigen::Matrix3d::Identity() * 100);
-            optimizer.addEdge(epa);
-            acc_edge.push_back(epa);
-
-            EdgePriorGyro *epg = new EdgePriorGyro(gyr_prior);
-            epg->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
-            epg->setId(optimizer.edges().size());
-            epg->setLevel(0);
-            epg->setInformation(Eigen::Matrix3d::Identity() * 100);
-            optimizer.addEdge(epg);
-            gyro_edge.push_back(epg);
+            EdgeAccRW* e_bias = new EdgeAccRW();
+            e_bias->setVertex(0,VA1);
+            e_bias->setVertex(1,VA2);
+            e_bias->setInformation(Eigen::Matrix3d::Identity() * 5e3*(mono_edges.size()+stereo_edges.size()));
+            optimizer.addEdge(e_bias);
             //velocity edge
             Eigen::Vector3d dvl_v1;
             pKFi->mPrevKF->GetDvlVelocity(dvl_v1);
@@ -1532,12 +1513,12 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ev->setId(optimizer.edges().size());
             auto vv1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1);
             if(pKFi->mPrevKF->mbDVL){
-                vv1->setFixed(true);
-                ev->setInformation(Eigen::Matrix3d::Identity());
+                vv1->setFixed(false);
+                ev->setInformation(Eigen::Matrix3d::Identity()*1e10);
             }
             else{
-                vv1->setFixed(true);
-                ev->setInformation(Eigen::Matrix3d::Identity()*1e4);
+                vv1->setFixed(false);
+                ev->setInformation(Eigen::Matrix3d::Identity()*1e5);
             }
             optimizer.addEdge(ev);
             velocity_edge.push_back(ev);
@@ -1548,12 +1529,12 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ev2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
             auto vv2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2);
             if (pKFi->mbDVL) {
-                vv2->setFixed(true);
-                ev2->setInformation(Eigen::Matrix3d::Identity());
+                vv2->setFixed(false);
+                ev2->setInformation(Eigen::Matrix3d::Identity()*1e10);
             }
             else {
-                vv2->setFixed(true);
-                ev2->setInformation(Eigen::Matrix3d::Identity() *1e4);
+                vv2->setFixed(false);
+                ev2->setInformation(Eigen::Matrix3d::Identity() *1e5);
             }
             optimizer.addEdge(ev2);
             velocity_edge.push_back(ev2);
@@ -1576,8 +1557,8 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             eG->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
             eG->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
             eG->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            eG->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
-            eG->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
+            eG->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG2));
+            eG->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA2));
             eG->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
             eG->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
@@ -1586,17 +1567,17 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(eG->vertices()[1]);
             Eigen::Matrix<double,9,9> info=Eigen::Matrix<double,9,9>::Identity();
             // info(0,0) = info(0,0)*500;
-            if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){;
-                info.block(0,0,3,3) = Eigen::Matrix3d::Identity()*5e1;
-                info(1,1) = 5e3;
-                info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*5e3;
-                info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*5e1;
+            if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
+                info.block(0,0,3,3) = Eigen::Matrix3d::Identity()*100* lamda_DVL;
+                info(1,1) =info(1,1) * 1e2 * lamda_DVL;
+                info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*100* lamda_DVL;
+                info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*10 * lamda_DVL;
                 eG->setInformation(info*(mono_edges.size()+stereo_edges.size()));
             }
             else{
                 info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * lamda_DVL;
-                info(1,1) = info(1,1)*lamda_DVL * 50;
-                info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*lamda_DVL*50;
+                info(1,1) = info(1,1)*lamda_DVL * 1e3;
+                info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*lamda_DVL*1;
                 info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*lamda_DVL*1;
                 eG->setInformation(info  * (mono_edges.size()+stereo_edges.size()));
             }
@@ -1786,39 +1767,47 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     if(pbStopFlag){
         optimizer.setForceStopFlag(pbStopFlag);
     }
+    stringstream ss_v_chi2;
     std::set<std::pair<KeyFrame*,MapPoint*>> remove_obs;
+    ss_v_chi2<<"mono chi2: ";
+    for (auto e: mono_edges) {
+        e->computeError();
+        ss_v_chi2<<e->chi2()<<", ";
+        // e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
+        if (e->chi2() > 1) {
+            e->setLevel(1);
+            remove_obs.insert(mono_obs[e]);
+        }
+        else {
+            e->setLevel(0);
+            // e->setInformation(Eigen::Matrix2d::Identity() * 1);
+        }
+
+    }
+    ss_v_chi2<<"\n";
+    ss_v_chi2<<"stereo chi2: ";
+    for (auto e: stereo_edges) {
+        e->computeError();
+        ss_v_chi2<<e->chi2()<<", ";
+        // e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
+        if (e->chi2() > 2) {
+            e->setLevel(1);
+            remove_obs.insert(stereo_obs[e]);
+        }
+        else {
+            e->setLevel(0);
+        }
+    }
+    // ROS_INFO_STREAM(ss_v_chi2.str());
     for(int i=0;i<2;i++){
         if(pbStopFlag){
             if(*pbStopFlag){
+                ROS_INFO_STREAM("stop BA");
                 break;
             }
         }
         optimizer.initializeOptimization(0);
-        optimizer.optimize(5);
-        for (auto e: mono_edges) {
-            e->computeError();
-            // e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
-            if (e->chi2() > 5.991) {
-                e->setLevel(1);
-                remove_obs.insert(mono_obs[e]);
-            }
-            else {
-                e->setLevel(0);
-                // e->setInformation(Eigen::Matrix2d::Identity() * 1);
-            }
-
-        }
-        for (auto e: stereo_edges) {
-            e->computeError();
-            // e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
-            if (e->chi2() > 7.8) {
-                e->setLevel(1);
-                remove_obs.insert(stereo_obs[e]);
-            }
-            else {
-                e->setLevel(0);
-            }
-        }
+        optimizer.optimize(4);
     }
 
 
@@ -1862,6 +1851,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         IMU::Bias b(v_ab->estimate().x(), v_ab->estimate().y(), v_ab->estimate().z(),
                     v_gb->estimate().x(), v_gb->estimate().y(), v_gb->estimate().z());
         pKFi->SetNewBias(b);
+        ROS_INFO_STREAM("KF["<<pKFi->mnId<<"] bias[acc gyros]: "<<v_ab->estimate().transpose()<<" "<<v_gb->estimate().transpose());
         // ss<<"KF["<<pKFi->mnId<<"] bias[acc gyros]: "<<v_ab->estimate().transpose()<<" "<<v_gb->estimate().transpose()<<"\n";
 
         //recover dvl_velocity of pKFi
@@ -1890,7 +1880,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         pMP->UpdateNormalAndDepth();
     }
     pMap->IncreaseChangeIndex();
-    ROS_INFO_STREAM("Map change after BA: "<<pMap->GetMapChangeIndex());
+    // ROS_INFO_STREAM("Map change after BA: "<<pMap->GetMapChangeIndex());
 }
 
 void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool* pbStopFlag, Map* pMap,

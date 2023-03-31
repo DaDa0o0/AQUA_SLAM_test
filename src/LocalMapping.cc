@@ -134,15 +134,16 @@ void LocalMapping::Run()
 			int num_FixedKF_BA = 0;
 
 			if (!CheckNewKeyFrames() && !stopRequested()) {
-				if (mpAtlas->KeyFramesInMap() > 2) {
+				if (mpAtlas->KeyFramesInMap() >= 2) {
                     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
                     if (!mpAtlas->isDvlImuInitialized()) {
-                        Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
+                        if(mpAtlas->KeyFramesInMap() > 2)
+                            Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
                                                          &mbAbortBA,
                                                          mpCurrentKeyFrame->GetMap(),
                                                          num_FixedKF_BA);
                     }
-                    else {
+                    else if(mpAtlas->KeyFramesInMap() > 2){
                         // DvlGyroOptimizer::LocalDVLGyroBundleAdjustment(mpCurrentKeyFrame,
                         // 											   &mbAbortBA,
                         // 											   mpCurrentKeyFrame->GetMap(),
@@ -159,20 +160,20 @@ void LocalMapping::Run()
 						mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
 
                     }
-                    // else{
-                    //     auto loss_kf = mpTracker->getMvpLossKf();
-                    //     // ROS_INFO_STREAM("KF during loss:");
-                    //     // for(auto pKF:loss_kf){
-                    //     //     ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
-                    //     //                          <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
-                    //     // }
-					//
-                    //     Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas,mpTracker->mlamda_DVL);
-                    //     mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
-                    //     mpTracker->mpRosHandler->PublishLossKF(loss_kf);
-                    //     mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-                    //     // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
-                    // }
+                    else{
+                        auto loss_kf = mpTracker->getMvpLossKf();
+                        // ROS_INFO_STREAM("KF during loss:");
+                        // for(auto pKF:loss_kf){
+                        //     ROS_INFO_STREAM(fixed<<setprecision(6)<<"KF["<<pKF->mnId<<"] "<<pKF->mTimeStamp
+                        //                          <<", integration duration: "<<pKF->mpDvlPreintegrationKeyFrame->dT);
+                        // }
+
+                        Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas,mpTracker->mlamda_DVL);
+                        mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
+                        // mpTracker->mpRosHandler->PublishLossKF(loss_kf);
+                        // mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+                        // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+                    }
 					// auto dense_up = new std::thread(&DenseMapper::Update,mpDenseMapper);
 //					mpDenseMapper->Update();
 				}
@@ -182,9 +183,10 @@ void LocalMapping::Run()
 				// Initialize IMU here
 				if (!mpAtlas->GetAllMaps().front()->isImuInitialized()) {
 
-                    if((mpAtlas->KeyFramesInMap() > 10))
+                    if((mpAtlas->KeyFramesInMap() > 10)){
                         ROS_INFO_STREAM("DVL-IMU init");
-					    InitializeDvlIMU();
+                        InitializeDvlIMU();
+                    }
 				}
                 else if(!mpAtlas->GetAllMaps().back()->isImuInitialized()&&mpAtlas->GetAllKeyFrames().size()>mpTracker->mKFThresholdForMap){
                     ROS_INFO_STREAM("DVL-IMU refine");
@@ -197,7 +199,9 @@ void LocalMapping::Run()
                     current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
                 }
 
-				// Check redundant local Keyframes
+
+
+                // Check redundant local Keyframes
 				// if(mpTracker->mCalibrated){
 				// 	KeyFrameCulling();
 				// }
@@ -1573,8 +1577,8 @@ void LocalMapping::InitializeDvlGyro(float priorG, bool bFirst)
 	mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
 	mpTracker->mCalibrated = true;
 	bInitializing = false;
-	mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-	mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+	// mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+	// mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
 	return;
 }
 
@@ -1584,17 +1588,7 @@ void LocalMapping::InitializeDvlIMU()
 		return;
 	}
 
-	float minTime;
-	int nMinKF;
-	if (mbMonocular) {
-		minTime = 2.0;
-		nMinKF = 10;
-	}
-	else {
-		minTime = 1.0;
-		nMinKF = 10;
-	}
-	nMinKF = 10;
+	int nMinKF = 10;
 
 	if (mpAtlas->KeyFramesInMap() < nMinKF) {
 		return;
@@ -1635,14 +1629,10 @@ void LocalMapping::InitializeDvlIMU()
 	mbg = Converter::toVector3d(mpCurrentKeyFrame->GetGyroBias());
 	mba = Converter::toVector3d(mpCurrentKeyFrame->GetAccBias());
 
-	mScale = 1.0;
-
-	mInitTime = mpTracker->mLastFrame.mTimeStamp - vpKF.front()->mTimeStamp;
-
 	std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
 	// new bias has been set to all keyframes after optimization
 //	Optimizer::DvlGyroInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
-	Optimizer::DvlIMUInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, 0);
+	Optimizer::DvlIMUInitOptimization(mpAtlas->GetCurrentMap());
 //	Optimizer::DvlGyroInitOptimization6(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 //	Optimizer::DvlGyroInitOptimization5(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
@@ -1677,8 +1667,8 @@ void LocalMapping::InitializeDvlIMU()
 	mpTracker->mCalibrated = true;
 	mpTracker->mInitialized = true;
 	bInitializing = false;
-	mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-	mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+	// mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+	// mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
 	return;
 }
 
@@ -1693,8 +1683,8 @@ void LocalMapping::RefineGravityDvlIMU()
 
     Optimizer::DvlIMURefineOptimization(mpAtlas);
 
-    mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-    mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
+    // mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+    // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
 }
 
 void LocalMapping::FullBA()
