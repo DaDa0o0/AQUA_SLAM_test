@@ -1476,7 +1476,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             Eigen::Matrix<double,9,9> info = Eigen::Matrix<double,9,9>::Identity();
             info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 100;
             info(1,1) = info(1,1) * 1e2; // before 10_24
-            info(0,0) = info(0,0) * 1e2; // 10_24
+            // info(0,0) = info(0,0) * 1e2; // 10_24
             info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*100;
             info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*100;
             e_di->setInformation(info);
