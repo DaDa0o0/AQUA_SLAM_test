@@ -1639,6 +1639,7 @@ void LocalMapping::InitializeDvlIMU()
 
     mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
     mpAtlas->SetDvlImuInitialized();
+    mpTracker->mpRosHandler->UpdateMap(mpAtlas);
 
 
 	// set new bias for tracking thread, update last frame and current frame pose
@@ -1667,7 +1668,6 @@ void LocalMapping::InitializeDvlIMU()
 	mpTracker->mCalibrated = true;
 	mpTracker->mInitialized = true;
 	bInitializing = false;
-	// mpTracker->mpRosHandler->UpdateMap(mpAtlas);
 	// mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
 	return;
 }

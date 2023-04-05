@@ -172,7 +172,8 @@ CMAKE_AUTOMOC_PATH_PREFIX=OFF
 CMAKE_BASE_NAME=clang++-15
 CMAKE_BINARY_DIR=/home/da/project/ros/orb_dvl2_ws/src/build
 CMAKE_BUILD_TOOL=/home/da/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.174/bin/ninja/linux/x64/ninja
-CMAKE_BUILD_TYPE=RelWithDebInfo
+CMAKE_BUILD_TYPE=Release
+CMAKE_BUILD_TYPE=Release
 CMAKE_C11_COMPILE_FEATURES=c_std_11;c_static_assert
 CMAKE_C11_EXTENSION_COMPILE_OPTION=-std=gnu11
 CMAKE_C11_STANDARD_COMPILE_OPTION=-std=c11
@@ -1458,6 +1459,7 @@ QHULL_MAJOR_VERSION=6
 QHULL_RELEASE_NAME=qhull_p;qhull6;qhull
 QHULL_ROOT=/usr
 Qhull_FOUND=TRUE
+ROS_BUILD_TYPE=Release
 RT_LIBRARY=/usr/lib/x86_64-linux-gnu/librt.so
 RUN_CONFIGURE=ON
 SERVICE_DIR=/home/da/project/ros/orb_dvl2_ws/src/dvl2/srv

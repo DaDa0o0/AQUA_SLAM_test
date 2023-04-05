@@ -1950,7 +1950,7 @@ void Tracking::topicPublishDVLOnly()
 //
 //    mCurrentFrame.SetPose(T_c_w);
 	// ORB pose
-	if (mCurrentFrame.mTcw.empty()) {
+	if (mCurrentFrame.mTcw.empty() || !mInitialized) {
 		return;
 	}
 

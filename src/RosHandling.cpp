@@ -281,6 +281,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
     Eigen::Isometry3d T_w_c0 = Eigen::Isometry3d::Identity();
     Eigen::Matrix3d R_w_c0 = R_b0_w.inverse() * T_b_c.rotation();
     T_w_c0.rotate(R_w_c0);
+    T_w_c0.pretranslate(T_b_c.translation());
     mT_w_c0 = T_w_c0;
 
 	vector<Map *> allMaps = pAtlas->GetAllMaps();
@@ -554,9 +555,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
     Eigen::Matrix3d R_g_d = T_g_d.rotation();
     // handle gravity dir
     Eigen::Matrix3d R_b0_w = pAtlas->getRGravity();
-    Eigen::Isometry3d T_w_c0 = Eigen::Isometry3d::Identity();
-    Eigen::Matrix3d R_w_c0 = R_b0_w.inverse() * (T_g_d * T_d_c).rotation();
-    T_w_c0.rotate(R_w_c0);
+    Eigen::Isometry3d T_w_c0 = mT_w_c0;
 
     for(auto pMap:maps){
         auto pKFs = pMap->GetAllKeyFrames();
