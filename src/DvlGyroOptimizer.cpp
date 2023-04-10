@@ -1500,7 +1500,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             EdgeAccRW* e_bias = new EdgeAccRW();
             e_bias->setVertex(0,VA1);
             e_bias->setVertex(1,VA2);
-            e_bias->setInformation(Eigen::Matrix3d::Identity() * 5e3*(mono_edges.size()+stereo_edges.size()));
+            e_bias->setInformation(Eigen::Matrix3d::Identity() * 5e3*(mono_edges.size()+stereo_edges.size()) * lamda_DVL);
             optimizer.addEdge(e_bias);
             //velocity edge
             Eigen::Vector3d dvl_v1;
@@ -1569,16 +1569,16 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             // info(0,0) = info(0,0)*500;
             if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
                 info.block(0,0,3,3) = Eigen::Matrix3d::Identity()*100* lamda_DVL;
-                // info(0,0) =info(0,0) * 1e2 * lamda_DVL; // 10_24
-                info(1,1) =info(1,1) * 1e2 * lamda_DVL; // before 10_24
+                info(0,0) =info(0,0) * 5e2 * lamda_DVL; // 10_24
+                // info(1,1) =info(1,1) * 5e2 * lamda_DVL; // before 10_24
                 info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*100* lamda_DVL;
                 info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*10 * lamda_DVL;
                 eG->setInformation(info*(mono_edges.size()+stereo_edges.size()));
             }
             else{
                 info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * lamda_DVL;
-                // info(0,0) = info(0,0)*lamda_DVL * 1e3; // 10_24
-                info(1,1) = info(1,1)*lamda_DVL * 1e3; // before 10_24
+                info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
+                // info(1,1) = info(1,1)*lamda_DVL * 5e3; // before 10_24
                 info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*lamda_DVL*1;
                 info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*lamda_DVL*1;
                 eG->setInformation(info  * (mono_edges.size()+stereo_edges.size()));

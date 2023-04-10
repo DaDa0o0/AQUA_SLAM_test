@@ -1475,8 +1475,8 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             e_di->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
             Eigen::Matrix<double,9,9> info = Eigen::Matrix<double,9,9>::Identity();
             info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 100;
-            // info(0,0) = info(0,0) * 1e2; // 10_24
-            info(1,1) = info(1,1) * 1e2; // before 10_24
+            info(0,0) = info(0,0) * 5e3; // 10_24
+            // info(1,1) = info(1,1) * 5e3; // before 10_24
             // info(0,0) = info(0,0) * 1e2; // 10_24
             info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*100;
             info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*100;
