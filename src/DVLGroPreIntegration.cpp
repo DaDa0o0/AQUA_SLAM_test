@@ -92,6 +92,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(DVLGroPreIntegration* pDVLPre) : dT(p
                                                                             JVa(pDVLPre->JVa.clone()),
                                                                             JPg(pDVLPre->JPg.clone()),
                                                                             JPa(pDVLPre->JPa.clone()),
+                                                                            JPv(pDVLPre->JPv.clone()),
                                                                             avgA(pDVLPre->avgA.clone()),
                                                                             avgW(pDVLPre->avgW.clone()),
                                                                             bu(pDVLPre->bu),
@@ -128,6 +129,7 @@ DVLGroPreIntegration::DVLGroPreIntegration(const DVLGroPreIntegration &integrati
                                                                                       JVa(integration.JVa.clone()),
                                                                                       JPg(integration.JPg.clone()),
                                                                                       JPa(integration.JPa.clone()),
+                                                                                      JPv(integration.JPv.clone()),
                                                                                       avgA(integration.avgA.clone()),
                                                                                       avgW(integration.avgW.clone()),
                                                                                       bu(integration.bu),
@@ -163,6 +165,7 @@ void DVLGroPreIntegration::Initialize(const Bias &b_)
     JVa = cv::Mat::zeros(3, 3, CV_64F);
     JPg = cv::Mat::zeros(3, 3, CV_64F);
     JPa = cv::Mat::zeros(3, 3, CV_64F);
+    JPv = cv::Mat::zeros(3, 3, CV_64F);
     C = cv::Mat::zeros(15, 15, CV_64F);
     Info = cv::Mat();
     db = cv::Mat::zeros(6, 1, CV_64F);
@@ -182,7 +185,7 @@ void DVLGroPreIntegration::ReintegrateWithBias(const Bias &b)
     const std::vector<integrable> aux = mvMeasurements;
     const std::vector<integrable> aux2 = mvMeasurements2;
     cv::Mat v = dV.clone();
-    Initialize(bu);
+    Initialize(b);
     SetVelocity(cv::Point3d(v.at<double>(0), v.at<double>(1), v.at<double>(2)));
     mb = b;
     for (size_t i = 0; i < aux2.size(); i++) {
@@ -408,12 +411,17 @@ void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc, co
     // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
     cv::Mat v_k_hat = (cv::Mat_<double>(3, 3) << 0, -dV.at<double>(2), dV.at<double>(1), dV.at<double>(
             2), 0, -dV.at<double>(0), -dV.at<double>(1), dV.at<double>(0), 0);
+    cv::Mat Wacc = (cv::Mat_<double>(3,3) << 0, -acc_b.at<double>(2), acc_b.at<double>(1),
+            acc_b.at<double>(2), 0, -acc_b.at<double>(0),
+            -acc_b.at<double>(1), acc_b.at<double>(0), 0);
 
     //todo_tightly
     //	add velocity jacobians
     JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
+    JPg = JPg + JVg*dt -0.5f*dR*dt*dt*Wacc*JRg;
     JVa = JVa - dR*dt;
-
+    JVg = JVg - dR*dt*Wacc*JRg;
+    JPv = JPv + dR*mR_g_d*dt;
 
 
 
@@ -483,12 +491,18 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement(const cv::Point3d &v_dk, cons
     // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
     cv::Mat v_k_hat = (cv::Mat_<double>(3, 3) << 0, -dV.at<double>(2), dV.at<double>(1), dV.at<double>(
             2), 0, -dV.at<double>(0), -dV.at<double>(1), dV.at<double>(0), 0);
+    cv::Mat Wacc = (cv::Mat_<double>(3,3) << 0, -acc_b.at<double>(2), acc_b.at<double>(1),
+            acc_b.at<double>(2), 0, -acc_b.at<double>(0),
+            -acc_b.at<double>(1), acc_b.at<double>(0), 0);
 
     //todo_tightly
     //	add velocity jacobians
     //  Update position and velocity jacobians wrt bias correction
     JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
+    JPg = JPg + JVg*dt -0.5f*dR*dt*dt*Wacc*JRg;
     JVa = JVa - dR*dt;
+    JPv = JPv + dR*mR_g_d*dt;
+    JVg = JVg - dR*dt*Wacc*JRg;
 
 
     // Update delta rotation
@@ -563,12 +577,18 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     // Compute velocity and position parts of matrices A and B (rely on non-updated delta rotation)
     cv::Mat v_k_hat = (cv::Mat_<double>(3, 3) << 0, -dV.at<double>(2), dV.at<double>(1), dV.at<double>(
             2), 0, -dV.at<double>(0), -dV.at<double>(1), dV.at<double>(0), 0);
+    cv::Mat Wacc = (cv::Mat_<double>(3,3) << 0, -acc_b.at<double>(2), acc_b.at<double>(1),
+            acc_b.at<double>(2), 0, -acc_b.at<double>(0),
+            -acc_b.at<double>(1), acc_b.at<double>(0), 0);
 
     //todo_tightly
     //	add velocity jacobians
     //  Update position and velocity jacobians wrt bias correction
     JPa = JPa + JVa*dt -0.5f*dR*dt*dt;
+    JPg = JPg + JVg*dt -0.5f*dR*dt*dt*Wacc*JRg;
     JVa = JVa - dR*dt;
+    JPv = JPv + dR*mR_g_d*dt;
+    JVg = JVg - dR*dt*Wacc*JRg;
 
 
     // Update delta rotation
@@ -697,16 +717,7 @@ void DVLGroPreIntegration::MergePrevious2(DVLGroPreIntegration* pPrev)
 
 void DVLGroPreIntegration::SetNewBias(const Bias &bu_)
 {
-    std::unique_lock<std::mutex> lock(mMutex);
-    bu = bu_;
-
-    db.at<double>(0) = bu_.bwx - mb.bwx;
-    db.at<double>(1) = bu_.bwy - mb.bwy;
-    db.at<double>(2) = bu_.bwz - mb.bwz;
-    db.at<double>(3) = bu_.bax - mb.bax;
-    db.at<double>(4) = bu_.bay - mb.bay;
-    db.at<double>(5) = bu_.baz - mb.baz;
-    mb = bu_;
+    ReintegrateWithBias(bu_);
 }
 
 IMU::Bias DVLGroPreIntegration::GetDeltaBias(const Bias &b_)
@@ -720,8 +731,8 @@ cv::Mat DVLGroPreIntegration::GetDeltaRotation(const Bias &b_)
 {
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
-    cv::Mat R = NormalizeRotation(dR);
-    R.convertTo(R, CV_32F);
+    cv::Mat R = NormalizeRotation(dR*ExpSO3(JRg*dbg));
+    // R.convertTo(R, CV_32F);
     return R;
 }
 
@@ -738,6 +749,7 @@ cv::Mat DVLGroPreIntegration::GetDeltaVelocity(const Bias &b_)
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
     cv::Mat V = dDeltaV  + JVa * dba;
+    // cv::Mat V = dDeltaV  + JVa * dba + JVg * dbg;
     // V.convertTo(V, CV_32F);
     return V;
 }
@@ -752,12 +764,27 @@ cv::Mat DVLGroPreIntegration::GetDVLPosition(const Bias &b_)
     return P;
 }
 
+cv::Mat DVLGroPreIntegration::GetDVLPosition(const Bias &b_, const Eigen::Vector3d &velocity)
+{
+    std::unique_lock<std::mutex> lock(mMutex);
+    cv::Mat v_new ;
+    cv::eigen2cv(velocity,v_new);
+    cv::Mat v_delta = v_new - dV;
+    cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
+    cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
+    cv::Mat P = dP_dvl.clone()  + JPv*v_delta;
+    // ROS_INFO_STREAM("current v: "<<dV<<" new v: "<<v_new<<"delta p"<<JPv*v_delta);
+    P.convertTo(P, CV_32F);
+    return P;
+}
+
 cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
 {
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    cv::Mat P = dP_acc + JPa * dba ;
+    // cv::Mat P = dP_acc + JPa * dba + JPg * dbg;
+    cv::Mat P = dP_acc + JPa * dba;
     // P.convertTo(P, CV_32F);
     return P;
 }
@@ -924,6 +951,7 @@ void DVLGroPreIntegration::serialize(Archive &ar, const unsigned int version)
     serializeMatrix(ar, JVa, version);
     serializeMatrix(ar, JPg, version);
     serializeMatrix(ar, JPa, version);
+    serializeMatrix(ar, JPv, version);
     // serializeMatrix(ar, avgA, version);
     // serializeMatrix(ar, avgW, version);
 

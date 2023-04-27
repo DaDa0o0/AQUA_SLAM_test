@@ -155,6 +155,9 @@ public:
     void SaveTrajectoryEuRoC(const string &filename);
     void SaveKeyFrameTrajectoryEuRoC(const string &filename);
 
+    // save all KeyFrame Pose
+    void SaveKeyFrameTrajectory(const string &filename);
+
     // Save data used for initialization debug
     void SaveDebugData(const int &iniIdx);
 

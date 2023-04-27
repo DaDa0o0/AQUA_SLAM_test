@@ -136,7 +136,8 @@ void LocalMapping::Run()
 			if (!CheckNewKeyFrames() && !stopRequested()) {
 				if (mpAtlas->KeyFramesInMap() >= 2) {
                     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-                    if (!mpAtlas->isDvlImuInitialized()) {
+                    // if (!mpAtlas->isDvlImuInitialized()||mBiasRefineCount<2) {
+                        if (!mpAtlas->isDvlImuInitialized()) {
                         if(mpAtlas->KeyFramesInMap() > 2)
                             Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
                                                          &mbAbortBA,
@@ -170,6 +171,7 @@ void LocalMapping::Run()
 
                         Optimizer::OptimizationDVLIMU(loss_kf, mpAtlas,mpTracker->mlamda_DVL);
                         mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
+                        mpTracker->clearPartLossKF();
                         // mpTracker->mpRosHandler->PublishLossKF(loss_kf);
                         // mpTracker->mpRosHandler->UpdateMap(mpAtlas);
                         // mpTracker->mpRosHandler->PublishIntegration(mpAtlas);
@@ -188,15 +190,26 @@ void LocalMapping::Run()
                         InitializeDvlIMU();
                     }
 				}
-                else if(!mpAtlas->GetAllMaps().back()->isImuInitialized()&&mpAtlas->GetAllKeyFrames().size()>mpTracker->mKFThresholdForMap){
-                    ROS_INFO_STREAM("DVL-IMU refine");
-                    RefineGravityDvlIMU();
-                    current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
-                }
-                else if((mpAtlas->GetAllKeyFramesinAllMap().size()>=current_KF_num*2)&&(current_KF_num<400)){
-                    ROS_INFO_STREAM("DVL-IMU refine");
-                    RefineGravityDvlIMU();
-                    current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
+                else {
+                    // InitializeDvlIMU();
+                    if(mpAtlas->GetAllKeyFramesinAllMap().size()>200){
+                        ROS_INFO_STREAM("DVL-IMU refine");
+                        RefineGravityDvlIMU();
+                        current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
+                    }
+                    else if(mpAtlas->GetAllKeyFramesinAllMap().size()>400){
+                        ROS_INFO_STREAM("DVL-IMU refine");
+                        RefineGravityDvlIMU();
+                        current_KF_num =  mpAtlas->GetAllKeyFramesinAllMap().size();
+                    }
+                    // if(mBiasRefineCount<1&&mpAtlas->GetCurrentMap()->GetAllKeyFrames().size()>50){
+                    //     InitializeDvlIMU();
+                    //     mBiasRefineCount++;
+                    // }
+                    // else if(mBiasRefineCount<2&&mpAtlas->GetCurrentMap()->GetAllKeyFrames().size()>100){
+                    //     InitializeDvlIMU();
+                    //     mBiasRefineCount++;
+                    // }
                 }
 
 

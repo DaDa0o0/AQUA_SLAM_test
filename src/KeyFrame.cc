@@ -935,6 +935,7 @@ void KeyFrame::SetNewBias(const IMU::Bias &b)
     unique_lock<mutex> lock(mMutexPose);
     mImuBias = b;
     if(mpDvlPreintegrationKeyFrame){
+        mpDvlPreintegrationKeyFrame->ReintegrateWithBias(b);
         mpDvlPreintegrationKeyFrame->SetNewBias(b);
     }
 }

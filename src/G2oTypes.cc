@@ -2203,7 +2203,9 @@ void EdgeDvlIMUWithBias::computeError()
 
 }
 
-EdgeDvlIMU::EdgeDvlIMU(DVLGroPreIntegration* pInt):mpInt(pInt), dt(pInt->dT)
+EdgeDvlIMU::EdgeDvlIMU(DVLGroPreIntegration* pInt):JRg(Converter::toMatrix3d(pInt->JRg)),
+                                                   JVg(Converter::toMatrix3d(pInt->JVg)), JPg(Converter::toMatrix3d(pInt->JPg)), JVa(Converter::toMatrix3d(pInt->JVa)),
+                                                   JPa(Converter::toMatrix3d(pInt->JPa)),mpInt(pInt), dt(pInt->dT)
 {
     resize(9);
 }
@@ -2241,6 +2243,7 @@ void EdgeDvlIMU::computeError()
 
     Eigen::Vector3d v1 = VV1->estimate();
     Eigen::Vector3d v2 = VV2->estimate();
+    Eigen::Vector3d avg_v = (v1+v2)/2;
 
     Eigen::Matrix3d R_b0_w = VR_G->estimate().Rwg;
     Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
@@ -2252,6 +2255,7 @@ void EdgeDvlIMU::computeError()
     const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
     const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
     const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->GetDeltaPosition(b));
+    const Eigen::Vector3d dP_dvl =Converter::toVector3d(mpInt->GetDVLPosition(b,avg_v));
 
 
 
@@ -2267,6 +2271,8 @@ void EdgeDvlIMU::computeError()
 
     const Eigen::Vector3d P_acc_est = R_b_c * VP1->estimate().Rcw[0] * (VP2->estimate().Rwc * t_c_b + VP2->estimate().twc - (VP1->estimate().Rwc * t_c_b  + VP1->estimate().twc)
             - VP1->estimate().Rwc * R_c_dvl * v1 * dt - 0.5 * R_c_b * R_b0_w * g_w*dt*dt);
+    const Eigen::Vector3d P_dvl_est= (t_dvl_c - R_dvl_c * VP1->estimate().Rcw[0] * VP2->estimate().Rwc * R_c_dvl * t_dvl_c
+                                  + R_dvl_c *(VP1->estimate().Rcw[0]*VP2->estimate().twc - VP1->estimate().Rcw[0]*VP1->estimate().twc));
 
     //	mpInt->ReintegrateWithVelocity(v_gt );
 
@@ -2278,6 +2284,7 @@ void EdgeDvlIMU::computeError()
 
     const Eigen::Vector3d e_V =  (VDelta_est - dDelta_V);
     const Eigen::Vector3d e_P =  (P_acc_est - dP_acc);
+    // const Eigen::Vector3d e_P =  (P_dvl_est - dP_dvl);
 
     _error<<e_R, e_V, e_P;
 }
@@ -2318,6 +2325,130 @@ bool EdgeDvlIMU::write(ostream &os) const
     os << str<<" ";
     return true;
 }
+
+EdgeDvlIMU::EdgeDvlIMU():JRg(Eigen::Matrix3d::Zero()),JVg(Eigen::Matrix3d::Zero()),
+JVa(Eigen::Matrix3d::Zero()),JPg(Eigen::Matrix3d::Zero()),JPa(Eigen::Matrix3d::Zero()),
+dt(0.0),mpInt(NULL)
+{
+    resize(9);
+}
+
+// void EdgeDvlIMU::linearizeOplus()
+// {
+//     const auto * VP1 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[0]);
+//     const auto * VP2 = dynamic_cast<const VertexPoseDvlIMU*>(_vertices[1]);
+//     const auto * VV1 = dynamic_cast<const VertexVelocity*>(_vertices[2]);
+//     const auto * VV2 = dynamic_cast<const VertexVelocity*>(_vertices[3]);
+//     const auto * VG1 = dynamic_cast<const VertexGyroBias*>(_vertices[4]);
+//     const auto * VA1 = dynamic_cast<const VertexAccBias*>(_vertices[5]);
+//     const auto * VT_d_c = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[6]);
+//     const auto * VT_g_d = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[7]);
+//     const auto * VR_G = dynamic_cast<const VertexGDir*>(_vertices[8]);
+//
+//     const IMU::Bias b1(VA1->estimate()[0],VA1->estimate()[1],VA1->estimate()[2],VG1->estimate()[0],VG1->estimate()[1],VG1->estimate()[2]);
+//     const IMU::Bias db = mpInt->GetDeltaBias(b1);
+//     Eigen::Vector3d dbg;
+//     dbg << db.bwx, db.bwy, db.bwz;
+//     Eigen::Vector3d g(0,0,-9.81);
+//
+//     const Eigen::Isometry3d T_dvl_c=VT_d_c->estimate();
+//     const Eigen::Matrix3d R_dvl_c=T_dvl_c.rotation();
+//     const Eigen::Matrix3d R_c_dvl=T_dvl_c.inverse().rotation();
+//     const Eigen::Vector3d t_dvl_c=T_dvl_c.translation();
+//     const Eigen::Vector3d t_c_dvl=T_dvl_c.inverse().translation();
+//
+//     const Eigen::Isometry3d T_gyros_dvl=VT_g_d->estimate();
+//     const Eigen::Matrix3d R_gyros_dvl=T_gyros_dvl.rotation();
+//     // cv::Mat R_g_d;
+//     // cv::eigen2cv(R_gyros_dvl,R_g_d);
+//     // R_g_d.convertTo(R_g_d,CV_32FC1);
+//     const Eigen::Matrix3d R_dvl_gyros=R_gyros_dvl.transpose();
+//
+//     Eigen::Isometry3d T_b_c = T_gyros_dvl *T_dvl_c;
+//     const Eigen::Matrix3d R_b_c=T_b_c.rotation();
+//     const Eigen::Vector3d t_b_c=T_b_c.translation();
+//     const Eigen::Matrix3d R_c_b=T_b_c.inverse().rotation();
+//     const Eigen::Vector3d t_c_b=T_b_c.inverse().translation();
+//
+//     Eigen::Matrix3d R_b0_w = VR_G->estimate().Rwg;
+//     Eigen::MatrixXd Gm = Eigen::MatrixXd::Zero(3,2);
+//     Gm(0,1) = -IMU::GRAVITY_VALUE;
+//     Gm(1,0) = IMU::GRAVITY_VALUE;
+//     const Eigen::MatrixXd dGdTheta = R_b0_w*Gm;
+//
+//     Eigen::Isometry3d T_c0_ci =Eigen::Isometry3d::Identity();
+//     T_c0_ci.rotate(VP1->estimate().Rwc);
+//     T_c0_ci.pretranslate(VP1->estimate().twc);
+//     Eigen::Isometry3d T_b0_bi = T_b_c * T_c0_ci * T_b_c.inverse();
+//     const Eigen::Matrix3d Rwb1 = T_b0_bi.rotation();
+//     const Eigen::Matrix3d Rbw1 = Rwb1.transpose();
+//
+//     Eigen::Isometry3d T_c0_cj = Eigen::Isometry3d::Identity();
+//     T_c0_cj.rotate(VP2->estimate().Rwc);
+//     T_c0_cj.pretranslate(VP2->estimate().twc);
+//     Eigen::Isometry3d T_b0_bj = T_b_c * T_c0_cj * T_b_c.inverse();
+//     Eigen::Vector3d twb1 = T_b0_bi.translation();
+//
+//
+//     const Eigen::Matrix3d Rwb2 = T_b0_bj.rotation();
+//     Eigen::Vector3d twb2 = T_b0_bj.translation();
+//
+//
+//     const Eigen::Matrix3d dR = Converter::toMatrix3d(mpInt->GetDeltaRotation(b1));
+//     const Eigen::Matrix3d eR = dR.transpose()*Rbw1*Rwb2;
+//     const Eigen::Vector3d er = LogSO3(eR);
+//     const Eigen::Matrix3d invJr = InverseRightJacobianSO3(er);
+//
+//     // Jacobians wrt Pose 1
+//     _jacobianOplus[0].setZero();
+//     // rotation
+//     _jacobianOplus[0].block<3,3>(0,0) = -invJr*Rwb2.transpose()*Rwb1; // OK
+//     _jacobianOplus[0].block<3,3>(3,0) = Skew(Rbw1*(VV2->estimate() - VV1->estimate() - g*dt)); // OK
+//     _jacobianOplus[0].block<3,3>(6,0) = Skew(Rbw1*( twb2- twb1
+//                                                    - VV1->estimate()*dt - 0.5*g*dt*dt)); // OK
+//     // translation
+//     _jacobianOplus[0].block<3,3>(6,3) = -Eigen::Matrix3d::Identity(); // OK
+//
+//     // Jacobians wrt Pose 2
+//     _jacobianOplus[1].setZero();
+//     // rotation
+//     _jacobianOplus[1].block<3,3>(0,0) = invJr;
+//     // translation
+//     _jacobianOplus[1].block<3,3>(6,3) = Rbw1*Rwb2;
+//
+//     // Jacobians wrt Velocity 1
+//     _jacobianOplus[2].setZero();
+//     _jacobianOplus[2].block<3,3>(3,0) = Rbw1;
+//     _jacobianOplus[2].block<3,3>(6,0) = Rbw1*dt;
+//     // Jacobians wrt Velocity 2
+//     _jacobianOplus[3].setZero();
+//     _jacobianOplus[3].block<3,3>(3,0) = Rbw1;
+//
+//     // Jacobians wrt Gyro bias
+//     _jacobianOplus[4].setZero();
+//     _jacobianOplus[4].block<3,3>(0,0) = -invJr*eR.transpose()*RightJacobianSO3(JRg*dbg)*JRg;
+//     _jacobianOplus[4].block<3,3>(3,0) = -JVg;
+//     _jacobianOplus[4].block<3,3>(6,0) = -JPg;
+//
+//     // Jacobians wrt Accelerometer bias
+//     _jacobianOplus[5].setZero();
+//     _jacobianOplus[5].block<3,3>(3,0) = -JVa;
+//     _jacobianOplus[5].block<3,3>(6,0) = -JPa;
+//
+//
+//     // Jacobians wrt extrinsic VT_d_c
+//     _jacobianOplus[6].setZero();
+//
+//     // Jacobians wrt extrinsic VT_g_d
+//     _jacobianOplus[7].setZero();
+//
+//     // Jacobians wrt Gravity direction
+//     _jacobianOplus[8].setZero();
+//     _jacobianOplus[8].block<3,2>(3,0) = -Rbw1*dGdTheta*dt;
+//     _jacobianOplus[8].block<3,2>(6,0) = -0.5*Rbw1*dGdTheta*dt*dt;
+//
+//
+// }
 
     EdgeDvlGyroBA::EdgeDvlGyroBA(DVLGroPreIntegration *pInt):mpInt(pInt), dt(pInt->dT)
 {
@@ -2667,9 +2798,9 @@ EdgeDvlIMU2::EdgeDvlIMU2(DVLGroPreIntegration* pInt):mpInt(pInt), dt(pInt->dT)
 bool EdgeDvlIMU2::read(istream &is)
 {
     //get information matrix
-    Eigen::Matrix<double, 9, 9> info;
-    for(int i=0; i<9; i++)
-        for(int j=0; j<9; j++)
+    Eigen::Matrix<double, 6, 6> info;
+    for(int i=0; i<6; i++)
+        for(int j=0; j<6; j++)
             is>>info(i,j);
     setInformation(info);
     //get preintegration
@@ -2688,8 +2819,8 @@ bool EdgeDvlIMU2::read(istream &is)
 bool EdgeDvlIMU2::write(ostream &os) const
 {
     //save information matrix
-    for(int i=0; i<9; i++)
-        for(int j=0; j<9; j++)
+    for(int i=0; i<6; i++)
+        for(int j=0; j<6; j++)
             os<<_information(i,j)<<" ";
     //save preintegration
     stringstream ss;
@@ -2768,7 +2899,7 @@ void EdgeDvlIMU2::computeError()
     const Eigen::Vector3d e_V = (VDelta_est - dDelta_V);
     const Eigen::Vector3d e_P = (P_acc_est - dP_acc);
 
-    _error<<e_R, e_V, e_P;
+    _error<<e_R, e_V;
 }
 }
 

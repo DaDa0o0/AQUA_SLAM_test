@@ -507,6 +507,7 @@ public:
     int mLossLastOptID = 0;
 public:
     set<KeyFrame*, KFComparator> getMvpLossKf();
+    void clearPartLossKF();
 };
 
 } //namespace ORB_SLAM

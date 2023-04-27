@@ -670,6 +670,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 
             cv::Mat R_gi_gj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDeltaRotation(pKF->GetImuBias());
             cv::Mat t_di_dj_cv = pKF->mpDvlPreintegrationKeyFrame->GetDVLPosition(pKF->GetImuBias());
+            R_gi_gj_cv.convertTo(R_gi_gj_cv, CV_32F);
             cv::Mat R_di_dj_cv = R_g_d_cv.t() * R_gi_gj_cv * R_g_d_cv;
             Eigen::Matrix3d R_di_dj;
             cv::cv2eigen(R_di_dj_cv, R_di_dj);
@@ -890,10 +891,11 @@ void RosHandling::PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros:
 bool RosHandling::SavePose(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
 	string out_path;
-	ros::param::get("/ORBSLAM3_tightly/out_path", out_path);
-	mp_system->SaveKeyFrameTrajectoryTUM(out_path + "KeyFrameTrajectory_TUM_Format");
-	mp_system->mpDenseMapper->Save(out_path);
-	mp_system->SaveAtlas(out_path, System::TEXT_FILE);
+	ros::param::get("/ORBSLAM3_tightly/traj_path", out_path);
+	// mp_system->SaveKeyFrameTrajectoryTUM(out_path + "KeyFrameTrajectory_TUM_Format");
+    mp_system->SaveKeyFrameTrajectory(out_path);
+	// mp_system->mpDenseMapper->Save(out_path);
+	// mp_system->SaveAtlas(out_path, System::TEXT_FILE);
 	return true;
 }
 bool RosHandling::LoadMap(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)

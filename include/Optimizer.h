@@ -66,7 +66,6 @@ public:
 	void static PoseOptimizationWithEKF(Frame *pFrame,Frame *pLastFrame);
     void static PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas, int& optimized_kf_id);
     void static OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas, double lamda_DVL);
-    void static PoseOptimizationDVLIMUBiasOnly(set<KeyFrame*, KFComparator> &loss_kfs, Atlas* pAtlas, bool fix_pose = true);
 
     int static PoseInertialOptimizationLastKeyFrame(Frame* pFrame, bool bRecInit = false);
     int static PoseInertialOptimizationLastFrame(Frame *pFrame, bool bRecInit = false);

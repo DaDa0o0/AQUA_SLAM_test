@@ -1261,4 +1261,36 @@ string System::CalculateCheckSum(string filename, int type)
 	return checksum;
 }
 
+void System::SaveKeyFrameTrajectory(const string &filename)
+{
+    auto all_kf = mpAtlas->GetAllKeyFramesinAllMap();
+    std::sort(all_kf.begin(),all_kf.end(),KFComparator());
+
+    ofstream outfile(filename);
+    if (!outfile.is_open()) {
+        cerr << "Failed to open file for writing: " << filename << endl;
+        return;
+    }
+    outfile << "# timestamp tx ty tz qx qy qz qw\n";
+    for(auto pkf:all_kf){
+        double timestamp = pkf->mTimeStamp;
+        cv::Mat Tc0cj = pkf->GetPoseInverse();
+        Eigen::Isometry3d T_c0_cj = Eigen::Isometry3d::Identity();
+        cv::cv2eigen(Tc0cj,T_c0_cj.matrix());
+        Eigen::Vector3d t_c0_cj = T_c0_cj.translation();
+        Eigen::Quaterniond q_c0_cj(T_c0_cj.rotation());
+        outfile << fixed << setprecision(9)
+                << timestamp << " "
+                << t_c0_cj(0) << " "
+                << t_c0_cj(1) << " "
+                << t_c0_cj(2) << " "
+                << q_c0_cj.x() << " "
+                << q_c0_cj.y() << " "
+                << q_c0_cj.z() << " "
+                << q_c0_cj.w() << endl;
+    }
+
+    outfile.close();
+}
+
 } // namespace ORB_SLAM3

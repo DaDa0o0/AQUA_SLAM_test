@@ -542,6 +542,16 @@ void ImageGrabber::SyncWithImu2()
                         mpDvlGb->dvlBuf2.pop();
                         continue;
                     }
+                    else{
+                        Eigen::Vector3d v(mpDvlGb->dvlBuf2.front()->velocity.x,
+                                          mpDvlGb->dvlBuf2.front()->velocity.y,
+                                          mpDvlGb->dvlBuf2.front()->velocity.z);
+                        if(v.norm()>1.0){
+                            BOOST_LOG_TRIVIAL(warning) <<std::fixed<<std::setprecision(9)<< "skip bad DVL data time:"<<t<<" v:"<<v.transpose();
+                            mpDvlGb->dvlBuf2.pop();
+                            continue;
+                        }
+                    }
                     // if(bad_beam_count>1){
                     //     BOOST_LOG_TRIVIAL(warning) << "skip bad DVL data, bad beam number: "<<bad_beam_count;
                     //     mpDvlGb->dvlBuf2.pop();

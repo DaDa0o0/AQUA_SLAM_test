@@ -181,7 +181,7 @@ protected:
 
     float mTinit;
 
-    int countRefinement;
+    int mBiasRefineCount = 0;
 
     bool mbDvlGyro;
 

@@ -327,6 +327,10 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	VertexGyroBias()
 	{}
+    VertexGyroBias(const Eigen::Vector3d &bg)
+    {
+        setEstimate(bg);
+    }
 	VertexGyroBias(KeyFrame *pKF);
 	VertexGyroBias(Frame *pF);
 
@@ -353,6 +357,10 @@ public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	VertexAccBias()
 	{ setEstimate(Eigen::Vector3d::Zero());}
+    VertexAccBias(const Eigen::Vector3d &ba)
+    {
+        setEstimate(ba);
+    }
 	VertexAccBias(KeyFrame *pKF);
 	VertexAccBias(Frame *pF);
 
@@ -1717,23 +1725,23 @@ class EdgeDvlIMU: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    EdgeDvlIMU(): dt(0.0),mpInt(NULL) {resize(9);}
+    EdgeDvlIMU();
 	EdgeDvlIMU(DVLGroPreIntegration *pInt);
 
 	virtual bool read(std::istream &is);
 	virtual bool write(std::ostream &os) const;
 
 	void computeError();
-	//	virtual void linearizeOplus();
+    // virtual void linearizeOplus();
 
-	//	const Eigen::Matrix3d JRg, JVg, JPg;
-	//	const Eigen::Matrix3d JVa, JPa;
+    const Eigen::Matrix3d JRg, JVg, JPg;
+    const Eigen::Matrix3d JVa, JPa;
 	DVLGroPreIntegration *mpInt;
 	double dt;
 
 };
 
-class EdgeDvlIMU2: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
+class EdgeDvlIMU2: public g2o::BaseMultiEdge<6, Eigen::Matrix<double, 9, 1>>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW

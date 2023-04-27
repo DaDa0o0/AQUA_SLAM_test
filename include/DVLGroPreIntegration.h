@@ -172,6 +172,7 @@ public:
 	cv::Mat GetDeltaVelocity(const Bias &b_);
 	// equation(44)
 	cv::Mat GetDVLPosition(const Bias &b_);
+    cv::Mat GetDVLPosition(const Bias &b_, const Eigen::Vector3d &velocity);
     cv::Mat GetDeltaPosition(const Bias &b_);
 	cv::Mat GetDeltaPosition(const Bias &b, const cv::Mat &R_g_d);
 	cv::Mat GetUpdatedDeltaRotation();
@@ -222,7 +223,7 @@ public:
 	 * JPg: Jacobian of p wrt bias_gro
 	 * JPa: Jacobian of p wrt bias_acc
 	 */
-	cv::Mat JRg, JVg, JVa, JPg, JPa;
+	cv::Mat JRg, JVg, JVa, JPg, JPa, JPv;
 	cv::Mat avgA;
 	cv::Mat avgW;
 
