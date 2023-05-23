@@ -5,6 +5,8 @@
 #define DENSEMAPPER_H
 
 #include <ros/ros.h>
+// #include <rosbag/bag.h>
+// #include <rosbag/view.h>
 #include <sensor_msgs/Image.h>
 #include <image_transport/image_transport.h>
 #include <image_transport/subscriber_filter.h>
@@ -78,7 +80,21 @@ struct DepthEstParamters
 		  _disparity_range(disparity_range), _min_disparity(min_disparity),
 		  _prefilter_cap(prefilter_cap), _prefilter_size(prefilter_size), _speckle_range(speckle_range),
 		  _speckle_size(speckle_size), _texture_threshold(texture_threshold), _uniqueness_ratio(uniqueness_ratio)
-	{};
+	{
+        //output all menber value
+        cout << "P1: " << _P1 << endl;
+        cout << "P2: " << _P2 << endl;
+        cout << "correlation_window_size: " << _correlation_window_size << endl;
+        cout << "disp12MaxDiff: " << _disp12MaxDiff << endl;
+        cout << "disparity_range: " << _disparity_range << endl;
+        cout << "min_disparity: " << _min_disparity << endl;
+        cout << "prefilter_cap: " << _prefilter_cap << endl;
+        cout << "prefilter_size: " << _prefilter_size << endl;
+        cout << "speckle_range: " << _speckle_range << endl;
+        cout << "speckle_size: " << _speckle_size << endl;
+        cout << "texture_threshold: " << _texture_threshold << endl;
+        cout << "uniqueness_ratio: " << _uniqueness_ratio << endl;
+    };
 
 };
 
@@ -118,6 +134,7 @@ public:
 	void Update();
 
 	void PublishMap();
+    void ReconstructFromBagPose(string bag_path,string pose_path);
 
 	void Run();
 	void Stop();

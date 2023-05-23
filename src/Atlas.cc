@@ -32,12 +32,13 @@
 namespace ORB_SLAM3
 {
 
-Atlas::Atlas():mDvlImuInitailized(false){
+Atlas::Atlas():mDvlImuInitailized(false), mIMUBiasCalibrated(false){
     mpCurrentMap = static_cast<Map*>(NULL);
     mR_b0_w.setIdentity();
 }
 
-Atlas::Atlas(int initKFid): mnLastInitKFidMap(initKFid), mHasViewer(false), mDvlImuInitailized(false)
+Atlas::Atlas(int initKFid): mnLastInitKFidMap(initKFid), mHasViewer(false), mDvlImuInitailized(false),
+mIMUBiasCalibrated(false)
 {
     mpCurrentMap = static_cast<Map*>(NULL);
     CreateNewMap();
@@ -475,6 +476,18 @@ void Atlas::setRGravity(const Eigen::Matrix3d &mRB0W)
 {
     std::unique_lock<std::shared_mutex> lock(mMutexGravity);
     mR_b0_w = mRB0W;
+}
+
+bool Atlas::IsIMUCalibrated()
+{
+    unique_lock<mutex> lock(mMutexAtlas);
+    return mIMUBiasCalibrated;
+}
+
+void Atlas::SetIMUCalibrated()
+{
+    unique_lock<mutex> lock(mMutexAtlas);
+    mIMUBiasCalibrated = true;
 }
 
 } //namespace ORB_SLAM3

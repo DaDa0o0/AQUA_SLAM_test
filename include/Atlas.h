@@ -127,6 +127,8 @@ public:
 
 	bool isDvlImuInitialized();
 	void SetDvlImuInitialized();
+    bool IsIMUCalibrated();
+    void SetIMUCalibrated();
 
     // Function for garantee the correction of serialization of this object
     void PreSave();
@@ -168,6 +170,7 @@ protected:
 
 	// DVL IMU Init status
 	bool mDvlImuInitailized;
+    bool mIMUBiasCalibrated;
 
 public:
     //Gravity

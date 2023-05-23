@@ -1470,13 +1470,13 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             e_di->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
             e_di->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
             Eigen::Matrix<double,9,9> info = Eigen::Matrix<double,9,9>::Identity();
-            info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 100;
+            // info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 100;
             // info(0,0) = info(0,0) * 5e3; // 10_24
             // info(1,1) = info(1,1) * 5e3; // before 10_24
             // info(0,0) = info(0,0) * 1e2; // 10_24
-            info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*100;
-            info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*100;
-            e_di->setInformation(info);
+            // info.block(3,3,3,3) = Eigen::Matrix3d::Identity()*100;
+            // info.block(6,6,3,3) = Eigen::Matrix3d::Identity()*100;
+            e_di->setInformation(info*1000);
             e_di->setId((maxKFid + 1) * 2 + pKFi->mnId);
             optimizer.addEdge(e_di);
             fixed_bias_edge = e_di;
@@ -1539,7 +1539,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
     //     edi->setLevel(0);
     // }
     optimizer.initializeOptimization(0);
-    optimizer.optimize(5);
+    optimizer.optimize(10);
     // for(auto p:vpab){
     //     p->setFixed(false);
     // }
@@ -1930,7 +1930,7 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
     // optimizer.setVerbose(true);
 
     optimizer.initializeOptimization(0);
-    optimizer.optimize(5);
+    optimizer.optimize(20);
 
     // for(auto p:vpab){
     //     p->setFixed(false);
@@ -13496,7 +13496,7 @@ void Optimizer::DvlGyroInitOptimization4(Map *pMap,
 
 }
 
-void Optimizer::DvlIMUInitOptimization(Map *pMap)
+double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double priori_a)
 {
 	// Verbose::PrintMess("inertial optimization", Verbose::VERBOSITY_NORMAL);
 	int its = 200; // Check number of iterations
@@ -13576,11 +13576,11 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
 	// Graph edges
     EdgePriorGyro* eg_pri_bias = new EdgePriorGyro();
     eg_pri_bias->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
-    eg_pri_bias->setInformation(Eigen::Matrix3d::Identity()*1e2);
+    eg_pri_bias->setInformation(Eigen::Matrix3d::Identity()*priori_g);
     optimizer.addEdge(eg_pri_bias);
     EdgePriorAcc* e_pri_bias = new EdgePriorAcc();
     e_pri_bias->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
-    e_pri_bias->setInformation(Eigen::Matrix3d::Identity()*1e10);
+    e_pri_bias->setInformation(Eigen::Matrix3d::Identity()*priori_a);
     optimizer.addEdge(e_pri_bias);
 
 	vector<EdgeDvlIMUInitWithoutBias *> vpei;
@@ -13588,6 +13588,7 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
 	vector<pair<KeyFrame *, KeyFrame *>> vppUsedKF;
 	vppUsedKF.reserve(vpKFs.size());
 	// std::cout << "build optimization graph" << std::endl;
+    vector<EdgeDvlIMU*> dvlimu_edges;
 	for (size_t i = 0; i < vpKFs.size(); i++) {
 		KeyFrame *pKFi = vpKFs[i];
 
@@ -13634,7 +13635,7 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
 
 
 
-			EdgeDvlIMU2 *ei2 = new EdgeDvlIMU2(pKFi->mpDvlPreintegrationKeyFrame);
+			EdgeDvlIMU *ei2 = new EdgeDvlIMU(pKFi->mpDvlPreintegrationKeyFrame);
 			ei2->setLevel(0);
 			ei2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
 			ei2->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
@@ -13645,7 +13646,7 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
 			ei2->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
 			ei2->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
 			ei2->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_w_b0));
-            Eigen::Matrix<double, 6, 6> info = Eigen::Matrix<double, 6, 6>::Identity();
+            Eigen::Matrix<double, 9, 9> info = Eigen::Matrix<double, 9, 9>::Identity()* 1e6;
             info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e6;
             // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
             // info_DI(1,1) = 1e9; // before 10_24
@@ -13654,15 +13655,33 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
 			ei2->setInformation(info);
 			// ei2->setId(pKFi->mnId);
 			optimizer.addEdge(ei2);
+            dvlimu_edges.push_back(ei2);
 
 		}
 	}
 
 
-	optimizer.setVerbose(true);
+	optimizer.setVerbose(false);
+    optimizer.initializeOptimization(0);
+    optimizer.optimize(20);
+    // VG->setFixed(false);
+    // VA->setFixed(false);
     optimizer.initializeOptimization(0);
     optimizer.optimize(20);
 
+    auto bias_g = VG->estimate();
+    auto bias_a = VA->estimate();
+    ROS_INFO_STREAM("bias_g: "<< bias_g.transpose());
+    ROS_INFO_STREAM("bias_a: "<< bias_a.transpose());
+
+    double total_dvl = 0;
+    double avg_dvl = 0;
+    for(auto e:dvlimu_edges){
+        total_dvl += e->chi2();
+    }
+    avg_dvl = total_dvl/dvlimu_edges.size();
+    ROS_INFO_STREAM("avg_dvl: "<< avg_dvl);
+    ROS_INFO_STREAM("total_dvl:"<< total_dvl);
     // VGDir->setFixed(true);
     // e_bias->setLevel(0);
     // e_bias_without->setLevel(1);
@@ -13677,9 +13696,11 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
     // Eigen::Vector3d R_b0_w_so3 = R_b0_w_SO3.log();
     ROS_INFO_STREAM("gravity calibration result: \n"<< VGDir->estimate().Rwg);
     pMap->setRGravity(VGDir->estimate().Rwg);
-
-    pMap->SetImuInitialized();
-
+    // if(vpKFs.size()<200){
+    // pMap->SetImuInitialized();
+    if(avg_dvl>2000){
+        return avg_dvl;
+    }
 
 	// Recover optimized data
 	// Biases
@@ -13692,16 +13713,12 @@ void Optimizer::DvlIMUInitOptimization(Map *pMap)
         // bg << v_gb->estimate();
 		IMU::Bias b(v_ab->estimate().x(), v_ab->estimate().y(), v_ab->estimate().z(),
                     v_gb->estimate().x(), v_gb->estimate().y(), v_gb->estimate().z());
-
-		cout << "kf id: " << pkf->mnId << " gyros bias: " << v_gb->estimate().transpose()
-        << "acc bias: "<< v_ab->estimate().transpose() << endl;
-
-
 		cv::Mat cvbg;
 		cv::eigen2cv(v_gb->estimate(), cvbg);
 		cvbg.convertTo(cvbg, CV_32F);
 		pkf->SetNewBias(b);
 	}
+    return avg_dvl;
 	// pkf->SetNewBias(b)
 
 }

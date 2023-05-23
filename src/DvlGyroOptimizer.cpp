@@ -1255,12 +1255,14 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     // Eigen::Vector3d gyros_b(0.00317551, -0.00854424, -0.000787445);//Structure_Hard
     // Eigen::Vector3d gyros_b(0.00247442, -0.002438478, 0.00188971);//Structure_Medium
     // Eigen::Vector3d gyros_b(0.00247442, -0.000638478, 0.00188971);//Halftank_Hard
-    Eigen::Vector3d gyros_b(-0.000653851, -0.00174641, 0.0020714);//wholetank_hard
+    // Eigen::Vector3d gyros_b(-0.000653851, -0.00174641, 0.0020714);//wholetank_hard
+    Eigen::Vector3d gyros_b(0, 0,  0);//halftank_medium
+
     for(auto pKFi:OptKFs){
         VertexGyroBias *VG = new VertexGyroBias(pKFi);
         // VertexGyroBias *VG = new VertexGyroBias(gyros_b);
         VG->setId(maxKFid + 1 + pKFi->mnId);
-        VG->setFixed(false);
+        VG->setFixed(true);
         optimizer.addVertex(VG);
         vpgb.push_back(VG);
 
@@ -1603,10 +1605,16 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             eG->setId(optimizer.edges().size());
             Eigen::Matrix<double,9,9> info_DI=Eigen::Matrix<double,9,9>::Identity();
             int visual_size = (mono_edges.size()+stereo_edges.size());
-            info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e10;
+            if(pAtlas->IsIMUCalibrated()){
+                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e10;
+                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e5;
+            }
+            else{
+                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1;
+                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1;
+            }
             // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
             // info_DI(1,1) = 1e10; // before 10_24
-            info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e5;
             info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity()*1;
             // ROS_INFO_STREAM("info: "<<info_DI);
             eG->setInformation(info_DI);

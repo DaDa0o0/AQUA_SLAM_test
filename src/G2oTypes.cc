@@ -2901,6 +2901,35 @@ void EdgeDvlIMU2::computeError()
 
     _error<<e_R, e_V;
 }
+
+EdgeTrajAlign::EdgeTrajAlign()
+{
+    resize(3);
+}
+
+void EdgeTrajAlign::computeError()
+{
+    //estimation pose
+    const auto * VP1 = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[0]);
+    //gt pose
+    const auto * VP2 = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[1]);
+    //align matrix
+    const auto * VP_align = dynamic_cast<const g2o::VertexSE3Expmap*>(_vertices[2]);
+
+    Eigen::Isometry3d T_e0_ci = VP1->estimate();
+    Eigen::Isometry3d T_g0_ci = VP2->estimate();
+    Eigen::Isometry3d T_g0_e0 = VP_align->estimate();
+
+    Eigen::Isometry3d T_g0_ci_estimated =  T_g0_e0 * T_e0_ci;
+    Eigen::Isometry3d diff = T_g0_ci.inverse() * T_g0_ci_estimated;
+    Eigen::Matrix3d R_diff = diff.rotation();
+    Eigen::Vector3d R_diff_so3= LogSO3(R_diff);
+    Eigen::Vector3d t_diff = diff.translation();
+
+    _error<<R_diff_so3,t_diff;
+
+
+}
 }
 
 BOOST_CLASS_EXPORT_IMPLEMENT(ORB_SLAM3::DvlImuCamPose)
