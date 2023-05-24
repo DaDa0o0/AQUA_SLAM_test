@@ -528,6 +528,7 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
 
     // V_dk
     Eigen::Vector3d V_dk = mETEInv * mE.transpose() * velocity_beam;
+    V_dk = v_di_dvl;
 
     cv::Mat_<double> v(3, 1);
     v << V_dk.x(), V_dk.y(), V_dk.z();
