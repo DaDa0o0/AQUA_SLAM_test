@@ -1818,7 +1818,7 @@ bool Tracking::PredictStateDvlGro()
         cv::cv2eigen(pDvlPreintegratedFromKF->GetDVLPosition(pDvlPreintegratedFromKF->mb), t_df_df_d1);
         Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
         Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
-        // T_df_d1.pretranslate(t_df_df_d1);
+         T_df_d1.pretranslate(t_df_df_d1);
         T_df_d1.rotate(R_df_d1);
         Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
         cv::Mat T_c1_c0_cv(4,4,CV_32F);
@@ -1845,7 +1845,7 @@ bool Tracking::PredictStateDvlGro()
         cv::cv2eigen(pDvlPreintegratedFromKF->GetDVLPosition(pDvlPreintegratedFromKF->mb), t_di_di_dj);
         Eigen::Matrix3d R_di_dj = T_g_d.rotation().inverse() * R_gi_gj * T_g_d.rotation();
         Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
-        // T_di_dj.pretranslate(t_di_di_dj);
+         T_di_dj.pretranslate(t_di_di_dj);
         T_di_dj.rotate(R_di_dj);
         Eigen::Isometry3d T_c0_cj = T_c0_ci * T_d_c.inverse() * T_di_dj * T_d_c;
         cv::Mat T_cj_c0_cv(4, 4, CV_32F);
@@ -5286,6 +5286,7 @@ bool Tracking::NeedNewKeyFrame()
 		}
 		else {
 			mpLocalMapper->InterruptBA();
+            return false;
 //            ROS_INFO_STREAM("interrupt BA");
             if (mpLocalMapper->KeyframesInQueue() < 3) {
                 return true;

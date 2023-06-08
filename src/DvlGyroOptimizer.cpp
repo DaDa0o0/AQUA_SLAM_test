@@ -1268,7 +1268,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
 
         VertexAccBias *VA = new VertexAccBias(pKFi);
         VA->setId((maxKFid + 1)*2 + pKFi->mnId);
-        VA->setFixed(true);
+        VA->setFixed(false);
         optimizer.addVertex(VA);
         vpab.push_back(VA);
 
@@ -1511,7 +1511,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             e_bias->setLevel(0);
             e_bias->setVertex(0,VA1);
             e_bias->setVertex(1,VA2);
-            e_bias->setInformation(Eigen::Matrix3d::Identity() * 1e12);
+            e_bias->setInformation(Eigen::Matrix3d::Identity() * 1e9);
             optimizer.addEdge(e_bias);
 
             EdgeGyroRW* eg_bias = new EdgeGyroRW();
@@ -1538,11 +1538,11 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ev->setId(optimizer.edges().size());
             auto vv1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1);
             if(pKFi->mPrevKF->mbDVL){
-                vv1->setFixed(true);
-                ev->setInformation(Eigen::Matrix3d::Identity()*1e10);
+                vv1->setFixed(false);
+                ev->setInformation(Eigen::Matrix3d::Identity()*1e8);
             }
             else{
-                vv1->setFixed(true);
+                vv1->setFixed(false);
                 ev->setInformation(Eigen::Matrix3d::Identity()*1e5);
             }
             optimizer.addEdge(ev);
@@ -1554,11 +1554,11 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ev2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
             auto vv2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2);
             if (pKFi->mbDVL) {
-                vv2->setFixed(true);
-                ev2->setInformation(Eigen::Matrix3d::Identity()*1e10);
+                vv2->setFixed(false);
+                ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
             }
             else {
-                vv2->setFixed(true);
+                vv2->setFixed(false);
                 ev2->setInformation(Eigen::Matrix3d::Identity() *1e5);
             }
             optimizer.addEdge(ev2);
@@ -1752,13 +1752,13 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     stringstream ss;
     ss<<"LocalVisualAcousticInertial BA"<<"\n";
     unique_lock<shared_timed_mutex> lock(pMap->mMutexMapUpdate);
-    for(auto o:remove_obs){
-        KeyFrame* pKFi = o.first;
-        MapPoint* pMpi = o.second;
-        pKFi->EraseMapPointMatch(pMpi);
-        pMpi->EraseObservation(pKFi);
-        ss<<"remove map point, KF: "<<pKFi->mnId<<", MP: "<<pMpi->mnId<<"\n";
-    }
+//    for(auto o:remove_obs){
+//        KeyFrame* pKFi = o.first;
+//        MapPoint* pMpi = o.second;
+//        pKFi->EraseMapPointMatch(pMpi);
+//        pMpi->EraseObservation(pKFi);
+//        ss<<"remove map point, KF: "<<pKFi->mnId<<", MP: "<<pMpi->mnId<<"\n";
+//    }
     //update KF after current KF
     auto all_kf = pMap->GetAllKeyFrames();
     for(auto pkfi:all_kf){

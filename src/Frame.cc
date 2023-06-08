@@ -285,12 +285,16 @@ void Frame::ExtractORB(int flag, const cv::Mat &im, const int x0, const int x1)
 
 void Frame::SetPose(cv::Mat Tcw)
 {
-	mTcw = Tcw.clone();
+    {
+        std::lock_guard<std::mutex> lock(*mpExtrinsic_mutex);
+        mTcw = Tcw.clone();
+    }
 	UpdatePoseMatrices();
 }
 
 const void Frame::GetPose(cv::Mat &Tcw)
 {
+    std::lock_guard<std::mutex> lock(*mpExtrinsic_mutex);
 	Tcw = mTcw.clone();
 }
 
@@ -348,6 +352,7 @@ void Frame::SetDvlPoseVelocity(const cv::Mat &R_c0_gyroj, const cv::Mat &c0_t_c0
 
 void Frame::UpdatePoseMatrices()
 {
+    std::lock_guard<std::mutex> lock(*mpExtrinsic_mutex);
 	mRcw = mTcw.rowRange(0, 3).colRange(0, 3);
 	mRwc = mRcw.t();
 	mtcw = mTcw.rowRange(0, 3).col(3);
