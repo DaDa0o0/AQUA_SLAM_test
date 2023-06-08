@@ -528,7 +528,7 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
 
     // V_dk
     Eigen::Vector3d V_dk = mETEInv * mE.transpose() * velocity_beam;
-    V_dk = v_di_dvl;
+    // V_dk = v_di_dvl;
 
     cv::Mat_<double> v(3, 1);
     v << V_dk.x(), V_dk.y(), V_dk.z();
@@ -749,8 +749,8 @@ cv::Mat DVLGroPreIntegration::GetDeltaVelocity(const Bias &b_)
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    cv::Mat V = dDeltaV  + JVa * dba;
-    // cv::Mat V = dDeltaV  + JVa * dba + JVg * dbg;
+    // cv::Mat V = dDeltaV  + JVa * dba;
+    cv::Mat V = dDeltaV  + JVa * dba + JVg * dbg;
     // V.convertTo(V, CV_32F);
     return V;
 }
@@ -784,8 +784,8 @@ cv::Mat DVLGroPreIntegration::GetDeltaPosition(const Bias &b_)
     std::unique_lock<std::mutex> lock(mMutex);
     cv::Mat dbg = (cv::Mat_<double>(3, 1) << b_.bwx - mb.bwx, b_.bwy - mb.bwy, b_.bwz - mb.bwz);
     cv::Mat dba = (cv::Mat_<double>(3, 1) << b_.bax - mb.bax, b_.bay - mb.bay, b_.baz - mb.baz);
-    // cv::Mat P = dP_acc + JPa * dba + JPg * dbg;
-    cv::Mat P = dP_acc + JPa * dba;
+    cv::Mat P = dP_acc + JPa * dba + JPg * dbg;
+    // cv::Mat P = dP_acc + JPa * dba;
     // P.convertTo(P, CV_32F);
     return P;
 }

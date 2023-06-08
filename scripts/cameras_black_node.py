@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-from urllib2 import urlopen
+# from urllib2 import urlopen
 # import cv2
 from pynput import keyboard
 import numpy as np
@@ -95,8 +95,8 @@ if __name__ == '__main__':
     rospy.init_node('sonar_black')
 
     # set_camera_srv = rospy.Service('/mi_camera/set_camera_info', SetCameraInfo, set_camera_para)
-    img_sub_l = rospy.Subscriber('/img_l/compressed', CompressedImage, camera_cb_l)
-    img_sub_r = rospy.Subscriber('img_r/compressed', CompressedImage, camera_cb_r)
+    img_sub_l = rospy.Subscriber('/camera/left/image_dehazed/compressed', CompressedImage, camera_cb_l)
+    img_sub_r = rospy.Subscriber('/camera/right/image_dehazed/compressed', CompressedImage, camera_cb_r)
 
     # rospy.spin()
 

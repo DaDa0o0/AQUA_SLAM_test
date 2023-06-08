@@ -1694,9 +1694,25 @@ bool Tracking::PredictStateDvlGro()
 	{
 		// std::lock_guard<std::mutex> lock_LossRfe(mLossIntegrationRefMutex);
 		if (mpIntegrator->GetDoLossIntegration()) {
+
+            // DVLGroPreIntegration *pDvlPreintegratedFromLastKFBeforeLost = mpIntegrator->mpIntFromKFBeforeLost_C2C;
+            // cv::Mat T_c0_cf_cv = mpIntegrator->mpLossRefKF->GetPoseInverse();
+            // Eigen::Isometry3d T_g_d,T_d_c,T_c0_cf;
+
+            // KeyFrame* pKF =mpIntegrator->mpLossRefKF;
+            // DVLGroPreIntegration *pDvlPreintegratedFromKF = mpIntegrator->mpIntFromKFBeforeLost_C2C;
+            // ROS_INFO_STREAM(fixed<<setprecision(9)<<"loss KF timestamp: "<<pKF->mTimeStamp);
+            // ROS_INFO_STREAM(fixed<<setprecision(9)<<"intgeration expected time: "<<pKF->mTimeStamp+pDvlPreintegratedFromKF->dT);
+            // ROS_INFO_STREAM(fixed<<setprecision(9)<<"current frame time: "<<mCurrentFrame.mTimeStamp);
             KeyFrame* pKF =*getMvpLossKf().rbegin();
+//            KeyFrame* pKF_loss_end =*getMvpLossKf().rbegin();
+//            KeyFrame* pKF_loss_start =*getMvpLossKf().begin();
+//            ROS_INFO_STREAM("loss kf start:"<<pKF_loss_start->mnId<<" end:"<<pKF_loss_end->mnId);
             Eigen::Matrix3d R_b0_w = mpAtlas->getRGravity();
             DVLGroPreIntegration *pDvlPreintegratedFromKF = mpIntegrator->mpIntFromKF_C2C;
+//            ROS_INFO_STREAM("loss bias: x:"<<
+//            pDvlPreintegratedFromKF->mb.bwx<<" y:"<<pDvlPreintegratedFromKF->mb.bwy<<" z:"<<
+//            pDvlPreintegratedFromKF->mb.bwz);
             cv::Mat T_c0_cf_cv = pKF->GetPoseInverse();
             Eigen::Vector3d v_df;
             pKF->GetDvlVelocity(v_df);
@@ -1718,43 +1734,55 @@ bool Tracking::PredictStateDvlGro()
             Eigen::Vector3d t_b0_b1 = Eigen::Vector3d::Zero();
             Eigen::Vector3d Dt_bf_b1 = Eigen::Vector3d::Zero();
             Eigen::Vector3d t_df_d1 = Eigen::Vector3d::Zero();
-             cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_bf_b1);
+            cv::cv2eigen(pDvlPreintegratedFromKF->GetDeltaRotation(pDvlPreintegratedFromKF->mb), R_bf_b1);
             cv::cv2eigen(pDvlPreintegratedFromKF->GetDeltaPosition(pDvlPreintegratedFromKF->mb), Dt_bf_b1);
-            cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_d1);
+            cv::cv2eigen(pDvlPreintegratedFromKF->GetDVLPosition(pDvlPreintegratedFromKF->mb), t_df_d1);
             t_b0_b1 = R_b0_bf * Dt_bf_b1 + t_b0_bf + R_b0_bf * T_b_d.rotation()  * v_df * pDvlPreintegratedFromKF->dT
                       + 0.5*R_b0_w*Eigen::Vector3d(0,0,-9.8)*pDvlPreintegratedFromKF->dT*pDvlPreintegratedFromKF->dT;
-            Eigen::Vector3d t_b0_b1_dvl = t_b0_bf + R_b0_bf*(-R_bf_b1*t_b_d + R_b_d*t_df_d1 + t_b_d);
-            // Eigen::Vector3d t_b0_b1_dvl =  R_b_d*t_df_d1;
-            Eigen::Vector3d t_b0_b1_acc_v = t_b0_bf + R_b0_bf * T_b_d.rotation()  * v_df * pDvlPreintegratedFromKF->dT;
 
-            Eigen::Matrix3d R_b0_b1 = R_b0_bf * R_bf_b1;
+            Eigen::Isometry3d T_d0_df = T_d_c * T_c0_cf * T_d_c.inverse();
+            Eigen::Matrix3d R_df_d1 = R_b_d.transpose() * R_bf_b1 * R_b_d;
+            Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+            T_df_d1.rotate(R_df_d1);
+            T_df_d1.pretranslate(t_df_d1);
 
-            Eigen::Isometry3d T_b0_b1 = Eigen::Isometry3d::Identity();
-            T_b0_b1.rotate(R_b0_b1);
-            T_b0_b1.pretranslate(t_b0_b1);
+            Eigen::Isometry3d T_d0_d1 = T_d0_df * T_df_d1;
+            Eigen::Isometry3d T_c0_c1 = T_d_c.inverse() * T_d0_d1 *T_d_c;
 
-            Eigen::Isometry3d T_b0_b1_dvl = Eigen::Isometry3d::Identity();
-            T_b0_b1_dvl.rotate(R_b0_b1);
-            T_b0_b1_dvl.pretranslate(t_b0_b1_dvl);
 
-            Eigen::Isometry3d T_b0_b1_acc_v = Eigen::Isometry3d::Identity();
-            T_b0_b1_acc_v.rotate(R_b0_b1);
-            T_b0_b1_acc_v.pretranslate(t_b0_b1_acc_v);
 
-            Eigen::Isometry3d T_c0_c1 = T_b_c.inverse() * T_b0_b1 * T_b_c;
-            Eigen::Isometry3d T_c0_c1_dvl = T_b_c.inverse() * T_b0_b1_dvl * T_b_c;
-            Eigen::Isometry3d T_c0_c1_acc_v = T_b_c.inverse() * T_b0_b1_acc_v * T_b_c;
-			// ROS_INFO_STREAM("Gravity: \n" << R_b0_w);
-			ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss KF[" << pKF->mnId << "]"<< " time: " << pKF->mTimeStamp);
-			ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss integration time: "
-            << pDvlPreintegratedFromKF->dT<<" v_d: "<<pDvlPreintegratedFromKF->mVelocity.t());
-			ROS_INFO_STREAM(fixed<<setprecision(6)<<"current frame time: " << mCurrentFrame.mTimeStamp);
-            ROS_INFO_STREAM("t_c0_c1:" << T_c0_c1.translation().transpose());
-            ROS_INFO_STREAM("t_c0_c1_dvl:" << T_c0_c1_dvl.translation().transpose());
-            ROS_INFO_STREAM("t_c0_c1_acc_v:" << T_c0_c1_acc_v.translation().transpose());
-            // ROS_INFO_STREAM("Dt_bf_b1: " << Dt_bf_b1.transpose());
+            // Eigen::Vector3d t_b0_b1_dvl = t_b0_bf + R_b0_bf*(-R_bf_b1*t_b_d + R_b_d*t_df_d1 + t_b_d);
+            // // Eigen::Vector3d t_b0_b1_dvl =  R_b_d*t_df_d1;
+            // Eigen::Vector3d t_b0_b1_acc_v = t_b0_bf + R_b0_bf * T_b_d.rotation()  * v_df * pDvlPreintegratedFromKF->dT;
+            //
+            // Eigen::Matrix3d R_b0_b1 = R_b0_bf * R_bf_b1;
+            //
+            // Eigen::Isometry3d T_b0_b1 = Eigen::Isometry3d::Identity();
+            // T_b0_b1.rotate(R_b0_b1);
+            // T_b0_b1.pretranslate(t_b0_b1);
+            //
+            // Eigen::Isometry3d T_b0_b1_dvl = Eigen::Isometry3d::Identity();
+            // T_b0_b1_dvl.rotate(R_b0_b1);
+            // T_b0_b1_dvl.pretranslate(t_b0_b1_dvl);
+            //
+            // Eigen::Isometry3d T_b0_b1_acc_v = Eigen::Isometry3d::Identity();
+            // T_b0_b1_acc_v.rotate(R_b0_b1);
+            // T_b0_b1_acc_v.pretranslate(t_b0_b1_acc_v);
+            //
+            // Eigen::Isometry3d T_c0_c1 = T_b_c.inverse() * T_b0_b1 * T_b_c;
+            // Eigen::Isometry3d T_c0_c1_dvl = T_b_c.inverse() * T_b0_b1_dvl * T_b_c;
+            // Eigen::Isometry3d T_c0_c1_acc_v = T_b_c.inverse() * T_b0_b1_acc_v * T_b_c;
+			// // ROS_INFO_STREAM("Gravity: \n" << R_b0_w);
+			// ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss KF[" << pKF->mnId << "]"<< " time: " << pKF->mTimeStamp);
+			// ROS_INFO_STREAM(fixed<<setprecision(6)<<"Loss integration time: "
+            // << pDvlPreintegratedFromKF->dT<<" v_d: "<<pDvlPreintegratedFromKF->mVelocity.t());
+			// ROS_INFO_STREAM(fixed<<setprecision(6)<<"current frame time: " << mCurrentFrame.mTimeStamp);
+            // ROS_INFO_STREAM("t_c0_c1:" << T_c0_c1.translation().transpose());
+            // ROS_INFO_STREAM("t_c0_c1_dvl:" << T_c0_c1_dvl.translation().transpose());
+            // ROS_INFO_STREAM("t_c0_c1_acc_v:" << T_c0_c1_acc_v.translation().transpose());
+            // // ROS_INFO_STREAM("Dt_bf_b1: " << Dt_bf_b1.transpose());
             cv::Mat T_c1_c0_cv(4,4,CV_32F);
-            cv::eigen2cv(T_c0_c1_dvl.inverse().matrix(),T_c1_c0_cv);
+            cv::eigen2cv(T_c0_c1.inverse().matrix(),T_c1_c0_cv);
             T_c1_c0_cv.convertTo(T_c1_c0_cv,CV_32F);
             mCurrentFrame.SetPose(T_c1_c0_cv);
 
@@ -1786,11 +1814,11 @@ bool Tracking::PredictStateDvlGro()
         cv::cv2eigen(T_c0_cf_cv,T_c0_cf.matrix());
         Eigen::Matrix3d R_gf_g1 = Eigen::Matrix3d::Identity();
         Eigen::Vector3d t_df_df_d1 = Eigen::Vector3d::Identity();
-        cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gf_g1);
-        cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_df_df_d1);
+        cv::cv2eigen(pDvlPreintegratedFromKF->GetDeltaRotation(pDvlPreintegratedFromKF->mb), R_gf_g1);
+        cv::cv2eigen(pDvlPreintegratedFromKF->GetDVLPosition(pDvlPreintegratedFromKF->mb), t_df_df_d1);
         Eigen::Matrix3d R_df_d1 =  T_g_d.rotation().inverse() * R_gf_g1 * T_g_d.rotation();
         Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
-        T_df_d1.pretranslate(t_df_df_d1);
+        // T_df_d1.pretranslate(t_df_df_d1);
         T_df_d1.rotate(R_df_d1);
         Eigen::Isometry3d T_c0_c1 = T_c0_cf * T_d_c.inverse() * T_df_d1 * T_d_c;
         cv::Mat T_c1_c0_cv(4,4,CV_32F);
@@ -1813,11 +1841,11 @@ bool Tracking::PredictStateDvlGro()
         T_c0_ci = T_ci_c0.inverse();
         Eigen::Matrix3d R_gi_gj = Eigen::Matrix3d::Identity();
         Eigen::Vector3d t_di_di_dj = Eigen::Vector3d::Identity();
-        cv::cv2eigen(pDvlPreintegratedFromKF->dR, R_gi_gj);
-        cv::cv2eigen(pDvlPreintegratedFromKF->dP_dvl, t_di_di_dj);
+        cv::cv2eigen(pDvlPreintegratedFromKF->GetDeltaRotation(pDvlPreintegratedFromKF->mb), R_gi_gj);
+        cv::cv2eigen(pDvlPreintegratedFromKF->GetDVLPosition(pDvlPreintegratedFromKF->mb), t_di_di_dj);
         Eigen::Matrix3d R_di_dj = T_g_d.rotation().inverse() * R_gi_gj * T_g_d.rotation();
         Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
-        T_di_dj.pretranslate(t_di_di_dj);
+        // T_di_dj.pretranslate(t_di_di_dj);
         T_di_dj.rotate(R_di_dj);
         Eigen::Isometry3d T_c0_cj = T_c0_ci * T_d_c.inverse() * T_di_dj * T_d_c;
         cv::Mat T_cj_c0_cv(4, 4, CV_32F);
@@ -2727,6 +2755,7 @@ void Tracking::TrackDVLGyro()
 
 				if (!bOK) {
                     PredictStateDvlGro();
+                    ROS_INFO_STREAM("Fail to track with motion model!");
 					// cout << "Fail to track with motion model!" << endl;
                     if(pCurrentMap->KeyFramesInMap() >= mKFThresholdForMap){
                         bOK = true;
@@ -5034,7 +5063,7 @@ bool Tracking::TrackLocalMap()
     // if(mnMatchesInliers<20){
     //     PredictStateDvlGro();
     // }
-    if (mnMatchesInliers < 30) {
+    if (mnMatchesInliers < 10) {
         return false;
     }
     else {
@@ -5252,12 +5281,12 @@ bool Tracking::NeedNewKeyFrame()
 		// If the mapping accepts keyframes, insert keyframe.
 		// Otherwise send a signal to interrupt BA
 		if (bLocalMappingIdle) {
-            ROS_INFO_STREAM("Idle BA");
+//            ROS_INFO_STREAM("Idle BA");
 			return true;
 		}
 		else {
 			mpLocalMapper->InterruptBA();
-            ROS_INFO_STREAM("interrupt BA");
+//            ROS_INFO_STREAM("interrupt BA");
             if (mpLocalMapper->KeyframesInQueue() < 3) {
                 return true;
             }

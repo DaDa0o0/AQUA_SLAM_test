@@ -10,11 +10,11 @@
 #include <boost/log/trivial.hpp>
 
 
-void Integrator::CreateNewIntFromKF_C2C(const Bias &b, const Calib &c)
-{
-    // DeleteInt(mpIntFromKF_C2C);
-    mpIntFromKF_C2C = new DVLGroPreIntegration(b, c);
-}
+//void Integrator::CreateNewIntFromKF_C2C(const Bias &b, const Calib &c)
+//{
+//     DeleteInt(mpIntFromKF_C2C);
+//    mpIntFromKF_C2C = new DVLGroPreIntegration(b, c);
+//}
 
 void Integrator::CreateNewIntFromKF_C2C(const Bias &b, const Calib &c, const Eigen::Vector4d &alpha,
                                         const Eigen::Vector4d &beta)
@@ -308,10 +308,10 @@ void Integrator::IntegrateMeasurements(Frame &cur_F, std::list<IMU::GyroDvlPoint
                 mpIntFromKFBeforeLost_C2C->v_dk_dvl = v_d;
                 mpIntFromKFBeforeLost_C2C->SetDVLDebugVelocity(v_d);
                 if(v_beam.x()!=0&&v_beam.y()!=0&&v_beam.z()!=0&&v_beam.w()!=0){
-                    mpIntFromKF_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
+                    mpIntFromKFBeforeLost_C2C->IntegrateDVLMeasurement2(v_beam, tstep);
                 }
                 else{
-                    mpIntFromKF_C2C->IntegrateDVLMeasurement(v_d, tstep);
+                    mpIntFromKFBeforeLost_C2C->IntegrateDVLMeasurement(v_d, tstep);
                 }
 
             }

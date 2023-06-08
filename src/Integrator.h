@@ -42,7 +42,7 @@ namespace ORB_SLAM3
             }
         }
 
-        void CreateNewIntFromKF_C2C(const IMU::Bias &b, const IMU::Calib &c);
+//        void CreateNewIntFromKF_C2C(const IMU::Bias &b, const IMU::Calib &c);
 
         void CreateNewIntFromKF_C2C(const IMU::Bias &b, const IMU::Calib &c, const Eigen::Vector4d &alpha,
                                     const Eigen::Vector4d &beta);

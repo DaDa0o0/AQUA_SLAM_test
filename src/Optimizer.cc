@@ -1285,7 +1285,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
         // }
         optimizer.addVertex(VP);
     }
-    ROS_INFO_STREAM(ss.str());
+    // ROS_INFO_STREAM(ss.str());
     optimized_kf_id = maxKFid;
 
 
@@ -1572,7 +1572,7 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
         IMU::Bias b(v_ab->estimate().x(), v_ab->estimate().y(), v_ab->estimate().z(),
                     v_gb->estimate().x(), v_gb->estimate().y(), v_gb->estimate().z());
         pKFi->SetNewBias(b);
-        ROS_INFO_STREAM("recover KF[" << pKFi->mnId << "] bias(gyros acc): " << b.bwx<<","<<b.bwy<<","<<b.bwz<<","<<b.bax<<","<<b.bay<<","<<b.baz);
+        // ROS_INFO_STREAM("recover KF[" << pKFi->mnId << "] bias(gyros acc): " << b.bwx<<","<<b.bwy<<","<<b.bwz<<","<<b.bax<<","<<b.bay<<","<<b.baz);
 
         // Pose
         VertexPoseDvlIMU *VP = dynamic_cast<VertexPoseDvlIMU *>(optimizer.vertex(pKFi->mnId));
@@ -13535,7 +13535,7 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
 		//velocity
 		VertexVelocity *VV = new VertexVelocity(pKFi);
         VV->setId((maxKFid + 1)*3 + pKFi->mnId);
-        VV->setFixed(true);
+        VV->setFixed(false);
         optimizer.addVertex(VV);
 	}
 
@@ -13664,8 +13664,8 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
 	optimizer.setVerbose(false);
     optimizer.initializeOptimization(0);
     optimizer.optimize(20);
-    // VG->setFixed(false);
-    // VA->setFixed(false);
+    VG->setFixed(false);
+    VA->setFixed(false);
     optimizer.initializeOptimization(0);
     optimizer.optimize(20);
 
@@ -13694,7 +13694,7 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
     // ROS_INFO_STREAM("gravity calibration result: "<< R_b0_w);
     // Sophus::SO3<double> R_b0_w_SO3(R_b0_w);
     // Eigen::Vector3d R_b0_w_so3 = R_b0_w_SO3.log();
-    ROS_INFO_STREAM("gravity calibration result: \n"<< VGDir->estimate().Rwg);
+    // ROS_INFO_STREAM("gravity calibration result: \n"<< VGDir->estimate().Rwg);
     pMap->setRGravity(VGDir->estimate().Rwg);
     // if(vpKFs.size()<200){
     // pMap->SetImuInitialized();

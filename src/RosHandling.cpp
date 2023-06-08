@@ -283,6 +283,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
     T_w_c0.rotate(R_w_c0);
     T_w_c0.pretranslate(T_b_c.translation());
     mT_w_c0 = T_w_c0;
+//    ROS_INFO_STREAM("pub T_w_c0: \n"<<T_w_c0.matrix());
 
 	vector<Map *> allMaps = pAtlas->GetAllMaps();
 	for (vector<Map *>::iterator it = allMaps.begin(); it != allMaps.end(); it++) {
