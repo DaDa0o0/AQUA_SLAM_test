@@ -1078,7 +1078,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                                               double lamda_DVL, double lamda_visual)
 {
     Map *pCurrentMap = pKF->GetMap();
-    int Nd = std::min(10, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
+    int Nd = std::min(5, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
     const unsigned long maxKFid = pKF->mnId;
 
     vector<KeyFrame *> OptKFs;
@@ -1555,7 +1555,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             auto vv2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2);
             if (pKFi->mbDVL) {
                 vv2->setFixed(false);
-                ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
+                ev2->setInformation(Eigen::Matrix3d::Identity()*1e10);
             }
             else {
                 vv2->setFixed(false);
@@ -1699,7 +1699,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
 
 
     optimizer.initializeOptimization(0);
-    optimizer.optimize(10);
+    optimizer.optimize(20);
     if(pbStopFlag){
         optimizer.setForceStopFlag(pbStopFlag);
     }
