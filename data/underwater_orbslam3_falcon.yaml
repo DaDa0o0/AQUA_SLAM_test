@@ -32,6 +32,7 @@ Camera.RGB: 0
 
 # Close/Far threshold. Baseline times.
 ThDepth: 35.0
+ThFarDepth: 100.0
 
 # scale image by a factor
 ImageScale: 0.5
@@ -76,12 +77,12 @@ Optimizer.visual_lamda: 1
 Optimizer.DVL_lamda: 1
 Optimizer.DVL_lamda_debug: 1
 Optimizer.DVL_func: 1
-Optimizer.KF_init_step: 0.6
-Optimizer.KF_num_for_init: 25
+Optimizer.KF_init_step: 0.25
+Optimizer.KF_num_for_init: 200
 Optimizer.calibrated: 1 # 0 or 1
 Optimizer.mergingThreshold: 3
-Tracker.KFThresholdForMap: 5
-Tracker.ReLocalTime: 0.5
+Tracker.KFThresholdForMap: 10
+Tracker.ReLocalTime: 5
 
 
 alpha: !!opencv-matrix

@@ -2,6 +2,7 @@
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 #include <sensor_msgs/Image.h>
+#include <nav_msgs/Path.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Point.h>
 #include <message_filters/subscriber.h>
@@ -33,6 +34,9 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "image_listener");
 
     ros::NodeHandle nh;
+    ros::Publisher pointcloud_pub = nh.advertise<sensor_msgs::PointCloud2>("/dense_viewer/pointcloud", 1);
+    ros::Publisher trajectory_pub = nh.advertise<nav_msgs::Path>("/dense_viewer/trajectory", 1);
+
     std::map<double, Eigen::Isometry3d> estimation_traj;
     std::string pose_path = "/home/da/project/ros/orb_dvl2_ws/src/dvl2/dvl2_results/dense/WholeTank_Medium_traj.txt";
     if (nh.getParam("/dense_ros/pose_path", pose_path))
@@ -84,67 +88,72 @@ int main(int argc, char** argv)
         ROS_ERROR("Failed to get param '/dense_ros/pcd_path'");
     }
     pcl::io::loadPCDFile(pcd_file,*global_map);
+    //oupt point cloud info
+    ROS_INFO_STREAM("Loaded "
+                    << global_map->width * global_map->height
+                    << " data points from pcd with the following fields: "
+                    << pcl::getFieldsList(*global_map));
 
     pcl::VoxelGrid<pcl::PointXYZRGB> vgf;
     vgf.setInputCloud(global_map);
-    vgf.setLeafSize(0.01, 0.01, 0.01);
+    vgf.setLeafSize(0.05, 0.05, 0.05);
     vgf.filter(*global_map);
-    // Initialize visualizer
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer(new pcl::visualization::PCLVisualizer ("3D Viewer"));
 
-    viewer->setBackgroundColor(1,1,1);
-    viewer->initCameraParameters();
+    Eigen::Isometry3d T_rviz_c = Eigen::Isometry3d::Identity();
+    Eigen::Matrix3d R_r_c;
+    //assign value to R_r_c
+    R_r_c << 0, 0, 1,
+            -1, 0, 0,
+            0, -1, 0;
+    T_rviz_c.rotate(R_r_c);
+    T_rviz_c.pretranslate(Eigen::Vector3d(0, 0, 0));
+    //tranform pointcloud
+    pcl::transformPointCloud(*global_map, *global_map, T_rviz_c.matrix());
 
-//    viewer->setCameraPosition(2.30598, -17.8696, 0.269679, 1.40695, 0.316864, 1.29969, 0.970534, 0.0344703, 0.238487); // dvl2 odom
-    viewer->setCameraPosition(2.36829, -21.6902, -0.0232327, 1.40695, 0.316864, 1.29969, 0.961521, 0.0255591, 0.273539); // dvl2 slam
-    viewer->setCameraFieldOfView(0.523599);
-    viewer->setCameraClipDistances(0.00522511, 50);
-    // Assuming that "cloud" is your point cloud
-    pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(global_map);
-    viewer->addPointCloud<pcl::PointXYZRGB> (global_map, rgb, "global cloud");
+    nav_msgs::Path traj_msg;
+    traj_msg.header.frame_id = "map";
+    traj_msg.header.stamp = ros::Time::now();
 
-    // Assuming "estimation_traj" is your map of Eigen::Isometry3d
-    std::map<double, Eigen::Isometry3d>::iterator it = estimation_traj.begin();
-    Eigen::Isometry3d prev_transform = it->second;
+    for(auto it:estimation_traj){
+//        Eigen::Isometry3d T_c0_cj = it.second;
+        Eigen::Isometry3d T_c0_cj = T_rviz_c * it.second;
 
-    Eigen::Vector3d v_color(0,0,1);
-    // Convert Eigen::Isometry3d to pcl::PointXYZ and add lines
-    for (it++; it != estimation_traj.end(); it++) {
-        Eigen::Isometry3d current_transform = it->second;
+        Eigen::Vector3d t = T_c0_cj.translation();
+        Eigen::Quaterniond q(T_c0_cj.rotation());
+        geometry_msgs::PoseStamped p;
+        p.header = traj_msg.header;
+        p.pose.position.x = t.x();
+        p.pose.position.y = t.y();
+        p.pose.position.z = t.z();
+        p.pose.orientation.x = q.x();
+        p.pose.orientation.y = q.y();
+        p.pose.orientation.z = q.z();
+        p.pose.orientation.w = q.w();
 
-        // Convert Eigen::Isometry3d translations to pcl::PointXYZ
-        pcl::PointXYZ prev_point(prev_transform.translation().x(), prev_transform.translation().y(), prev_transform.translation().z());
-        pcl::PointXYZ current_point(current_transform.translation().x(), current_transform.translation().y(), current_transform.translation().z());
-
-
-        // Add the line to the viewer with id as the timestamp
-        std::string line_id = std::to_string(it->first);
-        viewer->addLine<pcl::PointXYZ>(prev_point, current_point, v_color.x(), v_color.y(), v_color.z(), line_id);
-
-
-        // Update the previous transform
-        prev_transform = current_transform;
+        traj_msg.poses.push_back(p);
     }
 
-    // Main visualization loop
-    while (!viewer->wasStopped ()) {
-        double x, y, z, pos_x, pos_y, pos_z;
-        std::vector<pcl::visualization::Camera> cam;
+    sensor_msgs::PointCloud2 pointcloud_msg;
+    pcl::toROSMsg(*global_map, pointcloud_msg);
 
-        //Save the position of the camera
-        viewer->getCameras(cam);
 
-        //Print recorded points on the screen:
-        cout << "Cam: " << endl
-             << " - pos: (" << cam[0].pos[0] << ", "    << cam[0].pos[1] << ", "    << cam[0].pos[2] << ")" << endl
-             << " - view: ("    << cam[0].view[0] << ", "   << cam[0].view[1] << ", "   << cam[0].view[2] << ")"    << endl
-             << " - focal: ("   << cam[0].focal[0] << ", "  << cam[0].focal[1] << ", "  << cam[0].focal[2] << ")"   << endl;
 
-//        viewer->setCameraPosition()
-
-        viewer->spinOnce (100);
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    // set ros spin to publish at 10 hz
+    ros::Rate loop_rate(5);
+    while (ros::ok())
+    {
+        pointcloud_msg.header.frame_id = "map";
+        pointcloud_msg.header.stamp = ros::Time::now();
+        pointcloud_pub.publish(pointcloud_msg);
+        traj_msg.header.frame_id = "map";
+        traj_msg.header.stamp = ros::Time::now();
+        trajectory_pub.publish(traj_msg);
+        ROS_INFO_STREAM("pub map and traj");
+//        ros::spinOnce();
+        loop_rate.sleep();
     }
+
+
 
     return 0;
 }

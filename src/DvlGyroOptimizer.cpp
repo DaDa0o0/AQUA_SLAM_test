@@ -1078,7 +1078,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                                               double lamda_DVL, double lamda_visual)
 {
     Map *pCurrentMap = pKF->GetMap();
-    int Nd = std::min(5, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
+    int Nd = std::min(10, (int)pCurrentMap->KeyFramesInMap() - 2);// number of keyframes in current map
     const unsigned long maxKFid = pKF->mnId;
 
     vector<KeyFrame *> OptKFs;
@@ -1615,7 +1615,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
                 ROS_DEBUG_STREAM("Poor vision Hign DVL BA");
                 info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e10;
                 info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e5;
-                info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e5;
+                info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1;
             }
             else{
                 ROS_DEBUG_STREAM("Low DVL BA");
