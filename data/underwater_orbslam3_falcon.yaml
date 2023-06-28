@@ -112,7 +112,7 @@ IMU.GyroWalk: 0.01
 IMU.AccWalk: 0.01
 
 VisualIntegration: 0
-EnableLoopDetection: 1
+EnableLoopDetection: 0
 
 # IMU to orb
 # only use rotation

@@ -5,10 +5,10 @@
 <!--     <node pkg="ORB_DVL2" type="cameras_black_node.py" name="camera_black" output="screen"/> -->
 <!--     <node pkg="ORB_DVL2" type="align_EKF.py" name="ekf_align" output="screen"/> -->
 
-<!--     <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl" -->
-<!--           args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_blue_gx5.yaml false" output="screen"/> -->
-    <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl"
-              args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_falcon.yaml false" output="screen"/>
+<!--    <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl"-->
+<!--          args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_blue_gx5.yaml false" output="screen"/>-->
+     <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl"
+               args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_falcon.yaml false" output="screen"/>
 <!--    <node pkg="ORB_DVL2" type="BlueOdom2Twist.py" name="BlueOdom2Twist" />-->
     <!--    <arg name="model" default="$(find ORB_SLAM3_edit)/urdf/bluerov.urdf"/>-->
     <!--    <param name="robot_description" command="$(find xacro)/xacro $(arg model)"/>-->

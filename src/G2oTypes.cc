@@ -2798,9 +2798,9 @@ EdgeDvlIMU2::EdgeDvlIMU2(DVLGroPreIntegration* pInt):mpInt(pInt), dt(pInt->dT)
 bool EdgeDvlIMU2::read(istream &is)
 {
     //get information matrix
-    Eigen::Matrix<double, 6, 6> info;
-    for(int i=0; i<6; i++)
-        for(int j=0; j<6; j++)
+    Eigen::Matrix<double, 9, 9> info;
+    for(int i=0; i<9; i++)
+        for(int j=0; j<9; j++)
             is>>info(i,j);
     setInformation(info);
     //get preintegration
@@ -2819,8 +2819,8 @@ bool EdgeDvlIMU2::read(istream &is)
 bool EdgeDvlIMU2::write(ostream &os) const
 {
     //save information matrix
-    for(int i=0; i<6; i++)
-        for(int j=0; j<6; j++)
+    for(int i=0; i<9; i++)
+        for(int j=0; j<9; j++)
             os<<_information(i,j)<<" ";
     //save preintegration
     stringstream ss;
@@ -2865,6 +2865,7 @@ void EdgeDvlIMU2::computeError()
 
     Eigen::Vector3d v1 = VV1->estimate();
     Eigen::Vector3d v2 = VV2->estimate();
+    Eigen::Vector3d avg_v = (v1+v2)/2;
 
     Eigen::Matrix3d R_b0_w = VR_G->estimate().Rwg;
     Eigen::Vector3d g_w = Eigen::Vector3d(0,0,-9.81);
@@ -2876,6 +2877,7 @@ void EdgeDvlIMU2::computeError()
     const Eigen::Matrix3d dR=Converter::toMatrix3d(mpInt->GetDeltaRotation(b));
     const Eigen::Vector3d dDelta_V = Converter::toVector3d(mpInt->GetDeltaVelocity(b));
     const Eigen::Vector3d dP_acc =Converter::toVector3d(mpInt->GetDeltaPosition(b));
+    const Eigen::Vector3d dP_dvl =Converter::toVector3d(mpInt->GetDVLPosition(b,avg_v));
 
 
 
@@ -2891,15 +2893,22 @@ void EdgeDvlIMU2::computeError()
 
     const Eigen::Vector3d P_acc_est = R_b_c * VP1->estimate().Rcw[0] * (VP2->estimate().Rwc * t_c_b + VP2->estimate().twc - (VP1->estimate().Rwc * t_c_b  + VP1->estimate().twc)
                                                                         - VP1->estimate().Rwc * R_c_dvl * v1 * dt - 0.5 * R_c_b * R_b0_w * g_w*dt*dt);
+    const Eigen::Vector3d P_dvl_est= (t_dvl_c - R_dvl_c * VP1->estimate().Rcw[0] * VP2->estimate().Rwc * R_c_dvl * t_dvl_c
+                                      + R_dvl_c *(VP1->estimate().Rcw[0]*VP2->estimate().twc - VP1->estimate().Rcw[0]*VP1->estimate().twc));
 
     //	mpInt->ReintegrateWithVelocity(v_gt );
 
+    // Eigen::Vector3d e_R = R_b0_w.transpose() * LogSO3(dR.transpose() * R_est);
     Eigen::Vector3d e_R = LogSO3(dR.transpose() * R_est);
+    // e_R[0]=e_R[0]*50;//10_24 GX5 X axis is yaw
+    // e_R[1]=e_R[1]*50;//bofore 10_24 GX5 Y axis is yaw
+    // e_R[2]=e_R[2]*10;
 
-    const Eigen::Vector3d e_V = (VDelta_est - dDelta_V);
-    const Eigen::Vector3d e_P = (P_acc_est - dP_acc);
+    const Eigen::Vector3d e_V =  (VDelta_est - dDelta_V);
+    // const Eigen::Vector3d e_P =  (P_acc_est - dP_acc);
+    const Eigen::Vector3d e_P =  (P_dvl_est - dP_dvl);
 
-    _error<<e_R, e_V;
+    _error<<e_R, e_V, e_P;
 }
 
 EdgeTrajAlign::EdgeTrajAlign()

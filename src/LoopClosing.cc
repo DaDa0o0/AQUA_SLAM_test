@@ -1949,7 +1949,7 @@ void LoopClosing::MergeLocal2()
 {
     cout << "Merge detected!!!!" << endl;
 
-    int numTemporalKFs = 11; //TODO (set by parameter): Temporal KFs in the local window if the map is inertial.
+    int numTemporalKFs = 50; //TODO (set by parameter): Temporal KFs in the local window if the map is inertial.
 
     //Relationship to rebuild the essential graph, it is used two times, first in the local window and later in the rest of the map
     KeyFrame* pNewChild;

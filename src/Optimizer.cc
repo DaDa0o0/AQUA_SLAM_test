@@ -1479,8 +1479,8 @@ void Optimizer::PoseOnlyOptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kf
             e_di->setInformation(info*1000);
             e_di->setId((maxKFid + 1) * 2 + pKFi->mnId);
             optimizer.addEdge(e_di);
-            fixed_bias_edge = e_di;
-            dvlimu_edge.insert(e_di);
+            // fixed_bias_edge = e_di;
+            // dvlimu_edge.insert(e_di);
 
             EdgeDvlIMUGravityRefine* eg =new EdgeDvlIMUGravityRefine(pKFi->mpDvlPreintegrationKeyFrame);
             eg->setLevel(1);
@@ -13617,7 +13617,7 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
 
 			if (!VP1 || !VP2 || !VV1 || !VV2 || !VG || !VA  || !VT_d_c || !VT_g_d || !VR_w_b0) {
                 ROS_ERROR_STREAM("DVL IMU initialzation Error");
-                assert(-1);
+                // assert(-1);
 			}
             // // prior acc bias
             // EdgePriorAcc *epa = new EdgePriorAcc(cv::Mat::zeros(3, 1, CV_32F));

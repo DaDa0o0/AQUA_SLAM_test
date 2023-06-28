@@ -1741,7 +1741,7 @@ public:
 
 };
 
-class EdgeDvlIMU2: public g2o::BaseMultiEdge<6, Eigen::Matrix<double, 9, 1>>
+class EdgeDvlIMU2: public g2o::BaseMultiEdge<9, Eigen::Matrix<double, 9, 1>>
     {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW

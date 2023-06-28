@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 
     pcl::VoxelGrid<pcl::PointXYZRGB> vgf;
     vgf.setInputCloud(global_map);
-    vgf.setLeafSize(0.05, 0.05, 0.05);
+    vgf.setLeafSize(0.01, 0.01, 0.01);
     vgf.filter(*global_map);
 
     Eigen::Isometry3d T_rviz_c = Eigen::Isometry3d::Identity();
@@ -108,15 +108,15 @@ int main(int argc, char** argv)
     T_rviz_c.rotate(R_r_c);
     T_rviz_c.pretranslate(Eigen::Vector3d(0, 0, 0));
     //tranform pointcloud
-    pcl::transformPointCloud(*global_map, *global_map, T_rviz_c.matrix());
+    // pcl::transformPointCloud(*global_map, *global_map, T_rviz_c.matrix());
 
     nav_msgs::Path traj_msg;
     traj_msg.header.frame_id = "map";
     traj_msg.header.stamp = ros::Time::now();
 
     for(auto it:estimation_traj){
-//        Eigen::Isometry3d T_c0_cj = it.second;
-        Eigen::Isometry3d T_c0_cj = T_rviz_c * it.second;
+       Eigen::Isometry3d T_c0_cj = it.second;
+        // Eigen::Isometry3d T_c0_cj = T_rviz_c * it.second;
 
         Eigen::Vector3d t = T_c0_cj.translation();
         Eigen::Quaterniond q(T_c0_cj.rotation());
