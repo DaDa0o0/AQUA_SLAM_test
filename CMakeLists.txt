@@ -315,11 +315,11 @@ target_link_libraries(align ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 #
 #add_executable(dense src/test/dense_reconstruct.cpp)
 #target_link_libraries(dense ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
-add_executable(dense_ros src/test/dense_reconstruct_ros.cpp)
-target_link_libraries(dense_ros ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
+#add_executable(dense_ros src/test/dense_reconstruct_ros.cpp)
+#target_link_libraries(dense_ros ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 #
-add_executable(dense_viewer src/test/dense_viewer.cpp)
-target_link_libraries(dense_viewer ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
+#add_executable(dense_viewer src/test/dense_viewer.cpp)
+#target_link_libraries(dense_viewer ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 #
 #add_executable(boost_test ${PROJECT_SOURCE_DIR}/src/test/boost_test.cpp)
 #target_link_libraries(boost_test -lboost_serialization
