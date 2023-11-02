@@ -178,8 +178,8 @@ int main(int argc, char **argv)
 //	ros::Subscriber sub_imu = n.subscribe("/BlueRov2/imu/data/ENU", 100, &ImuGrabber::GrabImu, &imugb);
 	ros::Subscriber sub_imu = n.subscribe(imu_topic, 100, &ImuGrabber::GrabImu, &imugb);
 	// flowave/falcon DVL
-	 ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL, &dvlgb);
-	// ros::Subscriber sub_dvl2 = n.subscribe("/dvl/data", 100, &DVLGrabber::GrabDVL2, &dvlgb);
+	//  ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL, &dvlgb);
+	ros::Subscriber sub_dvl2 = n.subscribe("/dvl/data", 100, &DVLGrabber::GrabDVL2, &dvlgb);
 	// rovco DVL
 //	ros::Subscriber sub_dvl = n.subscribe(dvl_topic, 100, &DVLGrabber::GrabDVL2, &dvlgb);
 	image_transport::ImageTransport it(n);
