@@ -414,17 +414,37 @@ cv::Mat System::TrackStereoGroDVL(const Mat &imLeft,
 		mpTracker->GrabDVLGyroData(vDVLGyroMeas[i_imu]);
 
 	// std::cout << "start GrabImageStereo" << std::endl;
-	cv::Mat Tcw = mpTracker->GrabImageStereoDvlgyro(imLeft, imRight, timestamp, bDVL, filename);
+    cv::Mat Tcw;
+    // try-catch
+    try {
+        // Your operation that may throw an exception
+        Tcw = mpTracker->GrabImageStereoDvlgyro(imLeft, imRight, timestamp, bDVL, filename);
+    } catch (const cv::Exception& e) {
+        // An exception occurred in the OpenCV functions
+        ROS_ERROR_STREAM("OpenCV Error: " << e.what());
+        // Handle the exception, e.g., by returning an error code or rethrowing
+        Tcw = cv::Mat::eye(4, 4, CV_32F);
+    } catch (const std::exception& e) {
+        // Handle standard exceptions
+        ROS_ERROR_STREAM("Error: " << e.what());
+        // Handle the exception
+        Tcw = cv::Mat::eye(4, 4, CV_32F);
+    } catch (...) {
+        // Catch all other types of exceptions
+        ROS_ERROR_STREAM("Unknown Exception");
+        // Handle the exception
+        Tcw = cv::Mat::eye(4, 4, CV_32F);
+    }
 //	cv::Mat Tcw;
 
 	// std::cout << "out grabber" << std::endl;
+    unique_lock<mutex> lock2(mMutexState);
+    mTrackingState = mpTracker->mState;
+    mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+    mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
 
-	unique_lock<mutex> lock2(mMutexState);
-	mTrackingState = mpTracker->mState;
-	mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
-	mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+    return Tcw;
 
-	return Tcw;
 }
 
 void System::ActivateLocalizationMode()

@@ -2808,7 +2808,9 @@ void Tracking::TrackDVLGyro()
 				bOK = TrackLocalMap();
 			else//
 				bOK = TrackLocalMap();
-
+            if(mCurrentFrame.mPoorVision){
+                PredictStateDvlGro();
+            }
             if (!bOK) {
                 ROS_INFO_STREAM("Fail to track local map!");
                 PredictStateDvlGro();
