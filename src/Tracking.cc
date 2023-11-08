@@ -1836,26 +1836,35 @@ bool Tracking::PredictStateDvlGro()
 
 
         Eigen::Isometry3d T_c0_c1 = T_c0_cf;
-        if(mpAtlas->IsIMUCalibrated()){
-            //use IMU as prediction
-            ROS_DEBUG_STREAM("use IMU as prediction");
-            Eigen::Matrix3d R_b0_b1 = R_b0_bf * R_bf_b1;
-            Eigen::Isometry3d T_b0_b1 = Eigen::Isometry3d::Identity();
-            T_b0_b1.rotate(R_b0_b1);
-            T_b0_b1.pretranslate(t_b0_b1);
-            T_c0_c1 = T_b_c.inverse() * T_b0_b1 * T_b_c;
-        }
-        else{
-            //use DVL as prediction
-            ROS_DEBUG_STREAM("use DVL as prediction");
-            Eigen::Isometry3d T_d0_df = T_d_c * T_c0_cf * T_d_c.inverse();
-            Eigen::Matrix3d R_df_d1 = R_b_d.transpose() * R_bf_b1 * R_b_d;
-            Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
-            T_df_d1.rotate(R_df_d1);
-            T_df_d1.pretranslate(t_df_d1);
-            Eigen::Isometry3d T_d0_d1 = T_d0_df * T_df_d1;
-            T_c0_c1 = T_d_c.inverse() * T_d0_d1 *T_d_c;
-        }
+        //use DVL as prediction
+        ROS_DEBUG_STREAM("use DVL as prediction");
+        Eigen::Isometry3d T_d0_df = T_d_c * T_c0_cf * T_d_c.inverse();
+        Eigen::Matrix3d R_df_d1 = R_b_d.transpose() * R_bf_b1 * R_b_d;
+        Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+        T_df_d1.rotate(R_df_d1);
+        T_df_d1.pretranslate(t_df_d1);
+        Eigen::Isometry3d T_d0_d1 = T_d0_df * T_df_d1;
+        T_c0_c1 = T_d_c.inverse() * T_d0_d1 *T_d_c;
+        // if(mpAtlas->IsIMUCalibrated()){
+        //     //use IMU as prediction
+        //     ROS_DEBUG_STREAM("use IMU as prediction");
+        //     Eigen::Matrix3d R_b0_b1 = R_b0_bf * R_bf_b1;
+        //     Eigen::Isometry3d T_b0_b1 = Eigen::Isometry3d::Identity();
+        //     T_b0_b1.rotate(R_b0_b1);
+        //     T_b0_b1.pretranslate(t_b0_b1);
+        //     T_c0_c1 = T_b_c.inverse() * T_b0_b1 * T_b_c;
+        // }
+        // else{
+        //     //use DVL as prediction
+        //     ROS_DEBUG_STREAM("use DVL as prediction");
+        //     Eigen::Isometry3d T_d0_df = T_d_c * T_c0_cf * T_d_c.inverse();
+        //     Eigen::Matrix3d R_df_d1 = R_b_d.transpose() * R_bf_b1 * R_b_d;
+        //     Eigen::Isometry3d T_df_d1 = Eigen::Isometry3d::Identity();
+        //     T_df_d1.rotate(R_df_d1);
+        //     T_df_d1.pretranslate(t_df_d1);
+        //     Eigen::Isometry3d T_d0_d1 = T_d0_df * T_df_d1;
+        //     T_c0_c1 = T_d_c.inverse() * T_d0_d1 *T_d_c;
+        // }
 
 
         cv::Mat T_c1_c0_cv(4,4,CV_32F);
@@ -1880,7 +1889,7 @@ bool Tracking::PredictStateDvlGro()
         cv::cv2eigen(pDvlPreintegratedFromKF->GetDVLPosition(pDvlPreintegratedFromKF->mb), t_di_di_dj);
         Eigen::Matrix3d R_di_dj = T_g_d.rotation().inverse() * R_gi_gj * T_g_d.rotation();
         Eigen::Isometry3d T_di_dj = Eigen::Isometry3d::Identity();
-         // T_di_dj.pretranslate(t_di_di_dj);
+        T_di_dj.pretranslate(t_di_di_dj);
         T_di_dj.rotate(R_di_dj);
         Eigen::Isometry3d T_c0_cj = T_c0_ci * T_d_c.inverse() * T_di_dj * T_d_c;
         cv::Mat T_cj_c0_cv(4, 4, CV_32F);

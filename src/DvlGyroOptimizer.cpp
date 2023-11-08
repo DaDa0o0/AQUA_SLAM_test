@@ -1558,7 +1558,12 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ev->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
             ev->setId(optimizer.edges().size());
             auto vv1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1);
-            ev->setInformation(Eigen::Matrix3d::Identity()*1e6);
+            Eigen::Matrix3d infoV = Eigen::Matrix3d::Identity() * 1e2;
+            if(pAtlas->IsIMUCalibrated()){
+                cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
+                cv::cv2eigen(cvInfo.rowRange(3,6).colRange(3,6),infoV);
+            }
+            ev->setInformation(infoV);
             // if(pKFi->mPrevKF->mPoorVision)
             //     ev->setInformation(Eigen::Matrix3d::Identity()*1e8);
             // else
@@ -1572,6 +1577,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             //     ev->setInformation(Eigen::Matrix3d::Identity()*1e5);
             // }
             optimizer.addEdge(ev);
+
             velocity_edge.push_back(ev);
             // add edge for v2
             EdgeDvlVelocity *ev2 = new EdgeDvlVelocity(dvl_v2);
@@ -1580,7 +1586,9 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ev2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
             // auto vv2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2);
             // ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
-            ev2->setInformation(Eigen::Matrix3d::Identity()*1e6);
+            ev2->setInformation(infoV);
+            ROS_DEBUG_STREAM("KF["<<pKFi->mnId<<"] dvl velocity info:\n"<<infoV);
+
             // if(pKFi->mPoorVision)
             //     ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
             // else
@@ -1640,6 +1648,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             if(pAtlas->IsIMUCalibrated()){
                 cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
                 cv::cv2eigen(cvInfo,info_DI);
+                info_DI.block(3,3,3,3) = info_DI.block(3,3,3,3) * 10;
             }
             else{
                 // ROS_DEBUG_STREAM("Poor vision Hign DVL BA");
