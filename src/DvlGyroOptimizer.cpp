@@ -1859,7 +1859,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
         int dvl_vertex_id = kf_id + (maxKFid + 1)*3;
         VertexVelocity *v_dvl = dynamic_cast<VertexVelocity *>(optimizer.vertex(dvl_vertex_id));
         Eigen::Vector3d dvl_velocity;
-        pKFi->GetDvlVelocity(dvl_velocity);
+        pKFi->GetDvlVelocityMeasurement(dvl_velocity);
         ss<<"KF["<<pKFi->mnId<<"] "<<pKFi->mTimeStamp<< "old dvl_velocity: "<<dvl_velocity.transpose()<<"\n"
         <<"KF["<<pKFi->mnId<<"] "<<pKFi->mTimeStamp<< "new dvl_velocity: "<<v_dvl->estimate().transpose()<<"\n";
         dvl_velocity = v_dvl->estimate();
