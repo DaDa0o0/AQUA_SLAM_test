@@ -423,11 +423,33 @@ void DVLGroPreIntegration::IntegrateGroAccMeasurement(const cv::Point3d &acc, co
     JVg = JVg - dR*dt*Wacc*JRg;
     JPv = JPv + dR*mR_g_d*dt;
 
+    //matrxi related with covariance
+    cv::Mat A = cv::Mat::eye(9,9,CV_64F);
+    cv::Mat B = cv::Mat::zeros(9,6,CV_64F);
+
+    // computation related with covariance update
+    A.rowRange(3,6).colRange(0,3) = -dR*dt*Wacc;
+    A.rowRange(6,9).colRange(0,3) = -0.5f*dR*dt*dt*Wacc;
+    A.rowRange(6,9).colRange(3,6) = cv::Mat::eye(3,3,CV_64F)*dt;
+    B.rowRange(3,6).colRange(3,6) = dR*dt;
+    B.rowRange(6,9).colRange(3,6) = 0.5f*dR*dt*dt;
+
 
 
     // Update delta rotation
     IntegratedRotation dRi(angVel, mb, dt);
     dR = NormalizeRotation(dR * dRi.deltaR);
+
+    // Compute rotation parts of matrices A and B
+    A.rowRange(0,3).colRange(0,3) = dRi.deltaR.t();
+    B.rowRange(0,3).colRange(0,3) = dRi.rightJ*dt;
+    // Update covariance
+    // cv::Mat ACA = ;
+    cv::Mat noiseGA,walk_noiseGA;
+    Nga.convertTo(noiseGA, C.type());
+    NgaWalk.convertTo(walk_noiseGA,C.type());
+    C.rowRange(0,9).colRange(0,9) = A*C.rowRange(0,9).colRange(0,9)*A.t() + B * noiseGA * B.t();
+    C.rowRange(9,15).colRange(9,15) = C.rowRange(9,15).colRange(9,15) + walk_noiseGA;
 
 
     // Update rotation jacobian wrt bias correction
@@ -553,6 +575,11 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
         mVelocity = v.clone();
         dV = mR_g_d.t() * dR * mR_g_d * mVelocity;
     }
+
+    //matrxi related with covariance
+    cv::Mat A = cv::Mat::eye(9,9,CV_64F);
+    cv::Mat B = cv::Mat::zeros(9,6,CV_64F);
+
     // update pose from Last gyro frame to current dvl frame
     cv::Mat accW = (cv::Mat_<double>(3, 1) << mAngV.x - mb.bwx, mAngV.y - mb.bwy, mAngV.z - mb.bwz);
 
@@ -582,6 +609,13 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
             acc_b.at<double>(2), 0, -acc_b.at<double>(0),
             -acc_b.at<double>(1), acc_b.at<double>(0), 0);
 
+    // computation related with covariance update
+    A.rowRange(3,6).colRange(0,3) = -dR*dt*Wacc;
+    A.rowRange(6,9).colRange(0,3) = -0.5f*dR*dt*dt*Wacc;
+    A.rowRange(6,9).colRange(3,6) = cv::Mat::eye(3,3,CV_64F)*dt;
+    B.rowRange(3,6).colRange(3,6) = dR*dt;
+    B.rowRange(6,9).colRange(3,6) = 0.5f*dR*dt*dt;
+
     //todo_tightly
     //	add velocity jacobians
     //  Update position and velocity jacobians wrt bias correction
@@ -595,6 +629,17 @@ void DVLGroPreIntegration::IntegrateDVLMeasurement2(const Eigen::Vector4d &veloc
     // Update delta rotation
     IntegratedRotation dRi(mAngV, mb, dt);
     dR = NormalizeRotation(dR * dRi.deltaR);
+
+    // Compute rotation parts of matrices A and B
+    A.rowRange(0,3).colRange(0,3) = dRi.deltaR.t();
+    B.rowRange(0,3).colRange(0,3) = dRi.rightJ*dt;
+    // Update covariance
+    // cv::Mat ACA = ;
+    cv::Mat noiseGA,walk_noiseGA;
+    Nga.convertTo(noiseGA, C.type());
+    NgaWalk.convertTo(walk_noiseGA,C.type());
+    C.rowRange(0,9).colRange(0,9) = A*C.rowRange(0,9).colRange(0,9)*A.t() + B * noiseGA * B.t();
+    C.rowRange(9,15).colRange(9,15) = C.rowRange(9,15).colRange(9,15) + walk_noiseGA;
 
 
     // Update rotation jacobian wrt bias correction

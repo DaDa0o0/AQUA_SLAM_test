@@ -109,7 +109,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
 
     mnOriginMapId = pMap->GetId();
 
-    cv::cv2eigen(mpDvlPreintegrationKeyFrame->mVelocity, mVd);
+        cv::cv2eigen(mpDvlPreintegrationKeyFrame->mVelocity, mVd);
 }
 
 void KeyFrame::ComputeBoW()
@@ -1343,6 +1343,11 @@ void KeyFrame::IntegrateDVL(KeyFrame *kp_i)
 {
 	Eigen::Isometry3d T_e0_ei=kp_i->mT_e0_ej;
 	mT_ei_ej = T_e0_ei.inverse()*mT_e0_ej;
+}
+
+void KeyFrame::GetDvlVelocityMeasurement(Eigen::Vector3d &v_d)
+{
+    cv::cv2eigen(mpDvlPreintegrationKeyFrame->mVelocity, v_d);
 }
 
 

@@ -332,6 +332,22 @@ public:
 
 		mT_gyro_dvl = mT_gyro_c * mT_c_dvl;
 	}
+    Calib(cv::Mat T_gyro_c, cv::Mat T_dvl_c, const float &ng, const float &na, const float &ngw, const float &naw)
+            : mT_gyro_c(T_gyro_c.clone()), mT_dvl_c(T_dvl_c.clone())
+    {
+        mT_c_gyro = cv::Mat::eye(4, 4, CV_32F);
+        mT_c_gyro.rowRange(0, 3).colRange(0, 3) = mT_gyro_c.rowRange(0, 3).colRange(0, 3).t();
+        mT_c_gyro.rowRange(0, 3).col(3) =
+                -mT_gyro_c.rowRange(0, 3).colRange(0, 3).t() * mT_gyro_c.rowRange(0, 3).col(3);
+
+        mT_c_dvl = cv::Mat::eye(4, 4, CV_32F);
+        mT_c_dvl.rowRange(0, 3).colRange(0, 3) = mT_dvl_c.rowRange(0, 3).colRange(0, 3).t();
+        mT_c_dvl.rowRange(0, 3).col(3) = -mT_dvl_c.rowRange(0, 3).colRange(0, 3).t() * mT_dvl_c.rowRange(0, 3).col(3);
+
+        mT_gyro_dvl = mT_gyro_c * mT_c_dvl;
+
+        Set(T_gyro_c, ng, na, ngw, naw);
+    }
 	Calib(const Calib &calib)
 		:
 		mT_gyro_c(calib.mT_gyro_c.clone()), mT_dvl_c(calib.mT_dvl_c.clone()), mT_c_gyro(calib.mT_c_gyro.clone()),
@@ -349,6 +365,7 @@ public:
 	}
 
 	void Set(const cv::Mat &Tbc_, const float &ng, const float &na, const float &ngw, const float &naw);
+    void SetExtrinsic(const cv::Mat& T_gyro_c, const cv::Mat& T_dvl_c);
 
 public:
 	cv::Mat Tcb;

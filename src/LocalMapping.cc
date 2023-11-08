@@ -159,7 +159,7 @@ void LocalMapping::Run()
                                                                       mpTracker->mlamda_DVL,
                                                                       mpTracker->mlamda_visual);
 
-                        ROS_INFO_STREAM("LocalBA for KF["<<mpCurrentKeyFrame->mnId<<"] is done");
+                        ROS_DEBUG_STREAM("LocalBA for KF["<<mpCurrentKeyFrame->mnId<<"] is done");
 						mpTracker->UpdateFrameDVLGyro(mpCurrentKeyFrame->GetImuBias(),mpCurrentKeyFrame);
 
                     }
@@ -1674,8 +1674,9 @@ void LocalMapping::InitializeDvlIMU()
 	std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
 
     auto all_kf = mpAtlas->GetAllKeyFrames();
-    if(clib_avg_error<1000&&(all_kf.size()>20)){
-        ROS_INFO_STREAM("init avg error<100, kf >20");
+    if(clib_avg_error<0.01&&(all_kf.size()>20)){
+        unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+        ROS_INFO_STREAM("init avg error<100, avg err < 0.01");
         mpAtlas->GetCurrentMap()->SetImuInitialized();
         mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
         mpAtlas->SetDvlImuInitialized();
@@ -1686,7 +1687,7 @@ void LocalMapping::InitializeDvlIMU()
         mpTracker->mInitialized = true;
         bInitializing = false;
         mpAtlas->SetIMUCalibrated();
-        // FullBA();
+        FullBA();
         return;
 
     }
@@ -1705,11 +1706,24 @@ void LocalMapping::InitializeDvlIMU()
         // FullBA();
         return;
     }
-    else if(clib_avg_error<4000){
-        ROS_INFO_STREAM("init motion is enough, error <2000");
+    else if(clib_avg_error<0.1){
+        unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+        ROS_INFO_STREAM("init motion is enough");
         mpAtlas->SetIMUCalibrated();
+        mpAtlas->GetCurrentMap()->SetImuInitialized();
+        mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
+        mpAtlas->SetDvlImuInitialized();
+        mpTracker->mpRosHandler->UpdateMap(mpAtlas);
+        mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
+        mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
+        mpTracker->mCalibrated = true;
+        mpTracker->mInitialized = true;
+        bInitializing = false;
+        FullBA();
+        return;
+        // FullBA();
     }
-    ROS_INFO_STREAM("init motion is enough, error >2000");
+    ROS_INFO_STREAM("init motion is enough, but error too large");
     mpAtlas->GetCurrentMap()->SetImuInitialized();
     mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
     mpAtlas->SetDvlImuInitialized();

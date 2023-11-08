@@ -296,6 +296,7 @@ protected:
 	void saveMatchingResults(const cv::Mat &velocity_orb, const cv::Mat &velocity_dvl);
 	bool PredictStateIMU();
 	bool PredictStateDvlGro();
+    bool PredictStateGyro();
 
 	bool Relocalization();
 
@@ -505,9 +506,15 @@ public:
 
     int mLossFNum = 0;
     int mLossLastOptID = 0;
+    // optimized v
+    std::shared_mutex mVMutex;
+    Eigen::Vector3d mVd_opt;
 public:
     set<KeyFrame*, KFComparator> getMvpLossKf();
     void clearPartLossKF();
+
+    void setOptV(const Eigen::Vector3d& v);
+    void getOptV(Eigen::Vector3d& v);
 };
 
 } //namespace ORB_SLAM

@@ -669,7 +669,7 @@ Eigen::Vector3d EdgeMonoInvdepthBody::cam_unproject(const double u, const double
 VertexVelocity::VertexVelocity(KeyFrame* pKF)
 {
     Eigen::Vector3d v_d;
-    pKF->GetDvlVelocity(v_d);
+    pKF->GetDvlVelocityMeasurement(v_d);
     setEstimate(v_d);
 }
 
@@ -2263,14 +2263,11 @@ void EdgeDvlIMU::computeError()
 
     // R_b_d * R_d_c * R_ci_c0 *  ( * R_c0_cj * R_c_d*V_dj -  R_c0_cj
     // * R_c_d*V_di - R_c_d * R_d_b * R_b0_w * g_w * t_ij)
-    const Eigen::Vector3d VDelta_est = R_b_c * VP1->estimate().Rcw[0]* (VP2->estimate().Rwc*R_c_dvl*v2
-                                                                                        - VP1->estimate().Rwc*R_c_dvl*v1 - R_c_b * R_b0_w * g_w*mpInt->dT);
+    const Eigen::Vector3d VDelta_est = R_b_c * VP1->estimate().Rcw[0]* (VP2->estimate().Rwc*R_c_dvl*v2 - VP1->estimate().Rwc*R_c_dvl*v1 - R_c_b * R_b0_w * g_w*mpInt->dT);
 
-    // R_b_c * R_ci_c0 * [R_c0_cj * P_c_c_b + P_c0_c0_cj - (R_c0_ci * P_c_c_b + p_c0_c0_ci)
-    // - R_c0_ci * R_c_d * V_di * t_ij - 0.5 * R_c_b * R_b0_w * g_w * t_ij^2]
+    // R_b_c * R_ci_c0 * [R_c0_cj * P_c_c_b + P_c0_c0_cj - (R_c0_ci * P_c_c_b + p_c0_c0_ci) - R_c0_ci * R_c_d * V_di * t_ij - 0.5 * R_c_b * R_b0_w * g_w * t_ij^2]
 
-    const Eigen::Vector3d P_acc_est = R_b_c * VP1->estimate().Rcw[0] * (VP2->estimate().Rwc * t_c_b + VP2->estimate().twc - (VP1->estimate().Rwc * t_c_b  + VP1->estimate().twc)
-            - VP1->estimate().Rwc * R_c_dvl * v1 * dt - 0.5 * R_c_b * R_b0_w * g_w*dt*dt);
+    const Eigen::Vector3d P_acc_est = R_b_c * VP1->estimate().Rcw[0] * (VP2->estimate().Rwc * t_c_b + VP2->estimate().twc - (VP1->estimate().Rwc * t_c_b  + VP1->estimate().twc) - VP1->estimate().Rwc * R_c_dvl * v1 * dt - 0.5 * R_c_b * R_b0_w * g_w*dt*dt);
     const Eigen::Vector3d P_dvl_est= (t_dvl_c - R_dvl_c * VP1->estimate().Rcw[0] * VP2->estimate().Rwc * R_c_dvl * t_dvl_c
                                   + R_dvl_c *(VP1->estimate().Rcw[0]*VP2->estimate().twc - VP1->estimate().Rcw[0]*VP1->estimate().twc));
 

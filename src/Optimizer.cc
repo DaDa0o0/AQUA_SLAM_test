@@ -1856,9 +1856,9 @@ void Optimizer::OptimizationDVLIMU(set<KeyFrame*, KFComparator> &loss_kfs, Atlas
 
             //velocity edge
             Eigen::Vector3d dvl_v1;
-            pKFi->mPrevKF->GetDvlVelocity(dvl_v1);
+            pKFi->mPrevKF->GetDvlVelocityMeasurement(dvl_v1);
             Eigen::Vector3d dvl_v2;
-            pKFi->GetDvlVelocity(dvl_v2);
+            pKFi->GetDvlVelocityMeasurement(dvl_v2);
             EdgeDvlVelocity *ev = new EdgeDvlVelocity(dvl_v1);
             ev->setLevel(0);
             ev->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
@@ -12199,7 +12199,7 @@ void Optimizer::DvlGyroInitOptimization(Map *pMap,
 	cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
 	T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
 
-	IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
+	// IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
 
 	const int N = vpKFs.size();
 	for (size_t i = 0; i < N; i++) {
@@ -12207,7 +12207,7 @@ void Optimizer::DvlGyroInitOptimization(Map *pMap,
 		if (pKFi->mnId > maxKFid) {
 			continue;
 		}
-		pKFi->mImuCalib = extrinsic_para;
+		pKFi->mImuCalib.SetExtrinsic(T_gyros_c_cv, T_dvl_c_cv);
 
 		if (cv::norm(pKFi->GetGyroBias() - cvbg) > 0.01) {
 			pKFi->SetNewBias(b);
@@ -12455,7 +12455,7 @@ void Optimizer::DvlGyroInitOptimization2(Map *pMap,
 	cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
 	T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
 
-	IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
+	// IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
 
 	const int N = vpKFs.size();
 	for (size_t i = 0; i < N; i++) {
@@ -12463,7 +12463,7 @@ void Optimizer::DvlGyroInitOptimization2(Map *pMap,
 		if (pKFi->mnId > maxKFid) {
 			continue;
 		}
-		pKFi->mImuCalib = extrinsic_para;
+        pKFi->mImuCalib.SetExtrinsic(T_gyros_c_cv, T_dvl_c_cv);
 	}
 
 }
@@ -12730,7 +12730,7 @@ void Optimizer::DvlGyroInitOptimization3(Map *pMap,
 	cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
 	T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
 
-	IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
+	// IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
 
 	const int N = vpKFs.size();
 	for (size_t i = 0; i < N; i++) {
@@ -12738,7 +12738,7 @@ void Optimizer::DvlGyroInitOptimization3(Map *pMap,
 		if (pKFi->mnId > maxKFid) {
 			continue;
 		}
-		pKFi->mImuCalib = extrinsic_para;
+        pKFi->mImuCalib.SetExtrinsic(T_gyros_c_cv, T_dvl_c_cv);
 	}
 
 }
@@ -13017,7 +13017,7 @@ void Optimizer::DvlGyroInitOptimization5(Map *pMap, Eigen::Vector3d &bg, bool bM
 	cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
 	T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
 
-	IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
+	// IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
 
 	const int N = vpKFs.size();
 	for (size_t i = 0; i < N; i++) {
@@ -13025,7 +13025,7 @@ void Optimizer::DvlGyroInitOptimization5(Map *pMap, Eigen::Vector3d &bg, bool bM
 		if (pKFi->mnId > maxKFid) {
 			continue;
 		}
-		pKFi->mImuCalib = extrinsic_para;
+        pKFi->mImuCalib.SetExtrinsic(T_gyros_c_cv, T_dvl_c_cv);
 	}
 
 }
@@ -13483,7 +13483,7 @@ void Optimizer::DvlGyroInitOptimization4(Map *pMap,
 	cv::eigen2cv(T_gyros_c.matrix(), T_gyros_c_cv);
 	T_gyros_c_cv.convertTo(T_gyros_c_cv, CV_32FC1);
 
-	IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
+	// IMU::Calib extrinsic_para(T_gyros_c_cv, T_dvl_c_cv);
 
 	const int N = vpKFs.size();
 	for (size_t i = 0; i < N; i++) {
@@ -13491,7 +13491,7 @@ void Optimizer::DvlGyroInitOptimization4(Map *pMap,
 		if (pKFi->mnId > maxKFid) {
 			continue;
 		}
-		pKFi->mImuCalib = extrinsic_para;
+        pKFi->mImuCalib.SetExtrinsic(T_gyros_c_cv, T_dvl_c_cv);
 	}
 
 }
@@ -13647,10 +13647,12 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
 			ei2->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
 			ei2->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_w_b0));
             Eigen::Matrix<double, 9, 9> info = Eigen::Matrix<double, 9, 9>::Identity()* 1e6;
-            info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e6;
+            cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
+            cv::cv2eigen(cvInfo, info);
+            // info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e6;
             // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
             // info_DI(1,1) = 1e9; // before 10_24
-            info.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e6;
+            // info.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e6;
             // info.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e6;
 			ei2->setInformation(info);
 			// ei2->setId(pKFi->mnId);
@@ -13677,7 +13679,7 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
     double total_dvl = 0;
     double avg_dvl = 0;
     for(auto e:dvlimu_edges){
-        total_dvl += e->chi2();
+        total_dvl += e->error().norm();
     }
     avg_dvl = total_dvl/dvlimu_edges.size();
     ROS_INFO_STREAM("avg_dvl: "<< avg_dvl);

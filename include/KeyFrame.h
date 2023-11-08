@@ -356,6 +356,7 @@ public:
     cv::Mat GetGyroRotation();
 	cv::Mat GetDvlRotation();
     void GetDvlVelocity(Eigen::Vector3d& v_d);
+    void GetDvlVelocityMeasurement(Eigen::Vector3d& v_d);
     void SetDvlVelocity(const Eigen::Vector3d& v_d);
 
     // Bag of Words Representation
