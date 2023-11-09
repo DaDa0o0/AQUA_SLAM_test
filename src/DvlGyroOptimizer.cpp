@@ -1531,7 +1531,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             eg_bias->setLevel(0);
             eg_bias->setVertex(0,VG1);
             eg_bias->setVertex(1,VG2);
-            Eigen::Matrix3d info_gyro_bias = Eigen::Matrix3d::Identity()*1e10;
+            Eigen::Matrix3d info_gyro_bias = Eigen::Matrix3d::Identity()*1e4;
             if(pAtlas->IsIMUCalibrated()){
                 cv::Mat cvInfoG = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(9,12).colRange(9,12).inv(cv::DECOMP_SVD);
                 cv::cv2eigen(cvInfoG,info_gyro_bias);
@@ -1595,10 +1595,10 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             }
             else{
                 // ROS_DEBUG_STREAM("Poor vision Hign DVL BA");
-                eG->setLevel(1);
-                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e10;
-                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e5;
-                info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1;
+                // eG->setLevel(1);
+                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e3;
+                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e3;
+                info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e3;
             }
             // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
             // info_DI(1,1) = 1e10; // before 10_24
@@ -2959,54 +2959,54 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
         }
     }
 
-    optimizer.setVerbose(true);
+    // optimizer.setVerbose(true);
     optimizer.initializeOptimization(0);
-    optimizer.optimize(100);
+    optimizer.optimize(10);
     if(pbStopFlag){
         optimizer.setForceStopFlag(pbStopFlag);
     }
-    stringstream ss_v_chi2;
-    std::set<std::pair<KeyFrame*,MapPoint*>> remove_obs;
-    ss_v_chi2<<"mono chi2: ";
-    for (auto e: mono_edges) {
-        e->computeError();
-        ss_v_chi2<<e->chi2()<<", ";
-        // e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
-        if (e->chi2() > 1) {
-            e->setLevel(1);
-            remove_obs.insert(mono_obs[e]);
-        }
-        else {
-            e->setLevel(0);
-            // e->setInformation(Eigen::Matrix2d::Identity() * 1);
-        }
-
-    }
-    ss_v_chi2<<"\n";
-    ss_v_chi2<<"stereo chi2: ";
-    for (auto e: stereo_edges) {
-        e->computeError();
-        ss_v_chi2<<e->chi2()<<", ";
-        // e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
-        if (e->chi2() > 2) {
-            e->setLevel(1);
-            remove_obs.insert(stereo_obs[e]);
-        }
-        else {
-            e->setLevel(0);
-        }
-    }
-    // ROS_INFO_STREAM(ss_v_chi2.str());
-    for(int i=0;i<4;i++){
-        if(pbStopFlag){
-            if(*pbStopFlag){
-                ROS_DEBUG_STREAM("stop BA");
-                break;
-            }
-        }
-        optimizer.initializeOptimization(0);
-        optimizer.optimize(10);
-    }
+    // stringstream ss_v_chi2;
+    // std::set<std::pair<KeyFrame*,MapPoint*>> remove_obs;
+    // ss_v_chi2<<"mono chi2: ";
+    // for (auto e: mono_edges) {
+    //     e->computeError();
+    //     ss_v_chi2<<e->chi2()<<", ";
+    //     // e->setInformation(Eigen::Matrix2d::Identity() * lamda_visual);
+    //     if (e->chi2() > 1) {
+    //         e->setLevel(1);
+    //         remove_obs.insert(mono_obs[e]);
+    //     }
+    //     else {
+    //         e->setLevel(0);
+    //         // e->setInformation(Eigen::Matrix2d::Identity() * 1);
+    //     }
+    //
+    // }
+    // ss_v_chi2<<"\n";
+    // ss_v_chi2<<"stereo chi2: ";
+    // for (auto e: stereo_edges) {
+    //     e->computeError();
+    //     ss_v_chi2<<e->chi2()<<", ";
+    //     // e->setInformation(Eigen::Matrix3d::Identity() * lamda_visual);
+    //     if (e->chi2() > 2) {
+    //         e->setLevel(1);
+    //         remove_obs.insert(stereo_obs[e]);
+    //     }
+    //     else {
+    //         e->setLevel(0);
+    //     }
+    // }
+    // // ROS_INFO_STREAM(ss_v_chi2.str());
+    // for(int i=0;i<4;i++){
+    //     if(pbStopFlag){
+    //         if(*pbStopFlag){
+    //             ROS_DEBUG_STREAM("stop BA");
+    //             break;
+    //         }
+    //     }
+    //     optimizer.initializeOptimization(0);
+    //     optimizer.optimize(10);
+    // }
 
 
 

@@ -261,7 +261,7 @@ void RosHandling::PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, 
 void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 {
 	const std::lock_guard<std::mutex> guard(m_mutex_map);
-    if(!pAtlas->isDvlImuInitialized()){
+    if(!pAtlas->isImuInitialized()){
         return;
     }
 //	pcl::PointCloud<pcl::PointXYZRGB> cloud;
@@ -537,7 +537,7 @@ double RosHandling::LinearInterpolation(double start_x, double end_x, double sta
 }
 void RosHandling::PublishIntegration(Atlas *pAtlas)
 {
-    if(!pAtlas->isDvlImuInitialized()){
+    if(!pAtlas->isImuInitialized()){
         return;
     }
     auto maps = pAtlas->GetAllMaps();

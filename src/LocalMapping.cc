@@ -197,7 +197,7 @@ void LocalMapping::Run()
                     if (mpAtlas->GetAllMaps().size()==1) {
                         // unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
                         auto dis = GetTravelDistance();
-                        if(!mpAtlas->isDvlImuInitialized()){
+                        if(!mpAtlas->isImuInitialized()){
                             if((mpAtlas->KeyFramesInMap() > 10)){
                                 ROS_INFO_STREAM("DVL-IMU init");
                                 InitializeDvlIMU();
@@ -1637,6 +1637,7 @@ void LocalMapping::InitializeDvlIMU()
 	// Retrieve all keyframe in temporal order
 	list<KeyFrame *> lpKF;
 	KeyFrame *pKF = mpCurrentKeyFrame;
+    Map* pCurMap = mpCurrentKeyFrame->GetMap();
 	while (pKF->mPrevKF) {
 		lpKF.push_front(pKF);
 		pKF = pKF->mPrevKF;
@@ -1687,11 +1688,11 @@ void LocalMapping::InitializeDvlIMU()
 
     auto all_kf = mpAtlas->GetAllKeyFrames();
     if(clib_avg_error<0.01&&(all_kf.size()>20)){
-        unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+        unique_lock<shared_timed_mutex> lock(pCurMap->mMutexMapUpdate);
         ROS_INFO_STREAM("init avg error<100, avg err < 0.01");
-        mpAtlas->GetCurrentMap()->SetImuInitialized();
-        mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
+        pCurMap->SetImuInitialized();
         mpAtlas->SetDvlImuInitialized();
+        mpAtlas->setRGravity(pCurMap->getRGravity());
         mpTracker->mpRosHandler->UpdateMap(mpAtlas);
         // mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
         mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
@@ -1705,11 +1706,12 @@ void LocalMapping::InitializeDvlIMU()
 
     }
     else if (dis.first<mInitTranslationThred||dis.second<mInitRotationThred){
+        unique_lock<shared_timed_mutex> lock(pCurMap->mMutexMapUpdate);
         ROS_INFO_STREAM("init motion is not enough");
         ResetKFBias();
-        mpAtlas->GetCurrentMap()->SetImuInitialized();
-        mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
-        mpAtlas->SetDvlImuInitialized();
+        pCurMap->SetImuInitialized();
+        // mpAtlas->SetDvlImuInitialized();
+        mpAtlas->setRGravity(pCurMap->getRGravity());
         mpTracker->mpRosHandler->UpdateMap(mpAtlas);
         mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
         mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
@@ -1720,11 +1722,12 @@ void LocalMapping::InitializeDvlIMU()
         return;
     }
     else if(clib_avg_error<0.1){
-        unique_lock<shared_timed_mutex> lock(mpAtlas->GetCurrentMap()->mMutexMapUpdate);
+        unique_lock<shared_timed_mutex> lock(pCurMap->mMutexMapUpdate);
         ROS_INFO_STREAM("init motion is enough");
         mpAtlas->SetIMUCalibrated();
-        mpAtlas->GetCurrentMap()->SetImuInitialized();
-        mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
+        pCurMap->SetImuInitialized();
+        mpAtlas->SetDvlImuInitialized();
+        mpAtlas->setRGravity(pCurMap->getRGravity());
         mpAtlas->SetDvlImuInitialized();
         mpTracker->mpRosHandler->UpdateMap(mpAtlas);
         // mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
@@ -1738,8 +1741,10 @@ void LocalMapping::InitializeDvlIMU()
         // FullBA();
     }
     ROS_INFO_STREAM("init motion is enough, but error too large");
-    mpAtlas->GetCurrentMap()->SetImuInitialized();
-    mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
+    unique_lock<shared_timed_mutex> lock(pCurMap->mMutexMapUpdate);
+    pCurMap->SetImuInitialized();
+    mpAtlas->SetDvlImuInitialized();
+    mpAtlas->setRGravity(pCurMap->getRGravity());
     mpAtlas->SetDvlImuInitialized();
     mpTracker->mpRosHandler->UpdateMap(mpAtlas);
     mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
