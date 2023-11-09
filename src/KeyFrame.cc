@@ -938,7 +938,7 @@ void KeyFrame::SetNewBias(const IMU::Bias &b)
         auto b_delta = mpDvlPreintegrationKeyFrame->GetDeltaBias(b);
         Eigen::Matrix<double, 6, 1> b_u;
         b_u << b_delta.bax, b_delta.bay, b_delta.baz, b_delta.bwx, b_delta.bwy, b_delta.bwz;
-        if (b_u.norm()>0.01){
+        if (b_u.norm()>0.2){
             mpDvlPreintegrationKeyFrame->SetNewBias(b);
         }
 

@@ -1548,88 +1548,28 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             ROS_DEBUG_STREAM("KF["<<pKFi->mnId<<"] gyro bias info:\n"<<info_gyro_bias);
 
             optimizer.addEdge(eg_bias);
-            //velocity edge
-            Eigen::Vector3d dvl_v1;
-            pKFi->mPrevKF->GetDvlVelocityMeasurement(dvl_v1);
-            Eigen::Vector3d dvl_v2;
-            pKFi->GetDvlVelocityMeasurement(dvl_v2);
-            EdgeDvlVelocity *ev = new EdgeDvlVelocity(dvl_v1);
-            ev->setLevel(0);
-            ev->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
-            ev->setId(optimizer.edges().size());
-            auto vv1 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1);
-            Eigen::Matrix3d infoV = Eigen::Matrix3d::Identity() * 1e2;
-            if(pAtlas->IsIMUCalibrated()){
-                cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
-                cv::cv2eigen(cvInfo.rowRange(3,6).colRange(3,6),infoV);
-            }
-            ev->setInformation(infoV);
-            // if(pKFi->mPrevKF->mPoorVision)
-            //     ev->setInformation(Eigen::Matrix3d::Identity()*1e8);
-            // else
-            //     ev->setInformation(Eigen::Matrix3d::Identity()*1e5);
-            // if(pKFi->mPrevKF->mbDVL){
-            //     vv1->setFixed(true);
-            //     ev->setInformation(Eigen::Matrix3d::Identity()*1e8);
-            // }
-            // else{
-            //     vv1->setFixed(true);
-            //     ev->setInformation(Eigen::Matrix3d::Identity()*1e5);
-            // }
-            // optimizer.addEdge(ev);
 
-            velocity_edge.push_back(ev);
-            // add edge for v2
-            EdgeDvlVelocity *ev2 = new EdgeDvlVelocity(dvl_v2);
-            ev2->setLevel(0);
-            ev2->setId(optimizer.edges().size());
-            ev2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            // auto vv2 = dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2);
-            // ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
-            ev2->setInformation(infoV);
-            ROS_DEBUG_STREAM("KF["<<pKFi->mnId<<"] dvl velocity info:\n"<<infoV);
+            EdgeDvlIMU2 *eDVL = new EdgeDvlIMU2(pKFi->mPrevKF->mpDvlPreintegrationKeyFrame,pKFi->mpDvlPreintegrationKeyFrame);
+            eDVL->setLevel(0);
+            eDVL->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
+            eDVL->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
+            eDVL->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
+            eDVL->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
+            eDVL->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG2));
+            eDVL->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA2));
+            eDVL->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
+            eDVL->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
+            eDVL->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
+            eDVL->setId(optimizer.edges().size());
+            Eigen::Matrix<double,9,9> info_DVL=Eigen::Matrix<double,9,9>::Identity();
+            info_DVL.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            info_DVL.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            info_DVL.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            eDVL->setInformation(info_DVL);
+            ROS_DEBUG_STREAM("DVL edge info:\n"<<info_DVL);
+            optimizer.addEdge(eDVL);
 
-            // if(pKFi->mPoorVision)
-            //     ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
-            // else
-            //     ev2->setInformation(Eigen::Matrix3d::Identity()*1e5);
-            // if (pKFi->mbDVL) {
-            //     vv2->setFixed(true);
-            //     ev2->setInformation(Eigen::Matrix3d::Identity()*1e8);
-            // }
-            // else {
-            //     vv2->setFixed(true);
-            //     ev2->setInformation(Eigen::Matrix3d::Identity() *1e5);
-            // }
-            // optimizer.addEdge(ev2);
-            velocity_edge.push_back(ev2);
-            //				EdgeInertialGS *ei = new EdgeInertialGS(pKFi->mpImuPreintegrated);
-            EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
-            ei->setLevel(1);
-            ei->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
-            ei->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
-            ei->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG1));
-            ei->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
-            ei->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            // ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
-            ei->setId(pKFi->mnId);
-            VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(ei->vertices()[0]);
-            VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(ei->vertices()[1]);
-            Eigen::Matrix<double,6,6> info = Eigen::Matrix<double,6,6>::Identity();
-            if(v1->estimate().mPoorVision&&v2->estimate().mPoorVision){
-                info.block<3,3>(0,0) = info.block<3,3>(0,0) * lamda_DVL * 1e10;
-                info.block<3,3>(3,3) = info.block<3,3>(3,3) * lamda_DVL * 1;
-                ei->setInformation(info*(mono_edges.size()+stereo_edges.size()));
-            }
-            else{
-                info.block<3,3>(0,0) = info.block<3,3>(0,0) * 1e10;
-                info.block<3,3>(3,3) = info.block<3,3>(3,3) * 1;
-                ei->setInformation(info* lamda_DVL * (mono_edges.size()+stereo_edges.size()));
-            }
-            // dvlimu_edges.push_back(ei);
-            // optimizer.addEdge(ei);
-            auto vg1 = dynamic_cast<VertexGyroBias*>(VG1);
-//            ROS_INFO_STREAM("add edge kf1: "<<pKFi->mPrevKF->mnId<<" kf2: "<<pKFi->mnId<<" gyros bias: "<<vg1->estimate().transpose());
+
 
 			EdgeDvlIMU *eG = new EdgeDvlIMU(pKFi->mpDvlPreintegrationKeyFrame);
             eG->setLevel(0);
@@ -1664,73 +1604,8 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             // ROS_INFO_STREAM("info: "<<info_DI);
             eG->setInformation(info_DI);
             ROS_DEBUG_STREAM("IMU edge info:\n"<<info_DI);
-            // info(0,0) = info(0,0)*500;
-            // if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
-            //     info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e8;
-            //     // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
-            //     // info_DI(1,1) = 1e10; // before 10_24
-            //     info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e6;
-            //     info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity()*1;
-            //     // ROS_INFO_STREAM("info: "<<info_DI);
-            //     eG->setInformation(info_DI);
-            // }
-            // else{
-            //     info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e8;
-            //     // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
-            //     // info_DI(1,1) = 1e10; // before 10_24
-            //     info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e6;
-            //     info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity()*1;
-            //     // ROS_INFO_STREAM("info: "<<info_DI);
-            //     eG->setInformation(info_DI);
-            // }
-            // eG->setId(maxKFid+1 + pKFi->mnId);
             dvlimu_edges.push_back(eG);
             optimizer.addEdge(eG);
-
-            EdgeDvlIMUGravityRefine *eG1 = new EdgeDvlIMUGravityRefine(pKFi->mpDvlPreintegrationKeyFrame);
-            eG1->setLevel(1);
-            eG1->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
-            eG1->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
-            eG1->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
-            eG1->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            eG1->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG1));
-            eG1->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA1));
-            eG1->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
-            eG1->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            eG1->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            Eigen::Matrix<double,3,3> info_G = Eigen::Matrix<double,3,3>::Identity();
-            if(v1->estimate().mPoorVision && v2->estimate().mPoorVision){
-                info_G = info_G * lamda_DVL * 100;
-                eG1->setInformation(info_G*(mono_edges.size()+stereo_edges.size()));
-            }
-            else{
-                info_G = info_G* 1 * lamda_DVL;
-                eG1->setInformation(info_G  * (mono_edges.size()+stereo_edges.size()));
-            }
-            optimizer.addEdge(eG1);
-
-            // eG1->setId(maxKFid+1 + pKFi->mnId);
-            // only add first 5 KF for bias optimization
-            // if((pKF->mnId - pKFi->mnId)<5){
-			// 	ROS_DEBUG_STREAM("add bias edge: "<<pKFi->mPrevKF->mnId<<"->"<<pKFi->mnId);
-            //     EdgeDvlIMUGravityRefineWithBias *eG1 = new EdgeDvlIMUGravityRefineWithBias(pKFi->mpDvlPreintegrationKeyFrame);
-            //     eG1->setLevel(1);
-            //     eG1->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
-            //     eG1->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
-            //     eG1->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
-            //     eG1->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            //     eG1->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
-            //     eG1->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
-            //     eG1->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
-            //     eG1->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            //     eG1->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            //     eG1->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
-            //     optimizer.addEdge(eG1);
-            //     // ROS_INFO_STREAM("add bias refine edge, KF: "<<pKFi->mnId);
-            // }
-
-
-
         }
     }
 
@@ -1887,7 +1762,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
     }
     pMap->IncreaseChangeIndex();
     // ROS_INFO_STREAM("Map change after BA: "<<pMap->GetMapChangeIndex());
-    ROS_INFO_STREAM("Local BA upto KF done: " << pKF->mnId);
+    // ROS_INFO_STREAM("Local BA upto KF done: " << pKF->mnId);
 }
 
 void DvlGyroOptimizer::LocalDVLIMUBundleAdjustment2(Atlas* pAtlas, KeyFrame* pKF, bool* pbStopFlag, Map* pMap,
@@ -3018,7 +2893,6 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
             e_bias->setInformation(info_acc_bias);
             // if(info_acc_bias(0,0)==0)
             ROS_DEBUG_STREAM("KF["<<pKFi->mnId<<"] acc bias info:\n"<<info_acc_bias);
-            // e_bias->setInformation(Eigen::Matrix3d::Identity() * 1e12);
             optimizer.addEdge(e_bias);
 
             EdgeGyroRW* eg_bias = new EdgeGyroRW();
@@ -3042,53 +2916,28 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
             ROS_DEBUG_STREAM("KF["<<pKFi->mnId<<"] gyro bias info:\n"<<info_gyro_bias);
 
             optimizer.addEdge(eg_bias);
-            //velocity edge
-            Eigen::Vector3d dvl_v1;
-            pKFi->mPrevKF->GetDvlVelocityMeasurement(dvl_v1);
-            Eigen::Vector3d dvl_v2;
-            pKFi->GetDvlVelocityMeasurement(dvl_v2);
-            EdgeDvlVelocity *ev = new EdgeDvlVelocity(dvl_v1);
-            ev->setLevel(0);
-            ev->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
-            ev->setId(optimizer.edges().size());
-            ev->setInformation(Eigen::Matrix3d::Identity()*1e3);
-            optimizer.addEdge(ev);
-            velocity_edge.push_back(ev);
-            // add edge for v2
-            EdgeDvlVelocity *ev2 = new EdgeDvlVelocity(dvl_v2);
-            ev2->setLevel(0);
-            ev2->setId(optimizer.edges().size());
-            ev2->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            ev2->setInformation(Eigen::Matrix3d::Identity()*1e3);
-            optimizer.addEdge(ev2);
-            velocity_edge.push_back(ev2);
-            //				EdgeInertialGS *ei = new EdgeInertialGS(pKFi->mpImuPreintegrated);
-            EdgeDvlGyroBA *ei = new EdgeDvlGyroBA(pKFi->mpDvlPreintegrationKeyFrame);
-            ei->setLevel(1);
-            ei->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
-            ei->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
-            ei->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG1));
-            ei->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
-            ei->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            // ei->setInformation(Eigen::Matrix<double, 6, 6>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
-            ei->setId(pKFi->mnId);
-            VertexPoseDvlIMU* v1 = dynamic_cast<VertexPoseDvlIMU*>(ei->vertices()[0]);
-            VertexPoseDvlIMU* v2 = dynamic_cast<VertexPoseDvlIMU*>(ei->vertices()[1]);
-            Eigen::Matrix<double,6,6> info = Eigen::Matrix<double,6,6>::Identity();
-            if(v1->estimate().mPoorVision&&v2->estimate().mPoorVision){
-                info.block<3,3>(0,0) = info.block<3,3>(0,0) * lamda_DVL * 1e10;
-                info.block<3,3>(3,3) = info.block<3,3>(3,3) * lamda_DVL * 1;
-                ei->setInformation(info*(mono_edges.size()+stereo_edges.size()));
-            }
-            else{
-                info.block<3,3>(0,0) = info.block<3,3>(0,0) * 1e10;
-                info.block<3,3>(3,3) = info.block<3,3>(3,3) * 1;
-                ei->setInformation(info* lamda_DVL * (mono_edges.size()+stereo_edges.size()));
-            }
-            // dvlimu_edges.push_back(ei);
-            optimizer.addEdge(ei);
-            auto vg1 = dynamic_cast<VertexGyroBias*>(VG1);
-            //            ROS_INFO_STREAM("add edge kf1: "<<pKFi->mPrevKF->mnId<<" kf2: "<<pKFi->mnId<<" gyros bias: "<<vg1->estimate().transpose());
+
+            EdgeDvlIMU2 *eDVL = new EdgeDvlIMU2(pKFi->mPrevKF->mpDvlPreintegrationKeyFrame,pKFi->mpDvlPreintegrationKeyFrame);
+            eDVL->setLevel(0);
+            eDVL->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
+            eDVL->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
+            eDVL->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
+            eDVL->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
+            eDVL->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG2));
+            eDVL->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA2));
+            eDVL->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
+            eDVL->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
+            eDVL->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
+            eDVL->setId(optimizer.edges().size());
+            Eigen::Matrix<double,9,9> info_DVL=Eigen::Matrix<double,9,9>::Identity();
+            info_DVL.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            info_DVL.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            info_DVL.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            eDVL->setInformation(info_DVL);
+            ROS_DEBUG_STREAM("DVL edge info:\n"<<info_DVL);
+            optimizer.addEdge(eDVL);
+
+
 
             EdgeDvlIMU *eG = new EdgeDvlIMU(pKFi->mpDvlPreintegrationKeyFrame);
             eG->setLevel(0);
@@ -3103,9 +2952,14 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
             eG->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
             eG->setId(optimizer.edges().size());
             Eigen::Matrix<double,9,9> info_DI=Eigen::Matrix<double,9,9>::Identity();
+            int visual_size = (mono_edges.size()+stereo_edges.size());
             if(pAtlas->IsIMUCalibrated()){
                 cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
                 cv::cv2eigen(cvInfo,info_DI);
+                info_DI=Eigen::Matrix<double,9,9>::Identity();
+                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e6;
+                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e4;
+                info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e4;
             }
             else{
                 // ROS_DEBUG_STREAM("Poor vision Hign DVL BA");
@@ -3117,73 +2971,9 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
             // info_DI(1,1) = 1e10; // before 10_24
             // ROS_INFO_STREAM("info: "<<info_DI);
             eG->setInformation(info_DI);
-            // info(0,0) = info(0,0)*500;
-            // if(v1->estimate().mPoorVision||v2->estimate().mPoorVision){
-            //     info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e8;
-            //     // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
-            //     // info_DI(1,1) = 1e10; // before 10_24
-            //     info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e6;
-            //     info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity()*1;
-            //     // ROS_INFO_STREAM("info: "<<info_DI);
-            //     eG->setInformation(info_DI);
-            // }
-            // else{
-            //     info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e8;
-            //     // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
-            //     // info_DI(1,1) = 1e10; // before 10_24
-            //     info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity()*1e6;
-            //     info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity()*1;
-            //     // ROS_INFO_STREAM("info: "<<info_DI);
-            //     eG->setInformation(info_DI);
-            // }
-            // eG->setId(maxKFid+1 + pKFi->mnId);
+            ROS_DEBUG_STREAM("IMU edge info:\n"<<info_DI);
             dvlimu_edges.push_back(eG);
             optimizer.addEdge(eG);
-
-            EdgeDvlIMUGravityRefine *eG1 = new EdgeDvlIMUGravityRefine(pKFi->mpDvlPreintegrationKeyFrame);
-            eG1->setLevel(1);
-            eG1->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
-            eG1->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
-            eG1->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
-            eG1->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            eG1->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG1));
-            eG1->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA1));
-            eG1->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
-            eG1->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            eG1->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            Eigen::Matrix<double,3,3> info_G = Eigen::Matrix<double,3,3>::Identity();
-            if(v1->estimate().mPoorVision && v2->estimate().mPoorVision){
-                info_G = info_G * lamda_DVL * 100;
-                eG1->setInformation(info_G*(mono_edges.size()+stereo_edges.size()));
-            }
-            else{
-                info_G = info_G* 1 * lamda_DVL;
-                eG1->setInformation(info_G  * (mono_edges.size()+stereo_edges.size()));
-            }
-            optimizer.addEdge(eG1);
-
-            // eG1->setId(maxKFid+1 + pKFi->mnId);
-            // only add first 5 KF for bias optimization
-            // if((pKF->mnId - pKFi->mnId)<5){
-            // 	ROS_DEBUG_STREAM("add bias edge: "<<pKFi->mPrevKF->mnId<<"->"<<pKFi->mnId);
-            //     EdgeDvlIMUGravityRefineWithBias *eG1 = new EdgeDvlIMUGravityRefineWithBias(pKFi->mpDvlPreintegrationKeyFrame);
-            //     eG1->setLevel(1);
-            //     eG1->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP1));
-            //     eG1->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VP2));
-            //     eG1->setVertex(2, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV1));
-            //     eG1->setVertex(3, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VV2));
-            //     eG1->setVertex(4, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VG));
-            //     eG1->setVertex(5, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VA));
-            //     eG1->setVertex(6, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_d_c));
-            //     eG1->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
-            //     eG1->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
-            //     eG1->setInformation(Eigen::Matrix<double, 9, 9>::Identity() * lamda_DVL * (stereo_edges.size()+mono_edges.size()));
-            //     optimizer.addEdge(eG1);
-            //     // ROS_INFO_STREAM("add bias refine edge, KF: "<<pKFi->mnId);
-            // }
-
-
-
         }
     }
 
@@ -3242,13 +3032,13 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
     stringstream ss;
     ss<<"LocalVisualAcousticInertial BA"<<"\n";
     // unique_lock<shared_timed_mutex> lock(pMap->mMutexMapUpdate);
-    for(auto o:remove_obs){
-        KeyFrame* pKFi = o.first;
-        MapPoint* pMpi = o.second;
-        pKFi->EraseMapPointMatch(pMpi);
-        pMpi->EraseObservation(pKFi);
-        ss<<"remove map point, KF: "<<pKFi->mnId<<", MP: "<<pMpi->mnId<<"\n";
-    }
+    // for(auto o:remove_obs){
+    //     KeyFrame* pKFi = o.first;
+    //     MapPoint* pMpi = o.second;
+    //     pKFi->EraseMapPointMatch(pMpi);
+    //     pMpi->EraseObservation(pKFi);
+    //     ss<<"remove map point, KF: "<<pKFi->mnId<<", MP: "<<pMpi->mnId<<"\n";
+    // }
     //update KF after current KF
     auto all_kf = pMap->GetAllKeyFrames();
     for(auto pkfi:all_kf){
