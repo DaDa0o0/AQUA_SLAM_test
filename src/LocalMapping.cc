@@ -196,10 +196,15 @@ void LocalMapping::Run()
                                 InitializeDvlIMU();
                             }
                         }
-                        else if((!mpAtlas->IsIMUCalibrated())&&(dis.first>1&&dis.second>0.5)){
+                        else if((!mpAtlas->IsIMUCalibrated())&&(dis.first>10&&dis.second>1)){
                             ROS_INFO_STREAM("try initialize IMU with sufficient motion");
                             InitializeDvlIMU();
                         }
+                        // else if((mpAtlas->IsIMUCalibrated() && !mpAtlas->IsIMUCalibrated2()) && (dis.first>10&&dis.second>1)){
+                        //     ROS_INFO_STREAM("try refine IMU bias with sufficient motion");
+                        //     InitializeDvlIMU();
+                        //     mpAtlas->SetIMUCalibrated2();
+                        // }
 
                     }
                     else {
@@ -1662,7 +1667,7 @@ void LocalMapping::InitializeDvlIMU()
 	// new bias has been set to all keyframes after optimization
 //	Optimizer::DvlGyroInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
     double clib_avg_error = 0;
-    if(dis.first<4||dis.second<1){
+    if(dis.first<3||dis.second<0.5){
         clib_avg_error = Optimizer::DvlIMUInitOptimization(mpAtlas->GetCurrentMap(),1e2,1e8);
     }
     else{
@@ -1691,7 +1696,7 @@ void LocalMapping::InitializeDvlIMU()
         return;
 
     }
-    else if (dis.first<1||dis.second<0.5){
+    else if (dis.first<3||dis.second<0.5){
         ROS_INFO_STREAM("init motion is not enough");
         ResetKFBias();
         mpAtlas->GetCurrentMap()->SetImuInitialized();
