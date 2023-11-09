@@ -196,7 +196,7 @@ void LocalMapping::Run()
                                 InitializeDvlIMU();
                             }
                         }
-                        else if((!mpAtlas->IsIMUCalibrated())&&(dis.first>4&&dis.second>1)){
+                        else if((!mpAtlas->IsIMUCalibrated())&&(dis.first>3&&dis.second>0.5)){
                             ROS_INFO_STREAM("try initialize IMU with sufficient motion");
                             InitializeDvlIMU();
                         }
@@ -1691,7 +1691,7 @@ void LocalMapping::InitializeDvlIMU()
         return;
 
     }
-    else if (dis.first<4||dis.second<1){
+    else if (dis.first<3||dis.second<0.5){
         ROS_INFO_STREAM("init motion is not enough");
         ResetKFBias();
         mpAtlas->GetCurrentMap()->SetImuInitialized();
@@ -1719,7 +1719,7 @@ void LocalMapping::InitializeDvlIMU()
         mpTracker->mCalibrated = true;
         mpTracker->mInitialized = true;
         bInitializing = false;
-        FullBA();
+        // FullBA();
         return;
         // FullBA();
     }
@@ -1769,6 +1769,8 @@ void LocalMapping::FullBA()
 std::pair<double,double> LocalMapping::GetTravelDistance()
 {
     auto all_kfs = mpAtlas->GetAllKeyFrames();
+    //sort
+    std::sort(all_kfs.begin(),all_kfs.end(),[](KeyFrame* a,KeyFrame* b){return a->mnId<b->mnId;});
     Eigen::Isometry3d T_c0_ci = Eigen::Isometry3d::Identity();
     double t_dis = 0;
     double R_dis = 0;

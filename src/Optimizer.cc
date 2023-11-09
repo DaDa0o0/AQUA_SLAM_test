@@ -13647,8 +13647,11 @@ double Optimizer::DvlIMUInitOptimization(Map *pMap, double priori_g, double prio
 			ei2->setVertex(7, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VT_g_d));
 			ei2->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_w_b0));
             Eigen::Matrix<double, 9, 9> info = Eigen::Matrix<double, 9, 9>::Identity()* 1e6;
-            cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
-            cv::cv2eigen(cvInfo, info);
+            // cv::Mat cvInfo = pKFi->mpDvlPreintegrationKeyFrame->C.rowRange(0,9).colRange(0,9).inv(cv::DECOMP_SVD);
+            // cv::cv2eigen(cvInfo, info);
+            info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e6;
+            info.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e4;
+            info.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e4;
             // info.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e6;
             // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
             // info_DI(1,1) = 1e9; // before 10_24
