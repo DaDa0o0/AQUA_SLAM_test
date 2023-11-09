@@ -1595,9 +1595,9 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             }
             else{
                 // ROS_DEBUG_STREAM("Poor vision Hign DVL BA");
-                eG->setLevel(1);
-                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1;
-                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1;
+                // eG->setLevel(1);
+                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e10;
+                info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e5;
                 info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1;
             }
             // info(0,0) = info(0,0)*lamda_DVL * 5e3; // 10_24
