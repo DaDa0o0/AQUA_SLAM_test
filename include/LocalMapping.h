@@ -189,6 +189,8 @@ protected:
 
     bool mbCalibrated;
 
+    double mInitTranslationThred, mInitRotationThred;
+
     //DEBUG
     ofstream f_lm;
 

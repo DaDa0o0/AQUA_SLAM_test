@@ -68,6 +68,13 @@ LocalMapping::LocalMapping(System *pSys,
 	double dCalibrated;
 	dCalibrated = fSettings["Optimizer.calibrated"];
 	mbCalibrated = dCalibrated == 1;
+    mInitTranslationThred = fSettings["IMUInitTranslation"];
+    mInitRotationThred = fSettings["IMUInitRotation"];
+    stringstream ss;
+    ss<<" Local Mapper Parameter Setting: "<<endl;
+    ss<<" IMUInitTranslation: "<<mInitTranslationThred<<endl;
+    ss<<" IMUInitRotation: "<<mInitRotationThred<<endl;
+    ROS_INFO_STREAM(ss.str());
 
 
 	//f_lm.open("localMapping_times" + strSequence + ".txt");
@@ -196,7 +203,7 @@ void LocalMapping::Run()
                                 InitializeDvlIMU();
                             }
                         }
-                        else if((!mpAtlas->IsIMUCalibrated())&&(dis.first>10&&dis.second>1)){
+                        else if((!mpAtlas->IsIMUCalibrated())&&(dis.first>mInitTranslationThred&&dis.second>mInitRotationThred)){
                             ROS_INFO_STREAM("try initialize IMU with sufficient motion");
                             InitializeDvlIMU();
                         }
@@ -1667,7 +1674,7 @@ void LocalMapping::InitializeDvlIMU()
 	// new bias has been set to all keyframes after optimization
 //	Optimizer::DvlGyroInitOptimization(mpAtlas->GetCurrentMap(), mbg, mbMonocular, priorG);
     double clib_avg_error = 0;
-    if(dis.first<3||dis.second<0.5){
+    if(dis.first<mInitTranslationThred||dis.second<mInitRotationThred){
         clib_avg_error = Optimizer::DvlIMUInitOptimization(mpAtlas->GetCurrentMap(),1e2,1e8);
     }
     else{
@@ -1686,17 +1693,18 @@ void LocalMapping::InitializeDvlIMU()
         mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
         mpAtlas->SetDvlImuInitialized();
         mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-        mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
+        // mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
         mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
         mpTracker->mCalibrated = true;
         mpTracker->mInitialized = true;
         bInitializing = false;
         mpAtlas->SetIMUCalibrated();
         FullBA();
+        mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
         return;
 
     }
-    else if (dis.first<3||dis.second<0.5){
+    else if (dis.first<mInitTranslationThred||dis.second<mInitRotationThred){
         ROS_INFO_STREAM("init motion is not enough");
         ResetKFBias();
         mpAtlas->GetCurrentMap()->SetImuInitialized();
@@ -1719,12 +1727,13 @@ void LocalMapping::InitializeDvlIMU()
         mpAtlas->setRGravity(mpAtlas->GetCurrentMap()->getRGravity());
         mpAtlas->SetDvlImuInitialized();
         mpTracker->mpRosHandler->UpdateMap(mpAtlas);
-        mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
+        // mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
         mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
         mpTracker->mCalibrated = true;
         mpTracker->mInitialized = true;
         bInitializing = false;
         FullBA();
+        mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
         return;
         // FullBA();
     }
