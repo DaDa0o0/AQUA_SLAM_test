@@ -310,8 +310,8 @@ target_link_libraries(stereo_dvl2 ${Boost_LIBRARIES} ${PROJECT_NAME} ${PROJECT_N
 target_compile_features(stereo_dvl2 PUBLIC cxx_std_17)
 add_dependencies(stereo_dvl2 ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(align src/test/align_trajectory.cpp)
-target_link_libraries(align ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
+#add_executable(align src/test/align_trajectory.cpp)
+#target_link_libraries(align ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
 #
 #add_executable(dense src/test/dense_reconstruct.cpp)
 #target_link_libraries(dense ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
