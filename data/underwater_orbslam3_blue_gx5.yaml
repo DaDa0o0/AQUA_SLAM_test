@@ -119,7 +119,7 @@ RightImgTopic: "/camera/right/image_dehazed"
 #RightImgTopic: "/camera_black/img_r"
 ImuTopic: "/imu/data"
 DvlTopic: "/bluerov2/DVL"
-EnableLoopDetection: 0
+EnableLoopDetection: 1
 IMUInitTranslation: 15.0 # 10.0 can calibrate well, but some sequence cannot reach 10
 IMUInitRotation: 1.0
 

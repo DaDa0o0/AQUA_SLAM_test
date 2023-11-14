@@ -1566,6 +1566,9 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             info_DVL.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e2;
             info_DVL.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e2;
             eDVL->setInformation(info_DVL);
+            if(!pAtlas->IsIMUCalibrated()){
+                eDVL->setLevel(1);
+            }
             ROS_DEBUG_STREAM("DVL edge info:\n"<<info_DVL);
             optimizer.addEdge(eDVL);
 
