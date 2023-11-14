@@ -145,7 +145,7 @@ void LocalMapping::Run()
 				if (mpAtlas->KeyFramesInMap() >= 2) {
                     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
                     // if (!mpAtlas->isDvlImuInitialized()||mBiasRefineCount<2) {
-                    if (!mpAtlas->isDvlImuInitialized()) {
+                    if (!mpAtlas->IsIMUCalibrated()) {
                     if(mpAtlas->KeyFramesInMap() > 2)
                         Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,
                                                      &mbAbortBA,
