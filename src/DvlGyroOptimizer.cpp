@@ -1596,7 +1596,7 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             else{
                 // ROS_DEBUG_STREAM("Poor vision Hign DVL BA");
                 // eG->setLevel(1);
-                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e3;
+                info_DI.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1;
                 info_DI.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e3;
                 info_DI.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e3;
             }
@@ -2580,7 +2580,7 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
         }
         VertexPoseDvlIMU *VP = new VertexPoseDvlIMU(pKFi);
         VP->setId(pKFi->mnId);
-        VP->setFixed(false);
+        VP->setFixed(true);
         optimizer.addVertex(VP);
         // ROS_INFO_STREAM("opt KF: "<<pKFi->mnId);
 
@@ -2696,7 +2696,7 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
                 if (find(LocalFixedMapPoints.begin(), LocalFixedMapPoints.end(), pMP) != LocalFixedMapPoints.end()) {
                     vPoint->setFixed(true);
                 } else {
-                    vPoint->setFixed(false);
+                    vPoint->setFixed(true);
                 }
                 optimizer.addVertex(vPoint);
 
