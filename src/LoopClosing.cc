@@ -45,8 +45,8 @@ LoopClosing::LoopClosing(Atlas *pAtlas, KeyFrameDatabase *pDB, ORBVocabulary *pV
     mpLastCurrentKF = static_cast<KeyFrame*>(NULL);
     mpNH=boost::make_shared<ros::NodeHandle>();
     mpIt=boost::make_shared<image_transport::ImageTransport>(*mpNH);
-    mImgPub_cur_keyframe=mpIt->advertise("ORB_DVL/loop/cur_img",10);
-    mImgPub_map_keyframe=mpIt->advertise("ORB_DVL/loop/map_img",10);
+    mImgPub_cur_keyframe=mpIt->advertise("/AQUA_SLAM/loop/cur_img",10);
+    mImgPub_map_keyframe=mpIt->advertise("AQUA_SLAM/loop/map_img",10);
 	mTargetMapID = -1;
 }
 
@@ -603,8 +603,8 @@ bool LoopClosing::DetectAndReffineSim3FromLastKF(KeyFrame* pCurrentKF, KeyFrame*
 bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, KeyFrame* &pMatchedKF2, KeyFrame* &pLastCurrentKF, g2o::Sim3 &g2oScw,
                                              int &nNumCoincidences, std::vector<MapPoint*> &vpMPs, std::vector<MapPoint*> &vpMatchedMPs)
 {
-    int nBoWMatches = 20;
-    int nBoWInliers = 15;
+    int nBoWMatches = 10;
+    int nBoWInliers = 7;
     int nSim3Inliers = 5;
     int nProjMatches = 20;
     int nProjOptMatches = 30;
@@ -729,7 +729,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
             }
         }
 
-
+       ROS_INFO_STREAM("numBoWMatches:"<<numBoWMatches<<" threshold:"<<nBoWMatches);
         if(!bAbortByNearKF && numBoWMatches >= nBoWMatches) // TODO pick a good threshold
         {
 
@@ -743,7 +743,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
              */
             Sim3Solver solver = Sim3Solver(mpCurrentKF, pMostBoWMatchesKF, vpMatchedPoints, bFixedScale, vpKeyFrameMatchedMP);
             solver.SetRansacParameters(0.99, nBoWInliers, 300); // at least 15 inliers
-//			cout<<"set Ransac solver: "<<endl;
+			cout<<"set Ransac solver: "<<endl;
 			//ROS_INFO_STREAM("set Ransac solver");
 
             bool bNoMore = false;
@@ -758,7 +758,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
 
             if(bConverge)
             {
-                //cout <<"BoW: " << nInliers << " inliers in Sim3Solver" << endl;
+                cout <<"BoW: " << nInliers << " inliers in Sim3Solver" << endl;
 
                 // Match by reprojection
                 //int nNumCovisibles = 5;
@@ -810,7 +810,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                 vpMatchedKF.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<KeyFrame*>(NULL));
                 int numProjMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpKeyFrames, vpMatchedMP, vpMatchedKF, 8, 1.5);
 //                cout <<"BoW: " << numProjMatches << " matches between " << vpMapPoints.size() << " points with coarse Sim3" << endl;
-				//ROS_INFO_STREAM("re-projection matched points: "<<numProjMatches<<" threshold: "<<nProjMatches);
+				ROS_INFO_STREAM("re-projection matched points: "<<numProjMatches<<" threshold: "<<nProjMatches);
 
                 if(numProjMatches >= nProjMatches)
                 {
@@ -821,8 +821,8 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                     if(mpTracker->mSensor==System::IMU_MONOCULAR && !mpCurrentKF->GetMap()->GetIniertialBA2())
                         bFixedScale=false;
 
-                    int numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedMP, gScm, 10, mbFixScale, mHessian7x7, true);
-
+                    int numOptMatches = Optimizer::OptimizeSim3(mpCurrentKF, pKFi, vpMatchedMP, gScm, 20, true, mHessian7x7, true);
+                    ROS_INFO_STREAM("Optimize Sim3: "<<numOptMatches<<" inliers, threshold: "<<nSim3Inliers);
                     if(numOptMatches >= nSim3Inliers)
                     {
 						// gSmw: Similarity transformation from world to the keyframe candidate(previous keyframe in the map) which may have loop
@@ -839,7 +839,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
                         vpMatchedMP.resize(mpCurrentKF->GetMapPointMatches().size(), static_cast<MapPoint*>(NULL));
                         int numProjOptMatches = matcher.SearchByProjection(mpCurrentKF, mScw, vpMapPoints, vpMatchedMP, 5, 1.0);
                         //cout <<"BoW: " << numProjOptMatches << " matches after of the Sim3 optimization" << endl;
-						//ROS_INFO_STREAM(numProjOptMatches << " matches after of the Sim3 optimization"<<", threshold: "<<numProjOptMatches);
+						ROS_INFO_STREAM(numProjOptMatches << " matches after of the Sim3 optimization"<<", threshold: "<<numProjOptMatches);
 
                         /**
                          * if the inliers are more than a threshold

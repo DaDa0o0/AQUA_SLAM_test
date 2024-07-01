@@ -26,14 +26,14 @@ namespace ORB_SLAM3
     {
         ros::NodeHandle nh_;
         image_transport::ImageTransport it(nh_);
-        image_transport::Publisher depth_pub = it.advertise("/ORBSLAM3_tight/dense_mapper/depth", 10);
+        image_transport::Publisher depth_pub = it.advertise("/AQUA_SLAM/dense_mapper/depth", 10);
         mDepthPub = boost::shared_ptr<image_transport::Publisher>(
                 boost::make_shared<image_transport::Publisher>(depth_pub));
         image_transport::Publisher depth_conf_pub = it.advertise(
-                "/ORBSLAM3_tight/dense_mapper/depth_cpnfidence", 10);
+                "/AQUA_SLAM/dense_mapper/depth_cpnfidence", 10);
         mDepthConfPub = boost::shared_ptr<image_transport::Publisher>(
                 boost::make_shared<image_transport::Publisher>(depth_conf_pub));
-        ros::Publisher pointcloud_pub = nh_.advertise<sensor_msgs::PointCloud2>("/ORBSLAM3_tight/dense_map",
+        ros::Publisher pointcloud_pub = nh_.advertise<sensor_msgs::PointCloud2>("/AQUA_SLAM/dense_map",
                                                                                 10);
         mMapPub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pointcloud_pub));
 
@@ -443,7 +443,7 @@ namespace ORB_SLAM3
         sor.setLeafSize(0.05f, 0.05f, 0.05f);
         //	sor.filter(filtered_cloud);
         pcl::toROSMsg(mGlobalMap, dense_map);
-        dense_map.header.frame_id = "orb_slam";
+        dense_map.header.frame_id = "AQUA_SLAM";
         mMapPub->publish(dense_map);
         //	mMapPub->publish(mGlobalMap);
     }

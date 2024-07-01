@@ -19,61 +19,61 @@ RosHandling::RosHandling(System *pSys, LocalMapping *pLocal)
 	ros::NodeHandle nh_;
 	image_transport::ImageTransport it(nh_);
 
-	image_transport::Publisher img_l_pub = it.advertise("/suv3d/left/image_raw", 10);
+	image_transport::Publisher img_l_pub = it.advertise("/AQUA_SLAM/left/image_raw", 10);
 	mp_img_l_pub =
 		boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_l_pub));
 
-	image_transport::Publisher img_r_pub = it.advertise("/suv3d/right/image_raw", 10);
+	image_transport::Publisher img_r_pub = it.advertise("/AQUA_SLAM/right/image_raw", 10);
 	mp_img_r_pub =
 		boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_r_pub));
 
-	image_transport::Publisher img_info_pub = it.advertise("/ORBSLAM3_tightly/img_with_info", 10);
+	image_transport::Publisher img_info_pub = it.advertise("/AQUA_SLAM/img_with_info", 10);
 	mp_img_info_pub =
 		boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_info_pub));
 
-	image_transport::Publisher img_merge_pub = it.advertise("/ORBSLAM3_tightly/img_merge_cand", 10);
+	image_transport::Publisher img_merge_pub = it.advertise("/AQUA_SLAM/img_merge_cand", 10);
 	mp_img_merge_cond_pub =
 		boost::shared_ptr<image_transport::Publisher>(boost::make_shared<image_transport::Publisher>(img_merge_pub));
 
 
-	ros::Publisher gt_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_dvl/gt", 10);
-	mp_gt_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(gt_pub));
-	ros::Publisher gt_path_pub = nh_.advertise<nav_msgs::Path>("orb_path_gt", 10);
-	mp_gt_path_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(gt_path_pub));
+	// ros::Publisher gt_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_dvl/gt", 10);
+	// mp_gt_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(gt_pub));
+	// ros::Publisher gt_path_pub = nh_.advertise<nav_msgs::Path>("orb_path_gt", 10);
+	// mp_gt_path_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(gt_path_pub));
 
-	ros::Publisher integration_path_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tightly/integration_path", 10);
+	ros::Publisher integration_path_pub = nh_.advertise<nav_msgs::Path>("/AQUA_SLAM/integration_path", 10);
 	mp_integration_path_pub =
 		boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(integration_path_pub));
-    ros::Publisher ref_integration_path_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tightly/ref_integration_path", 10);
+    ros::Publisher ref_integration_path_pub = nh_.advertise<nav_msgs::Path>("/AQUA_SLAM/ref_integration_path", 10);
     mp_ref_integration_path_pub =
             boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(ref_integration_path_pub));
     // initialize mp_markers_pub
-    ros::Publisher markers_pub = nh_.advertise<visualization_msgs::MarkerArray>("/ORBSLAM3_tightly/markers", 10);
+    ros::Publisher markers_pub = nh_.advertise<visualization_msgs::MarkerArray>("/AQUA_SLAM/markers", 10);
     mp_markers_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(markers_pub));
-	ros::Publisher pose_orb_pub = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/orb_pose", 10);
+	ros::Publisher pose_orb_pub = nh_.advertise<geometry_msgs::PoseStamped>("/AQUA_SLAM/orb_pose", 10);
 	mp_pose_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_orb_pub));
-	ros::Publisher odom_orb_pub = nh_.advertise<nav_msgs::Odometry>("/ORBSLAM3_tightly/orb_odom", 10);
+	ros::Publisher odom_orb_pub = nh_.advertise<nav_msgs::Odometry>("/AQUA_SLAM/orb_odom", 10);
 	mp_odom_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(odom_orb_pub));
-	ros::Publisher path_orb_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3_tightly/orb_path", 10);
+	ros::Publisher path_orb_pub = nh_.advertise<nav_msgs::Path>("/AQUA_SLAM/orb_path", 10);
 	mp_path_orb_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(path_orb_pub));
-	ros::Publisher pose_orb_camera_pub = nh_.advertise<nav_msgs::Odometry>("/ORBSLAM3_tightly/camera_pose", 10);
+	ros::Publisher pose_orb_camera_pub = nh_.advertise<nav_msgs::Odometry>("/AQUA_SLAM/camera_pose", 10);
 	mp_pose_orb_camera_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_orb_camera_pub));
 
-	ros::Publisher pose_ekf_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_ekf_pose", 10);
-	mp_pose_ekf_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_ekf_pub));
-	ros::Publisher path_ekf_pub = nh_.advertise<nav_msgs::Path>("/ORBSLAM3/ekf_path", 10);
+	// ros::Publisher pose_ekf_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_ekf_pose", 10);
+	// mp_pose_ekf_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_ekf_pub));
+	ros::Publisher path_ekf_pub = nh_.advertise<nav_msgs::Path>("/AQUA_SLAM/ekf_path", 10);
 	mp_path_ekf_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(path_ekf_pub));
 
-	ros::Publisher pose_pointcloud_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_point_pose", 10);
-	mp_pose_pointcloud_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_pointcloud_pub));
+	// ros::Publisher pose_pointcloud_pub = nh_.advertise<geometry_msgs::PoseStamped>("orb_point_pose", 10);
+	// mp_pose_pointcloud_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_pointcloud_pub));
 
 //	ros::ServiceClient lost_srv = nh_.serviceClient<vehicle_interface::AlarmStoppedTracking>("/ORBSLAM3/lost");
 //	mp_lost_srv = boost::shared_ptr<ros::ServiceClient>(boost::make_shared<ros::ServiceClient>(lost_srv));
 
-	ros::Publisher pointcloud_pub = nh_.advertise<sensor_msgs::PointCloud2>("/ORBSLAM3_tightly/sparse_map", 100);
+	ros::Publisher pointcloud_pub = nh_.advertise<sensor_msgs::PointCloud2>("/AQUA_SLAM/sparse_map", 100);
 	mp_pointcloud_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pointcloud_pub));
 
-	ros::Publisher octomap_pub = nh_.advertise<octomap_msgs::Octomap>("/ORBSLAM3_tightly/octomap", 10);
+	ros::Publisher octomap_pub = nh_.advertise<octomap_msgs::Octomap>("/AQUA_SLAM/octomap", 10);
 	mp_octomap_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(octomap_pub));
 	mp_cloud_occupied = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
 	mp_cloud_occupied->reserve(5000);
@@ -81,29 +81,29 @@ RosHandling::RosHandling(System *pSys, LocalMapping *pLocal)
 	mp_cloud_free->reserve(50000);
 	m_octomap_resolution = 0.1;
 	mp_octree = boost::make_shared<octomap::OcTree>(octomap::OcTree(m_octomap_resolution));
-	ros::Publisher map_info_pub = nh_.advertise<vehicle_interface::MapInfo>("/ORBSLAM3_tightly/map_info", 10);
+	ros::Publisher map_info_pub = nh_.advertise<vehicle_interface::MapInfo>("/AQUA_SLAM/map_info", 10);
 	mp_map_info_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(map_info_pub));
 
 	ros::Publisher
-		pose_integration_ref = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/integration_ref", 10);
+		pose_integration_ref = nh_.advertise<geometry_msgs::PoseStamped>("/AQUA_SLAM/integration_ref", 10);
 	mp_pose_integration_ref_pub =
 		boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_integration_ref));
 
 	ros::Publisher
-		pose_integration_cur = nh_.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/integration_cur", 10);
+		pose_integration_cur = nh_.advertise<geometry_msgs::PoseStamped>("/AQUA_SLAM/integration_cur", 10);
 	mp_pose_integration_cur_pub =
 		boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(pose_integration_cur));
 
-	ros::ServiceServer save_srv = nh_.advertiseService("/ORBSLAM3_tightly/save", &RosHandling::SavePose, this);
+	ros::ServiceServer save_srv = nh_.advertiseService("/AQUA_SLAM/save", &RosHandling::SavePose, this);
 	mp_save_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(save_srv));
 
-	ros::ServiceServer load_srv = nh_.advertiseService("/ORBSLAM3_tightly/load_map", &RosHandling::LoadMap, this);
+	ros::ServiceServer load_srv = nh_.advertiseService("/AQUA_SLAM/load_map", &RosHandling::LoadMap, this);
 	m_load_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(load_srv));
 
-	ros::ServiceServer calib_srv = nh_.advertiseService("/ORBSLAM3_tightly/calibrate", &RosHandling::CalibrateDVLGyro, this);
+	ros::ServiceServer calib_srv = nh_.advertiseService("/AQUA_SLAM/calibrate", &RosHandling::CalibrateDVLGyro, this);
 	m_calib_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(calib_srv));
 
-    ros::ServiceServer fullBA_srv = nh_.advertiseService("/ORBSLAM3_tightly/fullBA", &RosHandling::FullBA, this);
+    ros::ServiceServer fullBA_srv = nh_.advertiseService("/AQUA_SLAM/fullBA", &RosHandling::FullBA, this);
     m_fullBA_srv = boost::shared_ptr<ros::ServiceServer>(boost::make_shared<ros::ServiceServer>(fullBA_srv));
 
     mT_w_c0.setIdentity();
@@ -121,24 +121,6 @@ void RosHandling::PublishRightImg(const sensor_msgs::ImageConstPtr &img)
 void RosHandling::PublishImgWithInfo(const sensor_msgs::ImageConstPtr &img)
 {
 	mp_img_info_pub->publish(img);
-}
-void RosHandling::PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time &stamp)
-{
-	geometry_msgs::PoseStamped gt_pose;
-	gt_pose.header.frame_id = "orb_slam";
-	gt_pose.header.stamp = stamp;
-	gt_pose.pose.position.x = T_g0_gj_gt.translation().x();
-	gt_pose.pose.position.y = T_g0_gj_gt.translation().y();
-	gt_pose.pose.position.z = T_g0_gj_gt.translation().z();
-	Eigen::Quaterniond r = Eigen::Quaterniond(T_g0_gj_gt.rotation());
-	gt_pose.pose.orientation.x = r.x();
-	gt_pose.pose.orientation.y = r.y();
-	gt_pose.pose.orientation.z = r.z();
-	gt_pose.pose.orientation.w = r.w();
-	mp_gt_pub->publish(gt_pose);
-	m_gt_path.header = gt_pose.header;
-	m_gt_path.poses.push_back(gt_pose);
-	mp_gt_path_pub->publish(m_gt_path);
 }
 
 void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb,
@@ -162,7 +144,7 @@ void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb,
 	Eigen::Isometry3d T_d0_dj = T_d_c * T_c0_cj_orb * T_d_c.inverse();
 
 	geometry_msgs::PoseStamped pose_to_pub;
-	pose_to_pub.header.frame_id = "orb_slam";
+	pose_to_pub.header.frame_id = "AQUA_SLAM";
 	//pose_to_pub.header.stamp=ros::Time::now();
 	pose_to_pub.header.stamp = stamp;
 	pose_to_pub.pose.position.x = T_w_cj.translation().x();
@@ -179,7 +161,7 @@ void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb,
 	pose_to_pub.pose.orientation.w = rotation_q.w();
 
 	mp_pose_orb_pub->publish(pose_to_pub);
-	// BroadcastTF(T_d0_dj, stamp, "orb_slam", "camera_dvl2_link");
+	// BroadcastTF(T_d0_dj, stamp, "AQUA_SLAM", "camera_dvl2_link");
 //	m_path_orb.header = pose_to_pub.header;
 //	m_path_orb.poses.push_back(pose_to_pub);
 //	mp_path_orb_pub->publish(m_path_orb);
@@ -202,61 +184,14 @@ void RosHandling::PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb,
 	pose_to_pub.pose.orientation.y = rotation_q.y();
 	pose_to_pub.pose.orientation.z = rotation_q.z();
 	pose_to_pub.pose.orientation.w = rotation_q.w();
-//	BroadcastTF(T_c0_cj_orb, stamp, "orb_slam", "orb_odom");
+	Eigen::Isometry3d T_w_rviz = T_w_cj * T_c_rviz;
+	BroadcastTF(T_w_rviz, stamp, "AQUA_SLAM", "/bluerov/base_link");
 	nav_msgs::Odometry odom;
 	odom.header = pose_to_pub.header;
 	odom.pose.pose = pose_to_pub.pose;
 	mp_odom_orb_pub->publish(odom);
 }
 
-void RosHandling::PublishEkf(const Eigen::Isometry3d &T_e0_ej_ekf, const ros::Time &stamp)
-{
-	geometry_msgs::PoseStamped pose_to_pub;
-	pose_to_pub.header.frame_id = "orb_slam";
-	//pose_to_pub.header.stamp=ros::Time::now();
-	pose_to_pub.header.stamp = stamp;
-	pose_to_pub.pose.position.x = T_e0_ej_ekf.translation().x();
-	pose_to_pub.pose.position.y = T_e0_ej_ekf.translation().y();
-	pose_to_pub.pose.position.z = T_e0_ej_ekf.translation().z();
-	// Eigen::Matrix3d rotation_matrix;
-	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
-	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
-	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
-	Eigen::Quaterniond rotation_q = Eigen::Quaterniond(T_e0_ej_ekf.rotation());
-	pose_to_pub.pose.orientation.x = rotation_q.x();
-	pose_to_pub.pose.orientation.y = rotation_q.y();
-	pose_to_pub.pose.orientation.z = rotation_q.z();
-	pose_to_pub.pose.orientation.w = rotation_q.w();
-
-	mp_pose_ekf_pub->publish(pose_to_pub);
-	m_path_ekf.header = pose_to_pub.header;
-	m_path_ekf.poses.push_back(pose_to_pub);
-	mp_path_ekf_pub->publish(m_path_ekf);
-
-}
-
-void RosHandling::PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, const ros::Time &stamp)
-{
-	geometry_msgs::PoseStamped pose_to_pub;
-	pose_to_pub.header.frame_id = "orb_slam";
-	//pose_to_pub.header.stamp=ros::Time::now();
-	pose_to_pub.header.stamp = stamp;
-	pose_to_pub.pose.position.x = T_c0_cmj.translation().x();
-	pose_to_pub.pose.position.y = T_c0_cmj.translation().y();
-	pose_to_pub.pose.position.z = T_c0_cmj.translation().z();
-	// Eigen::Matrix3d rotation_matrix;
-	// rotation_matrix<< R.at<float>(0, 0), R.at<float>(0, 1), R.at<float>(0, 2),
-	// R.at<float>(1, 0), R.at<float>(1, 1), R.at<float>(1, 2),
-	// R.at<float>(2, 0), R.at<float>(2, 1), R.at<float>(2, 2);
-	Eigen::Quaterniond rotation_q = Eigen::Quaterniond(T_c0_cmj.rotation());
-	pose_to_pub.pose.orientation.x = rotation_q.x();
-	pose_to_pub.pose.orientation.y = rotation_q.y();
-	pose_to_pub.pose.orientation.z = rotation_q.z();
-	pose_to_pub.pose.orientation.w = rotation_q.w();
-
-	mp_pose_pointcloud_pub->publish(pose_to_pub);
-
-}
 
 void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 {
@@ -359,7 +294,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 
     sensor_msgs::PointCloud2 sparse_map;
     pcl::toROSMsg(*mp_cloud_occupied, sparse_map);
-    sparse_map.header.frame_id = "orb_slam";
+    sparse_map.header.frame_id = "AQUA_SLAM";
     mp_pointcloud_pub->publish(sparse_map);
 
 	// remove noise map point
@@ -399,7 +334,7 @@ void RosHandling::UpdateMap(ORB_SLAM3::Atlas *pAtlas)
 //
 // 	// sensor_msgs::PointCloud2 sparse_map;
 // 	// pcl::toROSMsg(*mp_cloud_occupied, sparse_map);
-// 	// sparse_map.header.frame_id = "orb_slam";
+// 	// sparse_map.header.frame_id = "AQUA_SLAM";
 // 	// mp_pointcloud_pub->publish(sparse_map);
 //
 //
@@ -621,7 +556,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
                 Eigen::Isometry3d T_w_cf_ref = T_w_c0_ref * T_c0_cf;
 
                 geometry_msgs::PoseStamped pose_to_pub;
-                pose_to_pub.header.frame_id = "orb_slam";
+                pose_to_pub.header.frame_id = "AQUA_SLAM";
                 //pose_to_pub.header.stamp=ros::Time::now();
                 pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
                 pose_to_pub.pose.position.x = T_w_c1.translation().x();
@@ -689,7 +624,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             poses_integration.push_back(T_w_cj_integration);
 
             geometry_msgs::PoseStamped pose_to_pub;
-            pose_to_pub.header.frame_id = "orb_slam";
+            pose_to_pub.header.frame_id = "AQUA_SLAM";
             //pose_to_pub.header.stamp=ros::Time::now();
             pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
             pose_to_pub.pose.position.x = T_w_cj_integration.translation().x();
@@ -715,7 +650,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             //		T_c0_cj_orb = T_c_enu.inverse() * T_c0_cj_orb * T_c_enu;
             Eigen::Isometry3d T_w_cj_orb = T_w_c0 * T_c0_cj_orb ;
 
-            pose_to_pub.header.frame_id = "orb_slam";
+            pose_to_pub.header.frame_id = "AQUA_SLAM";
             //pose_to_pub.header.stamp=ros::Time::now();
             pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
             pose_to_pub.pose.position.x = T_w_cj_orb.translation().x();
@@ -735,7 +670,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             visualization_msgs::Marker marker;
             marker.header = pose_to_pub.header;
             marker.pose = pose_to_pub.pose;
-            marker.ns = "orb_slam";
+            marker.ns = "AQUA_SLAM";
             marker.id = pKF->mnId;
             marker.type = visualization_msgs::Marker::SPHERE;
             marker.action = visualization_msgs::Marker::ADD;
@@ -756,8 +691,7 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
             marker.lifetime = ros::Duration(0);
             all_markers.markers.push_back(marker);
 
-            m_path_orb.header = pose_to_pub.header;
-            m_path_orb.poses.push_back(pose_to_pub);
+
 
             pKF = pKF->mNextKF;
 
@@ -765,6 +699,28 @@ void RosHandling::PublishIntegration(Atlas *pAtlas)
 
     }
 
+	for(auto pKF:all_kf){
+		cv::Mat  T_c0_cj_cv = pKF->GetPoseInverse();
+		Eigen::Isometry3d T_c0_cj = Eigen::Isometry3d::Identity();
+		cv::cv2eigen(T_c0_cj_cv,T_c0_cj.matrix());
+		Eigen::Isometry3d T_w_cj = mT_w_c0 * T_c0_cj;
+		geometry_msgs::PoseStamped pose_to_pub;
+		pose_to_pub.header.frame_id = "AQUA_SLAM";
+		pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
+		pose_to_pub.pose.position.x = T_w_cj.translation().x();
+		pose_to_pub.pose.position.y = T_w_cj.translation().y();
+		pose_to_pub.pose.position.z = T_w_cj.translation().z();
+		Eigen::Quaterniond rotation_q(T_w_cj.rotation());
+		pose_to_pub.pose.orientation.x = rotation_q.x();
+		pose_to_pub.pose.orientation.y = rotation_q.y();
+		pose_to_pub.pose.orientation.z = rotation_q.z();
+		pose_to_pub.pose.orientation.w = rotation_q.w();
+
+
+		m_path_orb.header = pose_to_pub.header;
+		m_path_orb.poses.push_back(pose_to_pub);
+
+	}
 	mp_integration_path_pub->publish(m_integration_path);
 	mp_path_orb_pub->publish(m_path_orb);
     mp_ref_integration_path_pub->publish(m_ref_integration_path);
@@ -799,7 +755,7 @@ void RosHandling::PublishLossKF(set<KeyFrame*, KFComparator> &loss_kfs)
         Eigen::Isometry3d T_w_cj_orb = T_w_c0 * T_c0_cj_orb;
 
         geometry_msgs::PoseStamped pose_to_pub;
-        pose_to_pub.header.frame_id = "orb_slam";
+        pose_to_pub.header.frame_id = "AQUA_SLAM";
         pose_to_pub.header.stamp = ros::Time(pKF->mTimeStamp);
         pose_to_pub.pose.position.x = T_w_cj_orb.translation().x();
         pose_to_pub.pose.position.y = T_w_cj_orb.translation().y();
@@ -814,7 +770,7 @@ void RosHandling::PublishLossKF(set<KeyFrame*, KFComparator> &loss_kfs)
         visualization_msgs::Marker marker;
         marker.header = pose_to_pub.header;
         marker.pose = pose_to_pub.pose;
-        marker.ns = "orb_slam";
+        marker.ns = "AQUA_SLAM";
         marker.id = pKF->mnId;
         marker.type = visualization_msgs::Marker::SPHERE;
         marker.action = visualization_msgs::Marker::ADD;
@@ -834,7 +790,7 @@ void RosHandling::PublishLossKF(set<KeyFrame*, KFComparator> &loss_kfs)
 void RosHandling::PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const Eigen::Isometry3d &T_e0_ec)
 {
 	geometry_msgs::PoseStamped pose_to_pub;
-	pose_to_pub.header.frame_id = "orb_slam";
+	pose_to_pub.header.frame_id = "AQUA_SLAM";
 	pose_to_pub.header.stamp = ros::Time::now();
 //	pose_to_pub.header.stamp = stamp;
 	pose_to_pub.pose.position.x = T_e0_er.translation().x();
@@ -870,7 +826,7 @@ void RosHandling::PublishLossInteration(const Eigen::Isometry3d &T_e0_er, const 
 void RosHandling::PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp)
 {
 	nav_msgs::Odometry pose_to_pub;
-	pose_to_pub.header.frame_id = "orb_slam";
+	pose_to_pub.header.frame_id = "AQUA_SLAM";
 	//pose_to_pub.header.stamp=ros::Time::now();
 	pose_to_pub.header.stamp = stamp;
 
@@ -892,7 +848,7 @@ void RosHandling::PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros:
 bool RosHandling::SavePose(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
 	string out_path;
-	ros::param::get("/ORBSLAM3_tightly/traj_path", out_path);
+	ros::param::get("/AQUA_SLAM/traj_path", out_path);
 	// mp_system->SaveKeyFrameTrajectoryTUM(out_path + "KeyFrameTrajectory_TUM_Format");
     mp_system->SaveKeyFrameTrajectory(out_path);
 	// mp_system->mpDenseMapper->Save(out_path);
@@ -902,7 +858,7 @@ bool RosHandling::SavePose(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse 
 bool RosHandling::LoadMap(std_srvs::EmptyRequest &req, std_srvs::EmptyResponse &res)
 {
 	string map_file;
-	ros::param::get("/ORBSLAM3_tightly/map_file", map_file);
+	ros::param::get("/AQUA_SLAM/map_file", map_file);
 	mp_system->LoadAtlas(map_file,System::TEXT_FILE);
 	return true;
 }

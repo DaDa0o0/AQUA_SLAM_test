@@ -81,8 +81,8 @@ Tracking::Tracking(System *pSys,
 {
 	// initialize the pose pulisher
 	ros::NodeHandle n;
-	mPose_pub = n.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/orb_pose", 10);
-	// mEKFPose_pub = n.advertise<geometry_msgs::PoseStamped>("/ORBSLAM3_tightly/preintegrated_pose", 10);
+	// mPose_pub = n.advertise<geometry_msgs::PoseStamped>("/AQUA_SLAM/orb_pose", 10);
+	// mEKFPose_pub = n.advertise<geometry_msgs::PoseStamped>("/AQUA_SLAM/preintegrated_pose", 10);
 	// Load camera parameters from settings file
 	cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
 
@@ -2823,9 +2823,9 @@ void Tracking::TrackDVLGyro()
 				bOK = TrackLocalMap();
 			else//
 				bOK = TrackLocalMap();
-            if(mCurrentFrame.mPoorVision){
-                PredictStateDvlGro();
-            }
+            // if(mCurrentFrame.mPoorVision){
+                // PredictStateDvlGro();
+            // }
             if (!bOK) {
                 ROS_INFO_STREAM("Fail to track local map!");
                 PredictStateDvlGro();

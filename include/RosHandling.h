@@ -75,11 +75,11 @@ public:
 	void PublishImgMergeCandidate(const cv::Mat &img);
 	void PublishIntegration(Atlas *pAtlas);
     void PublishLossKF(set<KeyFrame*,KFComparator> &loss_kfs);
-	void PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time &stamp);
+	// void PublishGT(const Eigen::Isometry3d &T_g0_gj_gt, const ros::Time &stamp);
 	void PublishOrb(const Eigen::Isometry3d &T_c0_cj_orb, const Eigen::Isometry3d &T_d_c, const ros::Time &stamp);
 	void PublishCamera(const Eigen::Isometry3d &T_c0_cj_orb, const ros::Time &stamp);
-	void PublishEkf(const Eigen::Isometry3d &T_e0_ej_ekf, const ros::Time &stamp);
-	void PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, const ros::Time &stamp);
+	// void PublishEkf(const Eigen::Isometry3d &T_e0_ej_ekf, const ros::Time &stamp);
+	// void PublishDensePointCloudPose(const Eigen::Isometry3d &T_c0_cmj, const ros::Time &stamp);
 	//publish pointcloud and octomap
 	void UpdateMap(ORB_SLAM3::Atlas *pAtlas);
 	void PublishMap(ORB_SLAM3::Atlas *pAtlas, int state);

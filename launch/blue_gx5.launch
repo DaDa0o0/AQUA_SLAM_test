@@ -10,8 +10,8 @@
 <!--     <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl"-->
 <!--               args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_falcon.yaml false" output="screen"/>-->
 <!--    <node pkg="ORB_DVL2" type="BlueOdom2Twist.py" name="BlueOdom2Twist" />-->
-    <!--    <arg name="model" default="$(find ORB_SLAM3_edit)/urdf/bluerov.urdf"/>-->
-    <!--    <param name="robot_description" command="$(find xacro)/xacro $(arg model)"/>-->
+    <arg name="model" default="$(find ORB_DVL2)/urdf/bluerov.urdf"/>
+    <param name="robot_description" command="$(find xacro)/xacro $(arg model)"/>
     <param name="/ORBSLAM3_tightly/out_path" value="/home/da/project/ros/orb_dvl2_ws/src/dvl2/orb3_result/"/>
     <param name="/ORBSLAM3_tightly/traj_path" value="/home/da/project/ros/orb_dvl2_ws/src/dvl2/dvl2_results/stamped_traj_estimate0.txt"/>
     <param name="/ORBSLAM3_tightly/map_file" value="/home/da/project/ros/orb_dvl2_ws/src/dvl2/orb3_result/Altlas.osa"/>

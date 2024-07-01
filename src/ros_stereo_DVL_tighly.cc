@@ -194,8 +194,8 @@ int main(int argc, char **argv)
 	                             &igb,
 	                             image_transport::TransportHints("compressed"));
 
-	ros::Publisher img_test_pub = n.advertise<sensor_msgs::Image>("/ORBSLAM3_tightly/img_test", 10);
-	pimg_test_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(img_test_pub));
+	// ros::Publisher img_test_pub = n.advertise<sensor_msgs::Image>("/ORBSLAM3_tightly/img_test", 10);
+	// pimg_test_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(img_test_pub));
 //	ros::Subscriber sub_img_left = n.subscribe("/suv3d/left/rgb_rect", 100, &ImageGrabber::GrabImageLeft, &igb);
 //	ros::Subscriber sub_img_right = n.subscribe("/suv3d/right/rgb_rect", 100, &ImageGrabber::GrabImageRight, &igb);
 
@@ -260,7 +260,7 @@ void ImageGrabber::SyncWithImu()
 {
 	const double maxTimeDiff = 0.1;
 	ros::NodeHandle nh;
-	ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
+	// ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
 	while (1) {
 		cv::Mat imLeft, imRight;
 		double tImLeft = 0, tImRight = 0;
@@ -412,7 +412,7 @@ void ImageGrabber::SyncWithImu()
 			std_msgs::Header header;
 			header.stamp = ros::Time::now();
 			cv_bridge::CvImage cv_ptr_test(header, "bgr8", imLeft);
-			pimg_test_pub->publish(cv_ptr_test.toImageMsg());
+			// pimg_test_pub->publish(cv_ptr_test.toImageMsg());
 
 
 //			std::chrono::milliseconds tSleep(1);
@@ -426,7 +426,7 @@ void ImageGrabber::SyncWithImu2()
 {
 	const double maxTimeDiff = 0.1;
 	ros::NodeHandle nh;
-	ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
+	// ros::Publisher img_test_pub = nh.advertise<sensor_msgs::Image>("/ORBSLAM3_tightlt/test_img", 10);
 	while (1) {
 		cv::Mat imLeft, imRight;
 		double tImLeft = 0, tImRight = 0;
@@ -663,7 +663,7 @@ void ImageGrabber::SyncWithImu2()
 			std_msgs::Header header;
 			header.stamp = ros::Time::now();
 			cv_bridge::CvImage cv_ptr_test(header, "bgr8", imLeft);
-			pimg_test_pub->publish(cv_ptr_test.toImageMsg());
+			// pimg_test_pub->publish(cv_ptr_test.toImageMsg());
 
 
 //			std::chrono::milliseconds tSleep(1);

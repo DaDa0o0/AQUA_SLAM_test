@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot name="vehicle">
-<link name="camera_dvl2_link">
+<link name="bluerov/base_link">
     <visual>
       <geometry>
         <mesh filename="file:///home/da/project/ros/catkin_ws/src/orca_meta/launch/urdf/bluerov2_noprop.dae" scale="1 1 1"/>
