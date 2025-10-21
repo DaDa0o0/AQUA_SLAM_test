@@ -1746,6 +1746,7 @@ void LocalMapping::InitializeDvlIMU()
     mpAtlas->SetDvlImuInitialized();
     mpAtlas->setRGravity(pCurMap->getRGravity());
     mpAtlas->SetDvlImuInitialized();
+	mpAtlas->SetIMUCalibrated();
     mpTracker->mpRosHandler->UpdateMap(mpAtlas);
     mpTracker->UpdateFrameDVLGyro(vpKF.front()->GetImuBias(), mpCurrentKeyFrame);
     mpTracker->SetExtrinsicPara(vpKF.front()->mImuCalib);
