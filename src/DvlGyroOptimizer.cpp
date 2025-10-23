@@ -3101,7 +3101,7 @@ void DvlGyroOptimizer::FullDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, 
     }
 
 
-    ROS_INFO_STREAM(ss.str());
+    ROS_DEBUG_STREAM(ss.str());
 
     for (auto pMP:LocalMapPoints) {
         if(find(LocalFixedMapPoints.begin(), LocalFixedMapPoints.end(), pMP) !=

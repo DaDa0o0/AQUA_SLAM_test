@@ -3600,6 +3600,11 @@ void Tracking::StereoInitialization()
         }
         // mpRosHandler->PublishLossKF(all_loss_kf);
 	}
+    else{
+        if (mpIntegrator->GetDoLossIntegration()) {
+            PredictStateDvlGro();
+        }
+    }
 }
 
 void Tracking::StereoInitializationKLT()
