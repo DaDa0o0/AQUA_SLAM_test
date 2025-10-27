@@ -1,0 +1,14 @@
+<launch>
+    <arg name="pose_file" />
+    <arg name="pcd_file" />
+    <arg name="gt_file" />
+    <param name="/dense_ros/pose_path" value="$(arg pose_file)" />
+    <param name="/dense_ros/gt_path" value="$(arg gt_file)" />
+    <param name="/dense_ros/pcd_path" value="$(arg pcd_file)" />
+    <node name="rviz_dense_viewer" pkg="rviz" type="rviz" args="-d $(find ORB_DVL2)/launch/dense_viewer.rviz"/>
+    <node pkg="ORB_DVL2" type="dense_viewer" name="dense_viewer" output="screen">
+    </node>
+
+
+
+</launch>

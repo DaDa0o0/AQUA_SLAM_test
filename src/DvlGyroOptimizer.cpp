@@ -1562,13 +1562,13 @@ DvlGyroOptimizer::LocalDVLIMUBundleAdjustment(Atlas* pAtlas, KeyFrame* pKF, bool
             eDVL->setVertex(8, dynamic_cast<g2o::OptimizableGraph::Vertex *>(VR_b0_w));
             eDVL->setId(optimizer.edges().size());
             Eigen::Matrix<double,9,9> info_DVL=Eigen::Matrix<double,9,9>::Identity();
-            info_DVL.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e2;
-            info_DVL.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e2;
-            info_DVL.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e2;
+            info_DVL.block(0,0,3,3) = Eigen::Matrix3d::Identity() * 1e5;
+            info_DVL.block(3,3,3,3) = Eigen::Matrix3d::Identity() * 1e5;
+            info_DVL.block(6,6,3,3) = Eigen::Matrix3d::Identity() * 1e5;
             eDVL->setInformation(info_DVL);
-            if(!pAtlas->IsIMUCalibrated()){
-                eDVL->setLevel(1);
-            }
+            // if(!pAtlas->IsIMUCalibrated()){
+            //     eDVL->setLevel(1);
+            // }
             ROS_DEBUG_STREAM("DVL edge info:\n"<<info_DVL);
             optimizer.addEdge(eDVL);
 

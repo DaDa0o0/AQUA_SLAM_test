@@ -1845,7 +1845,7 @@ bool Tracking::PredictStateDvlGro()
     // T_df_d1.pretranslate(t_df_d1);
     // Eigen::Isometry3d T_d0_d1 = T_d0_df * T_df_d1;
     // T_c0_c1 = T_d_c.inverse() * T_d0_d1 *T_d_c;
-    if(mpAtlas->IsIMUCalibrated()){
+    if(0){
         //use IMU as prediction
         ROS_DEBUG_STREAM("use IMU as prediction");
         Eigen::Matrix3d R_b0_b1 = R_b0_bf * R_bf_b1;
