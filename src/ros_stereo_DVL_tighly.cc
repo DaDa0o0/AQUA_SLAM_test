@@ -686,12 +686,8 @@ void ImuGrabber::GrabImu(const sensor_msgs::ImuConstPtr &imu_msg)
 	sensor_msgs::ImuPtr p_new_msg(new sensor_msgs::Imu());
 	p_new_msg->header = imu_msg->header;
 	p_new_msg->angular_velocity = imu_msg->angular_velocity;
-	// convert from degree to radian
-	p_new_msg->angular_velocity.x = imu_msg->angular_velocity.x * M_PI / 180.0;
-	p_new_msg->angular_velocity.y = imu_msg->angular_velocity.y * M_PI / 180.0;
-	p_new_msg->angular_velocity.z = -imu_msg->angular_velocity.z * M_PI / 180.0;
 	p_new_msg->linear_acceleration = imu_msg->linear_acceleration;
-    p_new_msg->linear_acceleration.z = -p_new_msg->linear_acceleration.z;
+    // p_new_msg->linear_acceleration.z = -p_new_msg->linear_acceleration.z;
 //	p_new_msg->angular_velocity.z = p_new_msg->angular_velocity.z;
 //	p_new_msg->angular_velocity.y = p_new_msg->angular_velocity.y;
 //	p_new_msg->angular_velocity.x = p_new_msg->angular_velocity.x;
