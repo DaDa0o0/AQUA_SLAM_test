@@ -161,7 +161,7 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon-x11-0 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --user --root-user-action gdown
+RUN pip install --user gdown
 
 RUN mkdir -p /root/catkin_ws/src
 WORKDIR /root/catkin_ws/src
