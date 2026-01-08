@@ -8,8 +8,8 @@ git clone https://github.com/DaDa0o0/AQUA_SLAM_test.git
 cd ./AQUA_SLAM_test/docker
 docker compose build
 docker compose up -d
+xhost +
 docker exec -it orb_dvl2_ros_noetic bash
-xnost +
 ```
 In docker container:
 ```bash
