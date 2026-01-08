@@ -6,7 +6,7 @@
 <!--     <node pkg="ORB_DVL2" type="align_EKF.py" name="ekf_align" output="screen"/> -->
 
     <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl"
-          args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_blue_short.yaml false" output="screen"/>
+          args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_blue_gx5_short.yaml false" output="screen"/>
 <!--     <node pkg="ORB_DVL2" type="stereo_dvl2" name="stereo_dvl"-->
 <!--               args="$(find ORB_DVL2)/Vocabulary/ORBvoc.txt $(find ORB_DVL2)/data/underwater_orbslam3_falcon.yaml false" output="screen"/>-->
 <!--    <node pkg="ORB_DVL2" type="BlueOdom2Twist.py" name="BlueOdom2Twist" />-->
