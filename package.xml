@@ -27,7 +27,7 @@
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>tf</build_depend>
-  <build_depend>vehicle_interface</build_depend>
+<!--  <build_depend>vehicle_interface</build_depend>-->
   <build_depend>waterlinked_a50_ros_driver</build_depend>
 <!--  <build_depend>rosbag</build_depend>-->
 
@@ -39,11 +39,11 @@
   <build_export_depend>waterlinked_a50_ros_driver</build_export_depend>
 <!--  <build_export_depend>octomap</build_export_depend>-->
   <build_export_depend>octomap_msgs</build_export_depend>
-  <build_export_depend>pose_graph_msgs</build_export_depend>
+<!--  <build_export_depend>pose_graph_msgs</build_export_depend>-->
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>tf</build_export_depend>
-  <build_export_depend>vehicle_interface</build_export_depend>
+<!--  <build_export_depend>vehicle_interface</build_export_depend>-->
 <!--  <build_export_depend>rosbag</build_export_depend>-->
 
 <!--  <exec_depend>cv_bridge_slam</exec_depend>-->
@@ -53,11 +53,11 @@
   <exec_depend>nav_msgs</exec_depend>
 <!--  <exec_depend>octomap</exec_depend>-->
   <exec_depend>octomap_msgs</exec_depend>
-  <exec_depend>pose_graph_msgs</exec_depend>
+<!--  <exec_depend>pose_graph_msgs</exec_depend>-->
   <exec_depend>roscpp</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>tf</exec_depend>
-  <exec_depend>vehicle_interface</exec_depend>
+<!--  <exec_depend>vehicle_interface</exec_depend>-->
   <exec_depend>waterlinked_a50_ros_driver</exec_depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>

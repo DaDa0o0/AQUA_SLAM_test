@@ -1,1 +1,0 @@
-bin/stereo_only ./Vocabulary/ORBvoc.txt ./data/underwater_orbslam3.yaml false
