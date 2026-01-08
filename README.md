@@ -22,12 +22,17 @@ cd /root/catkin_ws
 source devel/setup.bash
 roslaunch ORB_DVL2 blue_gx5_StructureEasy.launch
 ```
+
+You should be able to see a rviz window after this step:
+![rviz.png](images/rviz.png)
+
 **Note:** We provide multiple launch files for each sequence (e.g., `blue_gx5_StructureEasy.launch` for `Structure_Easy.bag`), as some sequences use different extrinsic calibrations. Please make sure to use the corresponding launch file when running each ROS bag.
 
 ## Data Download
 Please visit [Tank Dataset](https://senseroboticslab.github.io/underwater-tank-dataset/) website to download ros bags.
 
 Here we download **Structure_Easy.bag** for test.
+![bag.png](images/bag.png)
 
 Place the ros bag under `aqua_slam_ws/src/AQUA_SLAM_test/dataset`
 
