@@ -1,6 +1,4 @@
 # AQUA SLAM
-## Data Download
-Please visit [Tank Dataset](https://senseroboticslab.github.io/underwater-tank-dataset/) website to download ros bags. 
 
 ## Installation
 Local Host:
@@ -24,9 +22,17 @@ cd /root/catkin_ws
 source devel/setup.bash
 roslaunch ORB_DVL2 blue_gx5_StructureEasy.launch
 ```
-Open a new terminal on local host to play the rosbag downloaded:
-```bash
-rosbag play [path_to_your_dataset]/Structure_Easy.bag 
-```
+**Note:** We provide multiple launch files for each sequence (e.g., `blue_gx5_StructureEasy.launch` for `Structure_Easy.bag`), as some sequences use different extrinsic calibrations. Please make sure to use the corresponding launch file when running each ROS bag.
 
-**Note:** We provide separate launch files for each sequence (e.g., `blue_gx5_StructureEasy.launch` for `Structure_Easy.bag`), as some sequences use different extrinsic calibrations. Please make sure to use the corresponding launch file when running each ROS bag.
+## Data Download
+Please visit [Tank Dataset](https://senseroboticslab.github.io/underwater-tank-dataset/) website to download ros bags.
+
+Here we download **Structure_Easy.bag** for test.
+
+Place the ros bag under `aqua_slam_ws/src/AQUA_SLAM_test/dataset`
+
+Open a new terminal on local host to play the rosbag:
+```bash
+docker exec -it orb_dvl2_ros_noetic bash
+rosbag play ./src/AQUA_SLAM/dataset
+```
