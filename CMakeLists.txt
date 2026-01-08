@@ -37,6 +37,7 @@ find_package(catkin REQUIRED COMPONENTS
         message_generation
         rospy
         std_msgs
+        waterlinked_a50_ros_driver
         )
 
 find_package(Pangolin REQUIRED)
@@ -89,10 +90,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 # )
 
 ## Generate services in the 'srv' folder
- add_service_files(
-   FILES
-   SetInfof.srv
- )
+# add_service_files(
+#   FILES
+#   SetInfof.srv
+# )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -102,10 +103,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   std_msgs
- )
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -139,7 +140,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_LOG_DYN_LINK")
 catkin_package(
         INCLUDE_DIRS include
         LIBRARIES lib
-        CATKIN_DEPENDS geometry_msgs image_transport message_filters nav_msgs octomap_msgs pose_graph_msgs roscpp sensor_msgs tf vehicle_interface message_runtime
+        CATKIN_DEPENDS geometry_msgs image_transport message_filters nav_msgs octomap_msgs roscpp sensor_msgs tf message_runtime waterlinked_a50_ros_driver
         #          DEPENDS system_lib
 )
 

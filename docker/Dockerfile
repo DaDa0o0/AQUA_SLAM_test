@@ -161,6 +161,10 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon-x11-0 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /root/catkin_ws/src
+WORKDIR /root/catkin_ws/src
+RUN git clone https://github.com/SenseRoboticsLab/dvl_a50_ros_driver.git
+
 # Provide a runtime dir expected by Qt/desktop components (rviz) when running in minimal containers.
 # If you later run as non-root, you can override this at runtime.
 ENV XDG_RUNTIME_DIR=/tmp/runtime-root
@@ -172,7 +176,6 @@ RUN mkdir -p ${XDG_RUNTIME_DIR} && chmod 700 ${XDG_RUNTIME_DIR}
 RUN echo "source /opt/ros/noetic/setup.bash" >> /root/.bashrc
 
 # Create a workspace
-RUN mkdir -p /root/catkin_ws/src
 WORKDIR /root/catkin_ws
 
 # Initialize the workspace

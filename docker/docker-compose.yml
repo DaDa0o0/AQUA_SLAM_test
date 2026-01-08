@@ -20,7 +20,7 @@ services:
 
     volumes:
       # Mount the workspace
-      - ../:/root/catkin_ws/src
+      - ../:/root/catkin_ws/src/AQUA_SLAM
       # Mount X11 socket for GUI support
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       # Mount home for persistent bash history and configs

@@ -21,8 +21,6 @@
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <nav_msgs/Path.h>
-#include <vehicle_interface/AlarmStoppedTracking.h>
-#include <vehicle_interface/MapInfo.h>
 #include <tf/transform_broadcaster.h>
 #include <octomap/OcTree.h>
 #include <octomap/octomap.h>

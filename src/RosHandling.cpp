@@ -81,8 +81,8 @@ RosHandling::RosHandling(System *pSys, LocalMapping *pLocal)
 	mp_cloud_free->reserve(50000);
 	m_octomap_resolution = 0.1;
 	mp_octree = boost::make_shared<octomap::OcTree>(octomap::OcTree(m_octomap_resolution));
-	ros::Publisher map_info_pub = nh_.advertise<vehicle_interface::MapInfo>("/AQUA_SLAM/map_info", 10);
-	mp_map_info_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(map_info_pub));
+	// ros::Publisher map_info_pub = nh_.advertise<vehicle_interface::MapInfo>("/AQUA_SLAM/map_info", 10);
+	// mp_map_info_pub = boost::shared_ptr<ros::Publisher>(boost::make_shared<ros::Publisher>(map_info_pub));
 
 	ros::Publisher
 		pose_integration_ref = nh_.advertise<geometry_msgs::PoseStamped>("/AQUA_SLAM/integration_ref", 10);
@@ -351,11 +351,7 @@ void RosHandling::PublishMap(ORB_SLAM3::Atlas *pAtlas, int state)
 	for (auto map: maps) {
 		map_ids.push_back(map->GetId());
 	}
-	vehicle_interface::MapInfo map_info;
-	map_info.current_map_id = current_map_id;
-	map_info.all_map_id = map_ids;
-	map_info.slam_state = state;
-	mp_map_info_pub->publish(map_info);
+
 }
 void RosHandling::BroadcastTF(const Eigen::Isometry3d &T_c0_cj_orb,
                               const ros::Time &stamp,
