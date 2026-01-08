@@ -161,6 +161,8 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon-x11-0 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN pip install --user --root-user-action gdown
+
 RUN mkdir -p /root/catkin_ws/src
 WORKDIR /root/catkin_ws/src
 RUN git clone https://github.com/SenseRoboticsLab/dvl_a50_ros_driver.git
