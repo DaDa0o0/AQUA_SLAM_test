@@ -729,7 +729,7 @@ bool LoopClosing::DetectCommonRegionsFromBoW(std::vector<KeyFrame*> &vpBowCand, 
             }
         }
 
-       ROS_INFO_STREAM("numBoWMatches:"<<numBoWMatches<<" threshold:"<<nBoWMatches);
+       //ROS_INFO_STREAM("numBoWMatches:"<<numBoWMatches<<" threshold:"<<nBoWMatches);
         if(!bAbortByNearKF && numBoWMatches >= nBoWMatches) // TODO pick a good threshold
         {
 

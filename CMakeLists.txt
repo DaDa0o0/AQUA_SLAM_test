@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
 SET(ROS_BUILD_TYPE RelWithDebInfo)
 SET(CMAKE_BUILD_TYPE RelWithDebInfo)
 MESSAGE("Build type: " ${ROS_BUILD_TYPE})
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -ferror-limit=1000")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_definitions(-DCOMPILEDWITHC11)
 set(CMAKE_CXX_STANDARD 17)
@@ -20,26 +20,23 @@ set(CMAKE_CXX_STANDARD 17)
 ## is used, also find other catkin packages
 
 
-set(OpenCV_DIR /home/da/project/Thirdparty/opencv3.2/share/OpenCV)
+#set(OpenCV_DIR /home/da/project/Thirdparty/opencv3.2/share/OpenCV)
 #set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} /home/da/project/Thirdparty/opencv3.2)
 find_package(OpenCV 3.2 REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
-        #        cv_bridge_slam
         geometry_msgs
         image_transport
         message_filters
         nav_msgs
-        octomap_msgs
-        pose_graph_msgs
+#        octomap_msgs
+#        pose_graph_msgs
         roscpp
         sensor_msgs
         tf
-        vehicle_interface
         message_generation
         rospy
         std_msgs
-#        rosbag
         )
 
 find_package(Pangolin REQUIRED)
@@ -295,10 +292,10 @@ target_link_libraries(${PROJECT_NAME}
         -lboost_iostreams
         -lcrypto
         )
-add_executable(g2o_BA src/g2o_BA.cpp)
-target_link_libraries(g2o_BA ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
-target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_executable(g2o_BA src/g2o_BA.cpp)
+#target_link_libraries(g2o_BA ${PROJECT_NAME} ${PROJECT_NAME}_Optmization)
+#target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+#add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 ## Declare a C++ executable
