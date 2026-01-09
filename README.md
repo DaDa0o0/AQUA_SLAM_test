@@ -73,7 +73,7 @@ Here we list some parameter affect performance seriously:
   - `EnableLoopDetection`: Enable/Disable loop closure detection.
 
 ## 6 Results
-
+![wh.gif](images/wh.gif)
 ## 7 Known Issues
 - Currently, the system may randomly crash when running with long sequences due to some multithreading issues. We are working on fixing this problem. If you encounter a crash, please try restarting the system again.
 
