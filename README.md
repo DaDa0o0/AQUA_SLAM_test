@@ -39,5 +39,5 @@ Place the ros bag under `aqua_slam_ws/src/AQUA_SLAM_test/dataset`
 Open a new terminal on local host to play the rosbag:
 ```bash
 docker exec -it orb_dvl2_ros_noetic bash
-rosbag play ./src/AQUA_SLAM/dataset
+rosbag play ./src/AQUA_SLAM/dataset/Structure_Easy.bag
 ```
