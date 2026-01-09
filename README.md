@@ -7,6 +7,7 @@ AQUA-SLAM is an underwater SLAM system that integrates a Doppler Velocity Log (D
 Shida Xu, Kaicheng Zhang, and Sen Wang. "AQUA-SLAM: Tightly-Coupled Underwater Acoustic-Visual-Inertial SLAM with Sensor Calibration." IEEE Transactions on Robotics, 2025. [[IEEE](https://ieeexplore.ieee.org/abstract/document/10938346)] [[PDF](https://arxiv.org/pdf/2503.11420)]
 
 ## 3 Installation
+**Tested on Ubuntu20.04 and Ubuntu22.04.**
 Local Host:
 ```bash
 mkdir aqua_slam_ws/src -p
